@@ -26,6 +26,24 @@ export function noise(g, w, h, amt) {
   g.putImageData(id, 0, 0);
 }
 
+// normal map from a canvas texture's luminance (Sobel): dark = recessed (window reveals, joints, stains)
+export function normalFrom(tex, strength = 2) {
+  const src = tex.image, w = src.width, h = src.height, g0 = src.getContext ? src.getContext('2d') : null;
+  if (!g0) return null;
+  const d = g0.getImageData(0, 0, w, h).data, L = new Float32Array(w * h);
+  for (let i = 0; i < w * h; i++) L[i] = (d[i * 4] * .3 + d[i * 4 + 1] * .59 + d[i * 4 + 2] * .11) / 255;
+  const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d'), o = g.createImageData(w, h);
+  const at = (x, y) => L[((y + h) % h) * w + ((x + w) % w)];
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const dx = (at(x + 1, y - 1) + 2 * at(x + 1, y) + at(x + 1, y + 1) - at(x - 1, y - 1) - 2 * at(x - 1, y) - at(x - 1, y + 1)) * strength;
+    const dy = (at(x - 1, y + 1) + 2 * at(x, y + 1) + at(x + 1, y + 1) - at(x - 1, y - 1) - 2 * at(x, y - 1) - at(x + 1, y - 1)) * strength;
+    const n = Math.hypot(dx, dy, 1), i = (y * w + x) * 4;
+    o.data[i] = (-dx / n * .5 + .5) * 255; o.data[i + 1] = (dy / n * .5 + .5) * 255; o.data[i + 2] = (1 / n * .5 + .5) * 255; o.data[i + 3] = 255;
+  }
+  g.putImageData(o, 0, 0);
+  const t = new THREE.CanvasTexture(c); t.wrapS = tex.wrapS; t.wrapT = tex.wrapT; t.repeat.copy(tex.repeat); t.anisotropy = 8; return t;
+}
+
 /* textures */
 export const texConcrete = canvasTex(512, 512, (g, w, h) => {
   g.fillStyle = '#8b8f93'; g.fillRect(0, 0, w, h); noise(g, w, h, 40);
@@ -96,12 +114,12 @@ export function setZone(z) { zone = z; }
 function bucket(key) { if (!mats[key]) throw new Error('unknown material ' + key); const id = zone + '|' + key; let b = batches.get(id); if (!b) batches.set(id, b = []); return b; }
 export const std = (o) => new THREE.MeshStandardMaterial(o);
 export const bas = (o) => new THREE.MeshBasicMaterial(o);
-def('conc', std({ map: texConcrete, color: 0xb0b4b8, roughness: .92 }), 4);
-def('concD', std({ map: texConcrete, color: 0x6a6e72, roughness: .95 }), 4);
-def('panel', std({ map: texPanel, color: 0xa6aaae, roughness: .9 }), 6);
+def('conc', std({ map: texConcrete, normalMap: normalFrom(texConcrete, 1.5), color: 0xb0b4b8, roughness: .92 }), 4);
+def('concD', std({ map: texConcrete, normalMap: normalFrom(texConcrete, 1.5), color: 0x6a6e72, roughness: .95 }), 4);
+def('panel', std({ map: texPanel, normalMap: normalFrom(texPanel, 2.5), color: 0xa6aaae, roughness: .9 }), 6);
 def('hwy', std({ map: texConcrete, color: 0x5a6270, emissive: 0x161d28, roughness: .9 }), 4);
-def('wall', std({ map: texWall, color: 0xbcc4cc, roughness: .5, metalness: .45 }), 2.4);
-def('wallD', std({ map: texWall, color: 0x76808a, roughness: .55, metalness: .45 }), 2.4);
+def('wall', std({ map: texWall, normalMap: normalFrom(texWall, 2), color: 0xbcc4cc, roughness: .5, metalness: .45 }), 2.4);
+def('wallD', std({ map: texWall, normalMap: normalFrom(texWall, 2), color: 0x76808a, roughness: .55, metalness: .45 }), 2.4);
 def('steel', std({ color: 0x1c2026, roughness: .5, metalness: .85 }));
 def('steelL', std({ color: 0x4b525a, roughness: .45, metalness: .8 }));
 def('yel', std({ color: 0xe0a812, emissive: 0x3a2800, roughness: .5, metalness: .25 }));
