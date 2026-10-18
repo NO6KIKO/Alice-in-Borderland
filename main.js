@@ -6,6 +6,7 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js';
+import { BokehPass } from 'three/addons/postprocessing/BokehPass.js';
 import { Reflector } from 'three/addons/objects/Reflector.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
@@ -526,7 +527,7 @@ for (const d of DISTRICTS) {
 } }
 const dayBtn = document.createElement('button'); vb.insertBefore(dayBtn, playBtn);
 const cineBtn = document.createElement('button'); cineBtn.textContent = '▭ 电影模式'; vb.insertBefore(cineBtn, playBtn);
-let cine = false; cineBtn.onclick = () => { cine = !cine; grade.setBars(cine); document.body.classList.toggle('cine', cine); };
+let cine = false; cineBtn.onclick = () => { cine = !cine; grade.setBars(cine); dof.enabled = cine; document.body.classList.toggle('cine', cine); };
 window.__player = player;   // console helper
 Promise.all([load('./models/truck_semi.glb'), load('./models/truck_box.glb')]).then(([semi, boxT]) => {
   const src = { truck_semi: semi.scene, truck_box: boxT.scene };
@@ -604,6 +605,8 @@ gtao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, rings
 gtao.blendIntensity = .85; composer.addPass(gtao);
 let hiQ = true; try { hiQ = localStorage.getItem('quality') !== 'std'; } catch (e) {}
 gtao.enabled = hiQ;
+// cinema-mode depth of field (off otherwise): focus on what the camera looks at
+const dof = new BokehPass(scene, camera, { focus: 60, aperture: .00012, maxblur: .006 }); dof.enabled = false; composer.addPass(dof);
 const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.55, 0.6, 1.0); composer.addPass(bloom);
 composer.addPass(new OutputPass());
 const grade = createGrade(composer);   // the show's teal / amber film look
@@ -666,6 +669,7 @@ function tick() {
   updateMarkers();
   const tr = performance.now();
   grade.update(t, innerWidth, innerHeight);
+  if (dof.enabled) dof.uniforms.focus.value = player.active ? 6 : camera.position.distanceTo(controls.target);
   audio.update(dt, camera, huntState.centre, huntState.firing);
   if (innerWidth > 0 && innerHeight > 0) composer.render();   // hidden pane → zero-size targets
   prof.render = prof.render * .9 + (performance.now() - tr) * .1; prof.js = prof.js * .9 + (tr - t0) * .1;
