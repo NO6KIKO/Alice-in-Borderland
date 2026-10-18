@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { Sky } from 'three/addons/objects/Sky.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
+const _moonDir = new THREE.Vector3(-80, 120, 60).normalize();   // matches the moonlight direction
 export function createDayNight({ scene, renderer, hemi, moon, bloom, spots, nightBackdrop, onChange = [] }) {
   const pmrem = new THREE.PMREMGenerator(renderer);
   const nightEnv = pmrem.fromScene(new RoomEnvironment(), .04).texture;
@@ -47,6 +48,19 @@ export function createDayNight({ scene, renderer, hemi, moon, bloom, spots, nigh
   cg.setAttribute('color', new THREE.BufferAttribute(ca, 4));
   const clouds = new THREE.Mesh(cg, new THREE.MeshBasicMaterial({ map: cloudTex, transparent: true, depthWrite: false, fog: false, opacity: .85, vertexColors: true }));
   clouds.rotation.x = Math.PI / 2; clouds.position.y = 1100; clouds.renderOrder = -1; scene.add(clouds);
+  // night sky: no city light pollution → a dense star field and a moon disc
+  const SN = 3200, sp = new Float32Array(SN * 3), sc2 = new Float32Array(SN * 3);
+  for (let i = 0; i < SN; i++) {
+    const u2 = Math.random(), v2 = Math.random() * .93 + .07, th = 2 * Math.PI * u2, ph = Math.acos(v2);   // upper hemisphere
+    sp.set([Math.sin(ph) * Math.cos(th) * 6000, Math.cos(ph) * 6000, Math.sin(ph) * Math.sin(th) * 6000], i * 3);
+    const b = Math.pow(Math.random(), 3) * .9 + .1, warm = Math.random(); sc2.set([b * (warm < .2 ? 1 : .85), b * .9, b * (warm > .8 ? 1 : .88)], i * 3);
+  }
+  const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.BufferAttribute(sp, 3)); sg.setAttribute('color', new THREE.BufferAttribute(sc2, 3));
+  const stars = new THREE.Points(sg, new THREE.PointsMaterial({ size: 1.6, sizeAttenuation: false, vertexColors: true, fog: false, depthWrite: false, transparent: true }));
+  stars.frustumCulled = false; stars.renderOrder = -2; scene.add(stars);
+  const moonTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d'); const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64); gr.addColorStop(0, 'rgba(235,240,255,1)'); gr.addColorStop(.28, 'rgba(225,232,250,1)'); gr.addColorStop(.32, 'rgba(160,180,220,.25)'); gr.addColorStop(1, 'rgba(120,150,210,0)'); g.fillStyle = gr; g.fillRect(0, 0, 128, 128); return new THREE.CanvasTexture(c); })();
+  const moonDisc = new THREE.Sprite(new THREE.SpriteMaterial({ map: moonTex, color: new THREE.Color(1.6, 1.6, 1.7), fog: false, depthWrite: false, transparent: true }));
+  moonDisc.scale.setScalar(520); scene.add(moonDisc);
   const night = { bg: scene.background.clone(), fogC: scene.fog.color.clone(), fogD: .0016, hemiS: hemi.color.clone(), hemiG: hemi.groundColor.clone(), hemiI: hemi.intensity, moonI: moon.intensity, exp: renderer.toneMappingExposure, bloom: bloom.strength };
   let isDay = false, isDusk = false;
   night.bloom = .35; night.moonI = moon.intensity * 1.5; moon.color.set(0x8fb0e0);   // softer bloom, clearer moonlight
@@ -65,6 +79,7 @@ export function createDayNight({ scene, renderer, hemi, moon, bloom, spots, nigh
     bloom.strength = day ? .18 : night.bloom; bloom.threshold = day ? 1.6 : 1.0;
     for (const s of spots) s.visible = !day;
     clouds.material.color.set(day ? 0xffffff : 0x1a2230); clouds.material.opacity = day ? .85 : .7;
+    stars.visible = moonDisc.visible = !day;
     for (const f of onChange) f(day, isDusk);
   }
   // enclosed halls: by day, fade sky light out while the camera is inside one of these boxes
@@ -72,6 +87,7 @@ export function createDayNight({ scene, renderer, hemi, moon, bloom, spots, nigh
   function base() { return isDusk ? { h: .8, s: 4.2, e: .55 } : isDay ? { h: 1.25, s: 5.2, e: .55 } : { h: night.hemiI, s: 0, e: .22 }; }
   function update(focus, cam) {
     cloudTex.offset.x += .000012; cloudTex.offset.y += .000006;
+    if (cam) { stars.position.copy(cam); moonDisc.position.copy(cam).addScaledVector(_moonDir, 5500); }
     const target = cam && interiors.some((b) => cam.x > b[0] && cam.x < b[1] && cam.y < b[2] && cam.y > (b[5] ?? -1e9) && cam.z > b[3] && cam.z < b[4]) ? 1 : 0;
     inside += (target - inside) * .08;
     if (isDay) { const b0 = base(), k = 1 - inside * .85; hemi.intensity = b0.h * k; sun.intensity = b0.s * (1 - inside); scene.environmentIntensity = b0.e * (1 - inside * .8); }

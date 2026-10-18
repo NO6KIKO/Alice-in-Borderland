@@ -617,7 +617,8 @@ const setQ = (q) => { hiQ = q; gtao.enabled = q; qBtn.textContent = q ? '画质:
 setQ(hiQ); qBtn.onclick = () => setQ(!hiQ);
 const facadeMats = Object.values(mats).filter((m) => m.userData.nightGlow);   // lit windows / signs / shopfronts at night
 const CITY_NIGHT_LIGHTS = .15;
-const dayNight = createDayNight({ scene, renderer, hemi, moon, bloom, spots, nightBackdrop: city, onChange: [
+city.visible = false;   // the real city fills the horizon now; the painted skyline ring looked fake
+const dayNight = createDayNight({ scene, renderer, hemi, moon, bloom, spots, nightBackdrop: null, onChange: [
   // the show's night has no city electricity: only a few windows (generators) glow; game venues light themselves
   (day) => { for (const m of facadeMats) m.emissiveIntensity = day ? 0 : m.userData.nightGlow * CITY_NIGHT_LIGHTS; },
   (day) => {   // the wet-asphalt mirror is a night look; by day the apron is plain dry asphalt
