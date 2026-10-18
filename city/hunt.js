@@ -113,7 +113,8 @@ export function hunt(ctx) {
   ctx.dayNight.push((day, dusk) => {
     const wetLook = !day || dusk; night = wetLook; const m = K.mats.shib_road; if (!m) return;   // wet after rain: dusk + night
     wet.material.uniforms.color.value.set(dusk ? 0x4c535c : 0x8a96a6);
-    m.userData.dryCol ??= m.color.clone(); m.color.copy(m.userData.dryCol).multiplyScalar(wetLook ? .45 : 1);   // wet asphalt is darker than dry   // the bright dusk sky mirrored at full strength read as white spots
+    m.userData.dryCol ??= m.color.clone(); m.color.copy(m.userData.dryCol).multiplyScalar(wetLook ? .45 : 1);   // wet asphalt is darker than dry
+    const pv = K.mats.shib_pave; if (pv) { pv.userData.dry ??= pv.color.clone(); pv.color.copy(pv.userData.dry).multiplyScalar(!day ? .7 : 1); pv.roughness = !day ? .45 : 1; }   // wet stone at night   // the bright dusk sky mirrored at full strength read as white spots
     if (!puddleMask && m.roughnessMap?.image) {   // high-contrast copy of the puddle map: dry asphalt opaque, puddles see-through
       const src = m.roughnessMap.image, c = document.createElement('canvas'); c.width = src.width; c.height = src.height;
       const g = c.getContext('2d'); g.filter = 'brightness(1.45) contrast(2.2)'; g.drawImage(src, 0, 0);

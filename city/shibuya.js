@@ -61,14 +61,29 @@ function materials() {
     for (let i = 0; i < 12; i++) { g.strokeStyle = 'rgba(20,20,20,.5)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(r() * w, r() * h); g.lineTo(r() * w, r() * h); g.stroke(); }
   }, { repeat: true });
   def('shib_zebra', std({ map: zT, color: 0xb4b2aa, roughness: .58, metalness: .02 }), 3);   // worn road paint: off-white, not glossy
+  // 30 cm running-bond pavers (512 px = 2.4 m tile, wraps seamlessly): colour, bevel height → normal, roughness
+  const rp = K.rng(9090), PN = 8, PS = 64, PVX = Array.from({ length: PN * PN }, () => [(rp() - .5) * 12, (rp() - .5) * 4, rp(), rp()]);
+  const pavers = (sc, fn) => { for (let j = 0; j < PN; j++) { const off = (j & 1) * PS / 2; for (let i = -1; i < PN; i++) fn((i * PS + off) * sc, j * PS * sc, PS * sc, PVX[j * PN + ((i + PN) % PN)]); } };
   const pT = canvasTex(512, 512, (g, w, h) => {
-    for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) { const v = 128 + (r() - .5) * 34; g.fillStyle = `rgb(${v},${v},${v - 6})`; g.fillRect(i * 64, j * 64, 64, 64); if (r() < .06) { g.fillStyle = 'rgba(30,26,20,.55)'; g.fillRect(i * 64, j * 64, 64, 64); } }
-    noise(g, w, h, 24);
-    g.fillStyle = '#3a3d36'; for (let i = 0; i <= 8; i++) { g.fillRect(i * 64 - 2, 0, 4, h); g.fillRect(0, i * 64 - 2, w, 4); }
-    for (let i = 0; i < 160; i++) { g.fillStyle = `rgba(${60 + r() * 40},${100 + r() * 50},${30 + r() * 20},.85)`; const a = Math.floor(r() * 9) * 64, b = r() * h; r() < .5 ? g.fillRect(a - 3, b, 6, 4 + r() * 16) : g.fillRect(b, a - 3, 4 + r() * 16, 6); }
-    for (let i = 0; i < 20; i++) { g.strokeStyle = 'rgba(0,0,0,.35)'; g.beginPath(); const x = r() * w, y = r() * h; g.moveTo(x, y); g.lineTo(x + (r() - .5) * 60, y + (r() - .5) * 60); g.stroke(); }
+    g.fillStyle = 'rgb(58,56,50)'; g.fillRect(0, 0, w, h);   // joints
+    pavers(1, (x, y, sz, [dv, hs, c1, c2]) => {
+      const v = 126 + dv; g.fillStyle = `rgb(${v + hs | 0},${v | 0},${v - 5 - hs | 0})`; g.fillRect(x + 2, y + 2, sz - 3, sz - 3);
+      g.strokeStyle = 'rgba(46,42,34,.22)'; g.lineWidth = 2; g.strokeRect(x + 4, y + 4, sz - 7, sz - 7); g.strokeStyle = 'rgba(46,42,34,.1)'; g.strokeRect(x + 7, y + 7, sz - 13, sz - 13);
+      if (c1 < .22) { g.fillStyle = 'rgb(58,56,50)'; g.beginPath(); g.moveTo(x + 2, y + 2); g.lineTo(x + 2 + 6 + c2 * 8, y + 2); g.lineTo(x + 2, y + 2 + 5 + c2 * 6); g.fill(); }   // chipped corner
+    });
+    noise(g, w, h, 18);
+    for (let i = 0; i < 12; i++) { g.fillStyle = `rgba(${70 + r() * 20},${85 + r() * 15},${45 + r() * 10},.55)`; const yy = Math.floor(r() * PN) * PS; g.fillRect(r() * w, yy - 1, 8 + r() * 22, 3); }   // moss in the joints
+    for (let i = 0; i < 6; i++) { g.strokeStyle = 'rgba(0,0,0,.25)'; g.beginPath(); const x = r() * w, y = r() * h; g.moveTo(x, y); g.lineTo(x + (r() - .5) * 50, y + (r() - .5) * 50); g.stroke(); }
   }, { repeat: true });
-  def('shib_pave', std({ map: pT, color: 0xbdbdb6, roughness: .7 }), 4);
+  const pH = canvasTex(512, 512, (g, w, h) => {   // height: joints low, a 4 px chamfer up to the face (CPU only → normal map)
+    g.fillStyle = '#3c3c3c'; g.fillRect(0, 0, w, h);
+    pavers(1, (x, y, sz) => { for (let k = 0; k < 4; k++) { const v = 90 + k * 32; g.fillStyle = `rgb(${v},${v},${v})`; g.fillRect(x + 2 + k, y + 2 + k, sz - 3 - 2 * k, sz - 3 - 2 * k); } g.fillStyle = 'rgb(220,220,220)'; g.fillRect(x + 6, y + 6, sz - 11, sz - 11); });
+  }, { repeat: true });
+  const pR = canvasTex(256, 256, (g, w, h) => {   // roughness: faces ~.78, joints 1
+    g.fillStyle = '#fff'; g.fillRect(0, 0, w, h);
+    pavers(.5, (x, y, sz, [dv]) => { const v = 199 + dv * 2.5 | 0; g.fillStyle = `rgb(${v},${v},${v})`; g.fillRect(x + 1, y + 1, sz - 2, sz - 2); });
+  }, { repeat: true, srgb: false });
+  def('shib_pave', std({ map: pT, normalMap: K.normalFrom(pH, 1.8), roughnessMap: pR, roughness: 1, color: 0xbdbdb6 }), 2.4);
   const wT = canvasTex(128, 128, (g) => {
     g.clearRect(0, 0, 128, 128);
     for (let i = 0; i < 28; i++) { const x = 34 + r() * 60, tx = x + (r() - .5) * 70, ty = 8 + r() * 70; g.strokeStyle = r() < .2 ? '#9a9a48' : `rgb(${50 + r() * 40},${100 + r() * 60},${30 + r() * 25})`; g.lineWidth = 2 + r() * 3; g.beginPath(); g.moveTo(x, 128); g.quadraticCurveTo(x + (tx - x) * .2, (128 + ty) / 2, tx, ty); g.stroke(); }
@@ -76,7 +91,13 @@ function materials() {
   const weed = std({ map: wT, color: 0xa3aa8c, alphaTest: .45, side: THREE.DoubleSide, roughness: 1 }); weed.userData.noCollide = true; def('shib_weed', weed, 1);   // muted, sun-bleached green
   const mT = canvasTex(256, 256, (g) => {
     g.clearRect(0, 0, 256, 256);
-    for (let i = 0; i < 90; i++) { const a = r() * 7, d = Math.sqrt(r()) * 95, x = 128 + Math.cos(a) * d, y = 128 + Math.sin(a) * d; g.fillStyle = `rgba(${55 + r() * 40},${85 + r() * 55},${28 + r() * 20},.9)`; g.beginPath(); g.ellipse(x, y, 6 + r() * 22, 5 + r() * 16, r() * 3, 0, 7); g.fill(); }
+    for (let i = 0; i < 110; i++) {   // mossy cushions: some dry, darker toward the rim
+      const a = r() * 7, t = Math.sqrt(r()), d = t * 95, x = 128 + Math.cos(a) * d, y = 128 + Math.sin(a) * d, dry = r() < .3;
+      const c = dry ? [88 + r() * 14, 80 + r() * 10, 56 + r() * 8] : [66 + r() * 20, 80 + r() * 18, 44 + r() * 10], k = t * .6;
+      g.fillStyle = `rgba(${c[0] * (1 - k) + 52 * k | 0},${c[1] * (1 - k) + 52 * k | 0},${c[2] * (1 - k) + 42 * k | 0},.9)`;
+      g.beginPath(); g.ellipse(x, y, (6 + r() * 22) * (1 - .5 * t), (5 + r() * 16) * (1 - .5 * t), r() * 3, 0, 7); g.fill();
+    }
+    for (let i = 0; i < 400; i++) { const a = r() * 7, d = 70 + r() * 40; g.fillStyle = `rgba(${60 + r() * 30},${70 + r() * 25},${40},.8)`; g.fillRect(128 + Math.cos(a) * d, 128 + Math.sin(a) * d, 1 + r() * 2, 1 + r() * 2); }
   });
   const moss = std({ map: mT, alphaTest: .4, roughness: 1, polygonOffset: true, polygonOffsetFactor: -1 }); moss.userData.noCollide = true; def('shib_mossP', moss, 1);
   const pudA = canvasTex(64, 64, (g, w, h) => { const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, '#fff'); gr.addColorStop(.5, '#fff'); gr.addColorStop(1, '#000'); g.fillStyle = gr; g.fillRect(0, 0, w, h); }, { srgb: false });   // feathered rim
