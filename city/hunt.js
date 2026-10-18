@@ -23,7 +23,7 @@ function cast(cars) {
   const clips = ['frightened', 'scared_01', 'afraid', 'frightened', 'scared_02', 'look_around'];
   cars.sort((a, b) => a.p.distanceTo(C) - b.p.distanceTo(C)).slice(0, 7).forEach((c, i) => {
     const d = new THREE.Vector3().subVectors(c.p, C).setY(0).normalize();
-    const p = c.p.clone().addScaledVector(d, 1.9).add(new THREE.Vector3(-d.z, 0, d.x).multiplyScalar((i % 2 ? 1 : -1) * .8));
+    const p = c.p.clone().addScaledVector(d, 2.6).add(new THREE.Vector3(-d.z, 0, d.x).multiplyScalar((i % 2 ? 1 : -1) * .8));
     A.push({ id: hide[i % hide.length], clip: clips[i % clips.length], x: p.x, z: p.z, y: c.p.y, yaw: i % 3 === 2 ? toward(p) : away(p) + (Math.random() - .5) * .6, crouch: true });
   });
   // runners crossing the scramble (loops), a couple fleeing together, a delivery rider sprinting
@@ -147,12 +147,27 @@ export function hunt(ctx) {
       const h = new THREE.Group(); h.add(body); root.add(h);
       const mx = new THREE.AnimationMixer(o), clip = g.animations.find((c) => c.name === a.clip) || g.animations[0];
       const act = mx.clipAction(clip); act.play(); act.time = Math.random() * clip.duration; act.timeScale = .9 + Math.random() * .2; mixers.push(mx);
-      if (a.crouch) body.scale.y = .78;   // no crouch preset: sell the cower by compressing the stance slightly
+      if (a.crouch) {   // crouched behind a car: knees bent, hips ~45 cm lower
+        const bones = {}; o.traverse((x) => { if (x.isBone) bones[x.name] = x; });
+        crouchers.push({ h, bones, k: .8 + Math.random() * .2 }); body.position.y = -.42;
+      }
       if (a.path) { walkers.push({ h, a, L: a.path[0].distanceTo(a.path[1]), s: a.s * a.path[0].distanceTo(a.path[1]) }); continue; }
       h.position.set(a.x, a.y, a.z);
       h.rotation.y = a.target ? Math.atan2(a.target.x - a.x, a.target.z - a.z) : a.yaw;
       if (a.gunman) { gunman = h; baseYaw = h.rotation.y; o.traverse((b) => { if (b.isBone && /R_Hand/i.test(b.name)) gunHand = b; }); if (gun && gunHand) attachGun(); }
     }
+  }
+
+  /* ── procedural crouch (Tripo has no crouch preset): bend the rig about the body's lateral axis after the clip ── */
+  const crouchers = [], _ax = new THREE.Vector3(), _pq = new THREE.Quaternion(), _rq = new THREE.Quaternion();
+  function bend(b, axis, ang) {   // rotate bone b by ang about a WORLD axis, keeping its parent
+    if (!b) return; b.parent.updateWorldMatrix(true, false); b.parent.getWorldQuaternion(_pq);
+    _rq.setFromAxisAngle(axis, ang); b.quaternion.premultiply(_pq.clone().invert().multiply(_rq).multiply(_pq)); b.updateMatrixWorld(true);
+  }
+  function crouchPose(c) {
+    const B = c.bones, lat = _ax.set(1, 0, 0).applyQuaternion(c.h.getWorldQuaternion(new THREE.Quaternion())).normalize();
+    for (const s of ['L', 'R']) { bend(B[s + '_Thigh'], lat, -c.k * 1.75); bend(B[s + '_Calf'], lat, c.k * 2.1); bend(B[s + '_Foot'], lat, -c.k * .45); }
+    bend(B.Spine01, lat, -c.k * .45); bend(B.Spine02, lat, -c.k * .2);
   }
 
   /* ── update ── */
@@ -161,6 +176,7 @@ export function hunt(ctx) {
   updates.push((dt, t) => {
     active = camera.position.distanceTo(C) < 420; root.visible = active; wet.visible = active && night && camera.position.distanceTo(C) < 300; if (!active) return;
     for (const mx of mixers) mx.update(dt);
+    for (const c of crouchers) crouchPose(c);
     for (const w of walkers) {
       w.s = (w.s + w.a.v * dt) % (2 * w.L); const back = w.s > w.L, d = back ? 2 * w.L - w.s : w.s;
       const [p0, p1] = w.a.path; w.h.position.lerpVectors(p0, p1, d / w.L);
