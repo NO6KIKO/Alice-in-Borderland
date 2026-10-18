@@ -26,7 +26,7 @@ import { huntState } from './city/hunt.js';
 const SX = 60, SZ = 42.5, WH = 6, L1 = 10, L2 = 15;
 
 /* ───────────── renderer / scene ───────────── */
-const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+const renderer = new THREE.WebGLRenderer({ antialias: false, depth: false, stencil: false, powerPreference: 'high-performance' });   // only the composer's full-screen quads reach the canvas (SMAA does the AA)
 // integrated GPUs share system memory with everything else: render at 1× and decode model textures at ≤512 px there.
 // ?lite (or a previous context loss this session) forces the same budget on any GPU.
 const igpu = (() => { try { const gl = renderer.getContext(), d = gl.getExtension('WEBGL_debug_renderer_info'); return /Intel|UHD|Iris|Radeon\(TM\) Graphics|Microsoft Basic/i.test(d ? gl.getParameter(d.UNMASKED_RENDERER_WEBGL) : ''); } catch (e) { return false; } })();
@@ -78,7 +78,9 @@ setZone('compound');
 const groundGeo = new THREE.PlaneGeometry(640, 640);   // compound apron only: the city has its own land slab
 const asphalt = new THREE.Mesh(groundGeo, new THREE.MeshStandardMaterial({ map: texAsphalt, color: 0xb0b4ba, roughnessMap: texPuddle, roughness: 1, metalness: .05, alphaMap: texPuddle, transparent: true }));
 asphalt.rotation.x = -Math.PI / 2; asphalt.position.set(10, 0, 10); asphalt.receiveShadow = true; scene.add(asphalt);
-const refl = new Reflector(groundGeo, { textureWidth: Math.max(512, Math.floor(innerWidth * .6)), textureHeight: Math.max(512, Math.floor(innerHeight * .6)), color: 0xa4b0c0, clipBias: .003 });
+const refl = new Reflector(groundGeo, { textureWidth: Math.max(512, Math.floor(innerWidth * .6)), textureHeight: Math.max(512, Math.floor(innerHeight * .6)), color: 0xa4b0c0, clipBias: .003, multisample: 0 });
+const mirrorOnlyInBeauty = (r) => { const f = r.onBeforeRender; r.onBeforeRender = function (rd, sc, cam, ...a) { if (sc.overrideMaterial) return; f.call(this, rd, sc, cam, ...a); }; };   // AO / DOF passes draw with an override material: skip the mirror re-render there
+mirrorOnlyInBeauty(refl);
 refl.rotation.x = -Math.PI / 2; refl.position.set(10, -.03, 10); scene.add(refl);
 
 /* slab + markings */
@@ -423,7 +425,7 @@ const cityInfo = buildCity({ scene, camera, highways: hw });
 /* ───────────── build merged meshes ───────────── */
 const built = buildBatches(scene);
 const collidables = [asphalt, ...built.collidables, ...cityInfo.collidables];
-for (const ms of zoneMeshes.values()) for (const m of ms) { m.castShadow = !m.material.transparent && !m.material.isMeshBasicMaterial && !m.name.startsWith('det_'); m.receiveShadow = true; }
+for (const ms of zoneMeshes.values()) for (const m of ms) { m.castShadow = !m.material.transparent && !m.material.isMeshBasicMaterial && !m.name.startsWith('det_') && !/\|(road|lineW|lineY|tactX|tactZ|lot|stZebra|shib_zebra|shib_road)$/.test(m.name); m.receiveShadow = true; }   // flat ground layers cast nothing
 console.log('triangles', built.tris, 'spots', spotCount, 'beacons', beacons.length);
 
 /* beacons: instanced, two blink phases, with additive halos */

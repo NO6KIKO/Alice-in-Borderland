@@ -102,13 +102,14 @@ export function hunt(ctx) {
   });
 
   /* ── after-rain wet crossing: a low-res mirror under the asphalt, shown through the puddle mask at night ── */
-  const wet = new Reflector(new THREE.PlaneGeometry(260, 230), { textureWidth: 512, textureHeight: 512, color: 0x8a96a6, clipBias: .003 });
+  const wet = new Reflector(new THREE.PlaneGeometry(260, 230), { textureWidth: 512, textureHeight: 512, color: 0x8a96a6, clipBias: .003, multisample: 0 });
+  { const f = wet.onBeforeRender; wet.onBeforeRender = function (rd, sc, cam, ...a) { if (sc.overrideMaterial) return; f.call(this, rd, sc, cam, ...a); }; }   // not inside AO / DOF override passes
   wet.rotation.x = -Math.PI / 2; wet.position.set(-980, .035, 190); wet.visible = false; scene.add(wet);
-  let night = false, puddleMask = null;
+  let night = false, puddleMask = null, floodLive = null;   // floodLive: null so the first frame counts as a flip
   // the venue's cold white floodlight from high above the scramble (night only) — the people read as silhouettes against it
   const flood = new THREE.SpotLight(0xdfe9ff, 0, 140, .6, .9, 1.2); flood.position.set(C.x + 18, 48, C.z - 12); flood.target.position.copy(C);
   flood.castShadow = true; flood.shadow.mapSize.set(1024, 1024); flood.shadow.bias = -.0005; scene.add(flood, flood.target);
-  ctx.dayNight.push((day) => { flood.intensity = day ? 0 : 260; flood.visible = !day; });   // hidden by day → no shadow pass   // soft key light, not a stadium
+  ctx.dayNight.push((day) => { flood.intensity = day ? 0 : 260; flood.visible = !day; if (!day) flood.shadow.needsUpdate = true; });   // hidden by day → no shadow pass   // soft key light, not a stadium
   ctx.dayNight.push((day, dusk) => {
     const wetLook = !day || dusk; night = wetLook; const m = K.mats.shib_road; if (!m) return;   // wet after rain: dusk + night
     wet.material.uniforms.color.value.set(dusk ? 0x4c535c : 0x8a96a6);   // the bright dusk sky mirrored at full strength read as white spots
@@ -183,7 +184,9 @@ export function hunt(ctx) {
   const _w = new THREE.Vector3(), _d = new THREE.Vector3(), _tq = new THREE.Quaternion(), _ts = new THREE.Vector3(1, 1, 1), _te = new THREE.Euler();
   updates.push((dt, t) => {
     huntState.firing = false;
-    active = camera.position.distanceTo(C) < 420; root.visible = active; wet.visible = active && night && camera.position.distanceTo(C) < 300; if (!active) return;
+    active = camera.position.distanceTo(C) < 420; root.visible = active; wet.visible = active && night && camera.position.distanceTo(C) < 300;
+    if (active !== floodLive) { floodLive = active; flood.shadow.autoUpdate = active; flood.shadow.needsUpdate = true; }   // far away: freeze the flood's shadow map (static casters only)
+    if (!active) return;
     for (const mx of mixers) mx.update(dt);
     for (const c of crouchers) crouchPose(c);
     for (const w of walkers) {

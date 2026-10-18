@@ -132,7 +132,7 @@ export function loadProps(scene, camera, updates) {
       const parts = normalise(gltf, PROPS[name]);
       const meshes = parts.map(({ g, mat }) => {
         mat.side = THREE.FrontSide;
-        const im = new THREE.InstancedMesh(g, mat, list.length); im.count = 0; im.frustumCulled = false;
+        const im = new THREE.InstancedMesh(g, mat, list.length); im.count = 0; im.frustumCulled = false; im.visible = false;   // nothing in range yet: skip every pass
         im.castShadow = true; im.receiveShadow = true; im.name = 'prop|' + name; scene.add(im); return im;
       });
       sets.push({ name, list, meshes, range: PROPS[name].range });
@@ -144,7 +144,7 @@ export function loadProps(scene, camera, updates) {
     for (const s of sets) {
       let n = 0;
       for (const it of s.list) if (it.p.distanceTo(cp) < s.range) { for (const im of s.meshes) im.setMatrixAt(n, it.m); n++; }
-      for (const im of s.meshes) { im.count = n; im.instanceMatrix.needsUpdate = true; }
+      for (const im of s.meshes) { im.count = n; im.visible = n > 0; if (n) { im.instanceMatrix.clearUpdateRanges(); im.instanceMatrix.addUpdateRange(0, n * 16); im.instanceMatrix.needsUpdate = true; } }   // upload only the live matrices
     }
   };
   updates.push((dt) => { if ((t -= dt) < 0) { t = .3; refresh(); } });
