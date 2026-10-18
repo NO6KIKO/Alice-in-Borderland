@@ -1,0 +1,8 @@
+node_modules/
+__pycache__/
+*.log
+# intermediate Tripo outputs (alice.glb is the shipped, compressed character)
+models/chars/alice_tpose.glb
+models/chars/alice_rigged.glb
+models/chars/alice_anim.glb
+.env
