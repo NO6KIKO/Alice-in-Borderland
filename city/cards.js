@@ -48,7 +48,11 @@ export function cardMaterial(rank, suit) {
   const key = rank + suit; if (matCache.has(key)) return matCache.get(key);
   const t = cardTexture(rank, suit);
   const m = new THREE.MeshStandardMaterial({ map: t, emissiveMap: t, emissive: 0xffffff, emissiveIntensity: .05, roughness: .7, side: THREE.DoubleSide, alphaTest: .5 });
-  if (PAINTED[key]) new THREE.TextureLoader().load(PAINTED[key], (p) => { p.colorSpace = THREE.SRGBColorSpace; p.anisotropy = 8; m.map = m.emissiveMap = p; m.needsUpdate = true; }, undefined, () => {});   // no file yet → keep generated art
+  if (PAINTED[key]) {   // try .webp, .png, .jpg; no file → keep generated art
+    const exts = ['webp', 'png', 'jpg'], base = PAINTED[key].replace(/\.webp$/, '');
+    const tryLoad = (i) => i < exts.length && new THREE.TextureLoader().load(`${base}.${exts[i]}`, (p) => { p.colorSpace = THREE.SRGBColorSpace; p.anisotropy = 8; m.map = m.emissiveMap = p; m.needsUpdate = true; }, undefined, () => tryLoad(i + 1));
+    tryLoad(0);
+  }
   matCache.set(key, m); return m;
 }
 export const queenOfHearts = () => cardMaterial('Q', 'H').map;
