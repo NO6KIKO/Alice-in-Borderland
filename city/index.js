@@ -291,7 +291,7 @@ export function buildCity({ scene, camera }) {
 
   // bay
   texWaterN.repeat.set(1100, 1100);   // ~8 m ripple tiles
-  const water = new THREE.Mesh(new THREE.PlaneGeometry(9000, 9000), new THREE.MeshStandardMaterial({ color: 0x24465c, roughness: .07, metalness: .2, normalMap: texWaterN, normalScale: new THREE.Vector2(.22, .22) }));
+  const water = new THREE.Mesh(new THREE.PlaneGeometry(9000, 9000), new THREE.MeshStandardMaterial({ color: 0x24465c, roughness: .14, metalness: .1, envMapIntensity: .6, normalMap: texWaterN, normalScale: new THREE.Vector2(.22, .22) }));
   water.rotation.x = -Math.PI / 2; water.position.set(0, WATER_Y, 0); scene.add(water);
   updates.push((dt) => { texWaterN.offset.x += dt * .03; texWaterN.offset.y += dt * .018; });
 
@@ -350,6 +350,9 @@ export function buildCity({ scene, camera }) {
     if (inDistrict(cx, cz, inner / 2 - 4) || corners.some(([x, z]) => inDistrict(x, z, 2))) continue;
     if (nearCompound(cx, cz, inner / 2)) continue;
     const park = R() < .07;
+    if (!park && R() < .08) {   // a tiny shrine squeezed between buildings on the block's edge
+      const sx = cx + (R() - .5) * (inner - 20), sz = cz + inner / 2 - 4; prop('torii', sx, .12, sz, Math.PI / 2); tree(sx - 2.5, sz - 2, .8, .12); tree(sx + 2.5, sz - 2.5, .9, .12);
+    }
     box(park ? 'grass' : 'walk', inner, .12, inner, cx, .06, cz);
     if (park) { for (let k = 0; k < 40; k++) tree(cx + (R() - .5) * (inner - 8), cz + (R() - .5) * (inner - 8), .8 + R() * .7, .12); continue; }
     const sx = 2 + Math.floor(R() * 3), sz = 2 + Math.floor(R() * 3), lw = (inner - 8) / sx, ld = (inner - 8) / sz;   // 15–39 m lots
@@ -367,6 +370,7 @@ export function buildCity({ scene, camera }) {
       if (R() < .35) for (let k = 0; k < 1 + Math.floor(R() * 3); k++) prop('vending', px, .12, pz - sz * k * 1.2, sx > 0 ? Math.PI : 0);
       else if (R() < .5) for (let k = 0; k < 2 + Math.floor(R() * 5); k++) prop(R() < .8 ? 'bicycle' : 'scooter', cx + sx * (inner / 2 - 6 - k * .65), .12, cz + sz * (inner / 2 - 1.3), Math.PI / 2 + (R() - .5) * .2, 1, R() < .15 ? Math.PI / 2 * .95 : 0);
       else if (R() < .2) prop('postbox', px, .12, pz, 0);
+      else if (R() < .15) prop('phone_booth', px, .12, pz, 0);
     }
   }
 
@@ -378,6 +382,10 @@ export function buildCity({ scene, camera }) {
   }
   setZone('compound');
 
+  // escaped zoo animals and wildlife (the show's tiger / panther; deer grazing in the palace grounds)
+  setZone('compound');
+  prop('tiger', -522, .06, 118, .8); prop('panther', -1036, 7.2, 199, 2.4); prop('panther', -1003, .06, 280, -1.2);
+  for (const [x, z, a] of [[-742, -262, .4], [-736, -256, 2.2], [-748, -251, -1], [-731, -268, 1.4]]) prop('deer', x, .06, z, a);
   try { hunt(ctx); } catch (e) { console.error('hunt scene failed', e); }
   setZone('express');
   expressway(-100, -700, -100, -105); expressway(-500, -700, 300, -700); box('hwy', 30, 2.6, 30, -100, 27, -700);

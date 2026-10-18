@@ -7,6 +7,7 @@
 import * as THREE from 'three';
 import * as K from '../kit.js';
 import { foliage } from './index.js';
+import { prop } from './props.js';
 
 const { box, cyl, plane, put, strut, M4, withFrame, setZone, canvasTex, noise, def, std } = K;
 const TILE = 14.4;   // facade textures: 4 modules × 4 floors of 3.6 m
@@ -151,6 +152,16 @@ function defineMats() {
   K.mats.bShop.userData.nightGlow = .9; K.mats.bVend.userData.nightGlow = 1.2;
   for (let i = 0; i < 10; i++) K.mats['bSign' + i].userData.nightGlow = .35;
   def('bDrape', std({ map: texDrape, color: 0xd8ecc0, roughness: .95, alphaTest: .45, side: THREE.DoubleSide }), 1);
+  def('bInWall', std({ color: 0xd9d4ca, roughness: .85 }));
+  def('bInFloor', std({ map: canvasTex(128, 128, (g, w, h) => { g.fillStyle = '#b9b2a6'; g.fillRect(0, 0, w, h); g.strokeStyle = 'rgba(0,0,0,.18)'; for (let i = 0; i <= w; i += 32) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i, h); g.stroke(); g.beginPath(); g.moveTo(0, i); g.lineTo(w, i); g.stroke(); } noise(g, w, h, 18); }, { repeat: true }), roughness: .5 }), 1.6);
+  def('bShopGlass', std({ color: 0x8aa0a8, roughness: .06, metalness: .2, transparent: true, opacity: .25 }));
+  const lt = std({ color: 0xf4f2ea, emissive: 0xfff6e6, emissiveIntensity: 0, roughness: .6 }); lt.userData.nightGlow = 2.2; def('bInLight', lt);
+  def('bInWood', std({ map: canvasTex(128, 128, (g, w, h) => { g.fillStyle = '#8a6440'; g.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 16) { g.fillStyle = `rgba(${40 + Math.random() * 30},20,10,.35)`; g.fillRect(0, y, w, 2); } noise(g, w, h, 24); }, { repeat: true }), roughness: .7 }), 2);
+  def('bInDark', std({ map: canvasTex(128, 128, (g, w, h) => { g.fillStyle = '#3e2c20'; g.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 12) { g.fillStyle = 'rgba(0,0,0,.3)'; g.fillRect(x, 0, 2, h); } noise(g, w, h, 20); }, { repeat: true }), roughness: .8 }), 2);
+  def('bMenu', std({ map: canvasTex(512, 128, (g, w, h) => { g.fillStyle = '#2a2420'; g.fillRect(0, 0, w, h); const items = ['醤油', '味噌', '塩', 'つけ麺', '餃子', '炒飯', 'ビール', '替玉']; items.forEach((t, i) => { g.fillStyle = '#f2ead8'; g.fillRect(8 + i * 63, 8, 56, h - 16); g.fillStyle = '#222'; g.font = 'bold 22px "Yu Gothic",sans-serif'; [...t].forEach((c, k) => g.fillText(c, 24 + i * 63, 36 + k * 24)); g.fillStyle = '#b02020'; g.font = '14px sans-serif'; g.fillText('¥' + (680 + i * 70), 14 + i * 63, h - 14); }); }), roughness: .7 }), 1);
+  def('bWhite', std({ map: canvasTex(256, 128, (g, w, h) => { g.fillStyle = '#eef0ee'; g.fillRect(0, 0, w, h); g.strokeStyle = '#2a4a8a'; g.lineWidth = 2; for (let i = 0; i < 9; i++) { g.beginPath(); g.moveTo(20 + Math.random() * 60, 20 + i * 11); g.lineTo(80 + Math.random() * 150, 20 + i * 11 + Math.random() * 4); g.stroke(); } g.strokeStyle = '#a02020'; g.strokeRect(150, 70, 80, 40); }), roughness: .3 }), 1);
+  def('bBlind', std({ map: canvasTex(64, 64, (g, w, h) => { g.clearRect(0, 0, w, h); g.fillStyle = '#d8d6cf'; for (let y = 0; y < h; y += 6) g.fillRect(0, y, w, 4); }, { repeat: true }), alphaTest: .5, side: THREE.DoubleSide, roughness: .7 }), .6);
+  K.mats.bBlind.userData.noCollide = true;
   K.mats.bRail.userData.noCollide = true; K.mats.bDrape.userData.noCollide = true;
 }
 
@@ -208,12 +219,49 @@ function storefront(w, z, r, awn = r() < .5 ? 'bAwnB' : 'bAwnR') {   // ground f
   box('bRust', sw + 1, .08, .08, -w * .2, 2.85, z + 1.4);
 }
 
+// hollow ground-floor shop (front on +z at d/2): walls / floor / rear fill are massing, glass + fit-out are detail
+const SHOPS = ['ramen', 'izakaya', 'grocery', 'office', 'closed', 'ramen', 'izakaya'];
+function shop(w, d, GH, r, mk) {
+  const D2 = Math.min(d - 2, 7 + r() * 2), zf = d / 2, zb = d / 2 - D2;
+  body(mk, w, GH, d - D2, 0, -D2 / 2, -.12);                                  // solid rear block
+  const o = K.zone; setZone(baseZone);
+  box('bInFloor', w - .4, .1, D2, 0, .1, zf - D2 / 2);
+  box('bInWall', w - .4, GH, .2, 0, GH / 2 + .12, zb + .1);
+  for (const s of [-1, 1]) box(mk, .3, GH, D2, s * (w / 2 - .15), GH / 2 + .12, zf - D2 / 2);
+  setZone(o);
+  const kind = SHOPS[Math.floor(r() * SHOPS.length)];
+  det(() => {
+    box(kind === 'office' || kind === 'grocery' ? 'bInWall' : 'bInDark', w - .6, .06, D2 - .2, 0, GH - .2, zf - D2 / 2);   // ceiling board
+    const wallK = { ramen: 'bInWood', izakaya: 'bInDark' }[kind];   // wall finish / dressing per shop type
+    if (wallK) { box(wallK, w - .7, GH - .3, .05, 0, (GH - .3) / 2 + .05, zb + .25); for (const sd of [-1, 1]) box(wallK, .05, GH - .3, D2 - .4, sd * (w / 2 - .35), (GH - .3) / 2 + .05, zf - D2 / 2); box('bMenu', Math.min(w - 2, 4), 1, .03, 0, GH - 1, zb + .3); }
+    if (kind === 'office') { box('bWhite', 2.4, 1.2, .03, 0, 1.7, zb + .3); plane('bBlind', w - .8, 1.6, 0, GH - 1.2, zf - .1); }
+    if (kind === 'grocery') for (let i = 0; i < 3; i++) planeU('bSign' + (i * 3 + 1), .55, .78, -w / 2 + 1.5 + i * 1.2, 1.7, zf - .06);   // posters in the window
+    for (let x = -w / 2 + 2; x < w / 2 - 1; x += 3) box('bInLight', 1.6, .04, .25, x, GH - .25, zf - D2 / 2);
+    if (kind === 'closed') { plane('bShutter', w - .6, GH - .6, 0, (GH - .6) / 2 + .1, zf + .02); return; }
+    // glass front with mullions and a door gap at one end
+    const door = r() < .5 ? -1 : 1, dw = 1.6, gx0 = -w / 2 + .3, gx1 = w / 2 - .3;
+    for (let x = gx0; x < gx1 - .1; x += 2.2) {
+      const x2 = Math.min(x + 2.2, gx1), cx = (x + x2) / 2;
+      if (Math.abs(cx - door * (w / 2 - .3 - dw / 2)) < dw / 2 + .5) continue;
+      box('bShopGlass', x2 - x - .08, GH - 1, .04, cx, (GH - 1) / 2 + .2, zf); box('bRust', .08, GH - .6, .1, x, (GH - .6) / 2 + .1, zf);
+    }
+    box('bBandD', w, .7, .25, 0, GH - .35, zf + .05);                          // fascia
+    const sx = door * (w / 2 - .3 - dw / 2);
+    // fit-out
+    if (kind === 'ramen') { prop('ramen_counter', 0, .1, zb + 1.6, 0); prop('ticket_machine', sx - door * 1.4, .1, zf - .7, Math.PI); for (let i = 0; i < 2; i++) prop('chochin', -w / 2 + 1 + i * 1.5, GH - .8, zf + .45, 0); }
+    else if (kind === 'izakaya') { for (let i = 0; i < Math.max(1, Math.floor(w / 3.5)); i++) prop('izakaya_table', -w / 2 + 2 + i * 3.2, .1, zf - D2 / 2 + (i % 2 - .5), r() * .4); prop('beer_crates', -door * (w / 2 - 1), .1, zf + .9, 0); prop('chochin', sx, GH - .8, zf + .45, 0); }
+    else if (kind === 'grocery') { for (let x = -w / 2 + 2; x < w / 2 - 1.5; x += 2.6) prop('konbini_shelf', x, .1, zf - D2 / 2, Math.PI / 2); prop('drink_fridge', 0, .1, zb + .7, Math.PI); prop('aframe_sign', sx, .1, zf + 1.2, 0); }
+    else { for (let i = 0; i < Math.max(1, Math.floor(w / 3)); i++) prop('office_desk', -w / 2 + 1.8 + i * 2.8, .1, zf - D2 / 2, Math.PI + (r() - .5) * .3); }
+    if (r() < .4) prop('potted_plants', -door * (w / 2 - 1), .12, zf + .9, 0);
+  });
+}
+
 /* ───────────── building types (local frame: +z = street front) ───────────── */
 function typeC(w, d, nf, r) {   // narrow apartment
   const FH = 3, H = 3.6 + (nf - 1) * FH, mk = 'bTile' + Math.floor(r() * 3);
-  body(mk, w, H, d);
+  body(mk, w, H - 3.6, d, 0, 0, 3.6); shop(w, d, 3.6, r, mk);
   det(() => {
-    storefront(w, d / 2, r, r() < .7 ? 'bAwnB' : 'bAwnR');
+    const awn = r() < .7 ? 'bAwnB' : 'bAwnR'; box(awn, w * .7, .06, 1.5, 0, 3.4, d / 2 + .7, 0, 0, -.32);
     if (r() < .6) { box('bVend', .9, 1.8, .7, w / 2 - .7, .9, d / 2 + .5); }
     for (let f = 1; f < nf; f++) {
       const y = 3.6 + (f - 1) * FH, bw = w * .8;
@@ -235,7 +283,8 @@ function typeC(w, d, nf, r) {   // narrow apartment
 }
 function typeA(w, d, nf, r) {   // corner office with curved glass corner (front-right)
   const FH = 3.6, H = nf * FH, mk = 'bOff' + Math.floor(r() * 3), c = Math.min(w, d) * (.28 + r() * .1);
-  body(mk, w - c, H, d, -c / 2, 0); body(mk, c, H, d - c, w / 2 - c / 2, -c / 2);
+  body(mk, w - c, H - FH, d, -c / 2, 0, FH); body(mk, c, H, d - c, w / 2 - c / 2, -c / 2);
+  withFrame(-c / 2, 0, 0, 0, () => shop(w - c, d, FH, r, mk));
   // curved glass corner (quarter cylinder) — part of the massing
   const g = new THREE.CylinderGeometry(c, c, H, 10, 1, true, 0, Math.PI / 2), uv = g.attributes.uv;
   for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * c * 1.57 / TILE, uv.getY(i) * H / TILE);
@@ -248,7 +297,7 @@ function typeA(w, d, nf, r) {   // corner office with curved glass corner (front
       box('bBand', w + .3, .5, .3, 0, y, -d / 2 - .1); box('bBand', .3, .5, d + .3, -w / 2 - .1, y, 0);
       const cg = new THREE.CylinderGeometry(c + .25, c + .25, .5, 5, 1, true, 0, Math.PI / 2); put('bBand', cg, M4(w / 2 - c, y, d / 2 - c));
     }
-    storefront(w - c, d / 2, r); box('bBandD', w + .6, .4, 1.6, 0, 3.2, d / 2 + .7);
+    box('bBandD', w + .6, .4, 1.6, 0, FH + .1, d / 2 + .7);
     plane('bShutter', d * .4, 3, w / 2 + .02, 1.5, -d * .25, Math.PI / 2);
     for (let i = 0; i < 1 + Math.floor(r() * 3); i++) signFrame(-w / 2 + 1.5 + r() * (w - c - 3), 6 + r() * (H - 12), d / 2 + .1, 0, r);
     if (r() < .7) signFrame(w / 2 + .1, 6 + r() * Math.max(1, H - 14), -d * .1, Math.PI / 2, r);

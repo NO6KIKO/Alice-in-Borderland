@@ -610,7 +610,10 @@ dayNight.set(true);
 window.__day = dayNight; window.__renderer = renderer; window.__scene = scene; window.__camera = camera;
 dayNight.interiors.push([402, 618, 40, -224, -76]);   // black warehouse hall (x0,x1,yTop,z0,z1)
 composer.addPass(new OutputPass());
-addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight); refl.getRenderTarget().setSize(Math.max(512, Math.floor(innerWidth * .6)), Math.max(512, Math.floor(innerHeight * .6))); });
+addEventListener('resize', () => { const pr = Math.min(devicePixelRatio, 2); renderer.setPixelRatio(pr); composer.setPixelRatio(pr); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight); refl.getRenderTarget().setSize(Math.max(512, Math.floor(innerWidth * .6)), Math.max(512, Math.floor(innerHeight * .6))); });
+
+// moving the window to a screen with another pixel ratio doesn't fire 'resize' — watch the ratio directly
+(function watchDPR() { matchMedia(`(resolution: ${devicePixelRatio}dppx)`).addEventListener('change', () => { dispatchEvent(new Event('resize')); watchDPR(); }, { once: true }); })();
 
 /* ───────────── loop ───────────── */
 const clock = new THREE.Clock(), up = new THREE.Vector3(0, 1, 0);

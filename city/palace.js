@@ -45,7 +45,7 @@ function mats() {
   def('pal_copper', std({ map: tile, color: 0x8fc0a8, roughness: .6, metalness: .3 }), 2.5);
   def('pal_iron', std({ color: 0x27302d, roughness: .5, metalness: .75 }));
   def('pal_pine', std({ color: 0x35512c, roughness: 1, flatShading: true }));
-  def('pal_water', std({ color: 0x2c4c40, roughness: .1, metalness: .3, normalMap: waterN, normalScale: new THREE.Vector2(.3, .3) }), 10);
+  def('pal_water', std({ color: 0x24423a, roughness: .22, metalness: .05, envMapIntensity: .35, normalMap: waterN, normalScale: new THREE.Vector2(.3, .3) }), 10);
   K.mats.pal_pine.userData.noCollide = true; K.mats.pal_water.userData.noCollide = true;
   return waterN;
 }

@@ -4,6 +4,7 @@
 // (near-only, no collision); road paint goes into the city zone.
 import * as THREE from 'three';
 import * as K from '../kit.js';
+import { prop } from './props.js';
 
 const { box, cyl, plane, put, strut, M4, withFrame, setZone, canvasTex, noise, def, std } = K;
 let defined = false;
@@ -62,6 +63,9 @@ export function streetSegment(cx, cz, dir, L, W) {
       if (Math.random() < .35) { const far = K.fpos(s + 3, 5.2, -off * 1.9); wire(pts[3], far, .5, .02); }
       prevPts = pts;
     }
+    // street lights on the side without poles, an occasional bus stop
+    for (let s = -L / 2 + 20; s < L / 2 - 10; s += 36) prop('street_light', s, .12, -side * (W / 2 + .9), side > 0 ? 0 : Math.PI);
+    if (Math.random() < .18) prop('bus_stop', (Math.random() - .5) * L * .6, .12, side * (W / 2 + 1.6), 0);
     // white pipe guardrail along the kerb (both sides, with gaps), manholes in the lane
     for (const sd of [-1, 1]) for (let s = -L / 2 + 10; s < L / 2 - 12; s += 14) if (Math.random() < .55) {
       const len = 6 + Math.random() * 6; plane('stGuard', len, .85, s + len / 2, .55, sd * (W / 2 - .2), sd > 0 ? Math.PI : 0);

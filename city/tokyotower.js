@@ -45,7 +45,7 @@ function mats() {
   def('tt_plaster', std({ color: 0xe6e0d2, roughness: .9 }));
   def('tt_gravel', std({ map: K.texConcrete, color: 0xd4cbb4, roughness: 1 }), 3);
   def('tt_mud', std({ color: 0x2f3324, roughness: 1 }));
-  def('tt_water', std({ color: 0x2c4a44, roughness: .08, metalness: .3, normalMap: waterN, normalScale: new THREE.Vector2(.3, .3) }), 8);
+  def('tt_water', std({ color: 0x24403a, roughness: .22, metalness: .05, envMapIntensity: .35, normalMap: waterN, normalScale: new THREE.Vector2(.3, .3) }), 8);
   K.mats.tt_water.userData.noCollide = true;
   for (const [k, c] of [['tt_car0', 0xc9c6bd], ['tt_car1', 0x6b7076], ['tt_car2', 0x2a3a55], ['tt_car3', 0x7d2a24], ['tt_taxi', 0xd9a21b], ['tt_bus', 0xd8dcd2]]) def(k, std({ color: c, roughness: .6, metalness: .35 }));
   return waterN;
