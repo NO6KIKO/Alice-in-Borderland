@@ -129,6 +129,7 @@ const texDrape = canvasTex(256, 1024, (g, w, h) => {
 });
 
 let defined = false;
+export function buildingMats() { defineMats(); }
 function defineMats() {
   if (defined) return; defined = true;
   const facade = (key, [day, glow], { glow: ng = 1, tile = TILE, ...o } = {}) => { const m = std({ map: day, normalMap: K.normalFrom(day, 3), emissiveMap: glow, emissive: 0xffffff, emissiveIntensity: 0, roughness: .85, ...o }); m.userData.nightGlow = ng; def(key, m, tile); };
@@ -210,6 +211,18 @@ function signFrame(x, y, z, ry, r, big = false) {   // rusty bracket frame holdi
     box('bRust', .1, h + .2, .1, -w / 2 - .05, 0, .5); box('bRust', .1, h + .2, .1, w / 2 + .05, 0, .5);
     for (const s of [-1, 1]) { box('bRust', .08, .08, .6, s * w * .35, h * .35, .25); box('bRust', .08, .08, .6, s * w * .35, -h * .35, .25); }
     planeU('bSign' + i, w, h, 0, 0, .56); planeU('bSign' + i, w, h, 0, 0, .44, Math.PI);
+  });
+}
+// vertical stack of tenant signs (one per floor) projecting from a facade: x,z on the wall, ry = facade facing
+export function signStack(x, y0, z, ry, floors, r) {
+  defineMats();
+  withFrame(x, 0, z, ry, () => {
+    box('bRust', .12, floors * 3.5 + .4, .12, 0, y0 + floors * 1.75, .9);
+    for (let f = 0; f < floors; f++) {
+      const i = Math.floor(r() * 10), y = y0 + 1.75 + f * 3.5;
+      box('bRust', .9, .08, .08, 0, y + 1.3, .45); box('bRust', .9, .08, .08, 0, y - 1.3, .45);
+      planeU('bSign' + i, .95, 2.9, 0, y, 1.02, Math.PI / 2); planeU('bSign' + i, .95, 2.9, 0, y, .78, -Math.PI / 2);
+    }
   });
 }
 function ivyDrape(x, y, z, ry, w, h, up = false) {   // up: climbing from the ground (strands point up)

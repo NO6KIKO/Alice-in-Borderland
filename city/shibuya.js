@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import * as K from '../kit.js';
 import { prop } from './props.js';
 import { konbini } from './konbini.js';
+import { signStack, buildingMats } from './buildings.js';
 const { box, cyl, sph, put, M4, withFrame, def, std, canvasTex, noise, strut } = K;
 
 const RD = .06, PV = .18, DECK = 7.2;           // asphalt top, pavement top, podium deck top
@@ -210,7 +211,9 @@ function roofBoard(x, y, z, ry, w, h, type, card) {   // billboard on a lattice 
 }
 function sign(x, y, z, ry, col) { const g = K.boxGeo('shib_sign', .5, 6, 1.2), uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setX(i, uv.getX(i) + col * .2); put('shib_sign', g, M4(x, y, z, 0, ry, 0)); }
 // mid-rise block: facade, roof clutter, storefront band + canopy, vertical signs on street faces, ivy, vines
+const FAC_MAP = { fac0: 'bOff0', fac1: 'bCur0', fac2: 'bOff1', fac3: 'bOff2', fac4: 'bCur1', fac5: 'bOff0' };   // modern office / curtain-wall facades
 function bld(x0, z0, x1, z1, h, fk, o = {}) {
+  buildingMats(); fk = FAC_MAP[fk] || fk;
   const y0 = o.y0 ?? PV, w = x1 - x0, dd = z1 - z0, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
   h = Math.round(h / 3.5) * 3.5; const top = y0 + h;
   SOLID.push([x0 - .3, z0 - .3, x1 + .3, z1 + .3]);
@@ -227,6 +230,20 @@ function bld(x0, z0, x1, z1, h, fk, o = {}) {
     const col = Math.floor(R() * 5), sy = y0 + 8.5 + (R() < .4 ? 7 : 0);
     if (f === 's') sign(x0 + w * t, sy, z1 + .75, 0, col); if (f === 'n') sign(x0 + w * t, sy, z0 - .75, 0, col);
     if (f === 'e') sign(x1 + .75, sy, z0 + dd * t, Math.PI / 2, col); if (f === 'w') sign(x0 - .75, sy, z0 + dd * t, Math.PI / 2, col);
+  }
+  // floor ledges + vertical tenant-sign stacks on the street faces
+  const nf = Math.floor((h - 4.5) / 3.5);
+  for (const f of o.st || '') {
+    for (let k = 1; k <= nf; k++) {
+      const y = y0 + 4.5 + k * 3.5 - .25;
+      if (f === 's') box('concD', w + .3, .22, .45, cx, y, z1 + .22); if (f === 'n') box('concD', w + .3, .22, .45, cx, y, z0 - .22);
+      if (f === 'e') box('concD', .45, .22, dd + .3, x1 + .22, y, cz); if (f === 'w') box('concD', .45, .22, dd + .3, x0 - .22, y, cz);
+    }
+    if (R() < .7 && nf > 2) {
+      const t = .35 + R() * .3, fl = Math.min(nf - 1, 3 + Math.floor(R() * 4));
+      if (f === 's') signStack(x0 + w * t, y0 + 4.6, z1, 0, fl, R); if (f === 'n') signStack(x0 + w * t, y0 + 4.6, z0, Math.PI, fl, R);
+      if (f === 'e') signStack(x1, y0 + 4.6, z0 + dd * t, Math.PI / 2, fl, R); if (f === 'w') signStack(x0, y0 + 4.6, z0 + dd * t, -Math.PI / 2, fl, R);
+    }
   }
   // ivy curtains and hanging vines
   for (let i = 0; i < 1 + R() * 4; i++) {
