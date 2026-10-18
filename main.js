@@ -625,12 +625,12 @@ const dayNight = createDayNight({ scene, renderer, hemi, moon, bloom, spots, nig
     am.alphaMap = day ? null : texPuddle; am.transparent = !day; am.roughness = day ? .95 : 1; am.roughnessMap = day ? null : texPuddle; am.color.set(day ? 0xf0f2f4 : 0xb0b4ba); am.needsUpdate = true;
   },
   (day) => { for (const k of ['poolC', 'poolY', 'beam']) mats[k].visible = !day; },   // fake light pools / cones are night-only
-  (day) => grade.setDay(day),
+  (day) => grade.setDay(day, dayNight?.isDusk),
   (day) => audio.setDay(day),
-  (day) => { dayBtn.textContent = day ? '☾ 切换夜晚' : '☀ 切换白天'; },
+  (day) => { dayBtn.textContent = !day ? '☀ 切换白天' : dayNight?.isDusk ? '☾ 切换夜晚' : '◐ 切换黄昏'; },
   ...(cityInfo.dayNight || []),
 ] });
-dayBtn.onclick = () => dayNight.set(!dayNight.isDay);
+dayBtn.onclick = () => dayNight.set(dayNight.isDusk ? 'night' : dayNight.isDay ? 'dusk' : 'day');   // day → dusk → night
 dayNight.set(true);
 window.__day = dayNight; window.__renderer = renderer; window.__scene = scene; window.__camera = camera; window.__composer = composer;
 dayNight.interiors.push([402, 618, 40, -224, -76]);   // black warehouse hall (x0,x1,yTop,z0,z1)

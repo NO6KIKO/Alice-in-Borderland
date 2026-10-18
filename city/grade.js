@@ -35,11 +35,12 @@ export function createGrade(composer) {
   const u = pass.uniforms;
   const looks = {   // day: hazy, cool, washed highlights; night: deep teal shadows with warm practicals
     day: { shadowTint: 0x1f4a58, highTint: 0xf4ece0, split: .2, sat: .78, contrast: .3, lift: .0, vignette: .34 },
+    dusk: { shadowTint: 0x153c52, highTint: 0xffb46a, split: .34, sat: .9, contrast: .26, lift: .01, vignette: .42 },
     night: { shadowTint: 0x06303c, highTint: 0xffa860, split: .4, sat: .85, contrast: .28, lift: .012, vignette: .5 },
   };
   return {
     pass,
-    setDay(day) { const L = looks[day ? 'day' : 'night']; for (const [k, v] of Object.entries(L)) { if (u[k].value?.isColor) u[k].value.set(v); else u[k].value = v; } },
+    setDay(day, dusk) { const L = looks[dusk ? 'dusk' : day ? 'day' : 'night']; for (const [k, v] of Object.entries(L)) { if (u[k].value?.isColor) u[k].value.set(v); else u[k].value = v; } },
     setBars(on) { u.bars.value = on ? 1 : 0; },
     update(t, w, h) { u.time.value = t % 100; u.aspect.value = w / h; },
   };

@@ -46,6 +46,9 @@ function cast(cars) {
   A.push({ id: 'punk', clip: 'look_around', x: -1040, z: 204, y: 7.2, target: C });
   A.push({ id: 'courier', clip: 'scared_01', x: -962, z: 246, y: 3.9, target: C });
   A.push({ id: 'cook', clip: 'frightened', x: -1016, z: 196, y: PV, target: C });   // ramen cook ducking out of a side street
+  // more participants up high: on the stalled rail viaduct, on a roof edge
+  A.push({ id: 'player_m', clip: 'look_around', x: -985, z: 87.5, y: 9.45, target: C });
+  A.push({ id: 'player_f', clip: 'afraid', x: -958, z: 249, y: 3.95, target: C, crouch: true });
   // the gunman
   A.push({ id: 'gunman', clip: 'fire', x: C.x - 1.5, z: C.z + 1, y: .06, yaw: Math.atan2(.9, .6), gunman: true });
   return A;
