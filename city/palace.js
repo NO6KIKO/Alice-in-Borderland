@@ -4,6 +4,7 @@
 // The city land slab is runtime-cut under the footprint (cooperative userData.holes) so the moat can sink.
 import * as THREE from 'three';
 import { foliage } from './index.js';
+import { scatterDecay } from './street.js';
 import * as K from '../kit.js';
 const { box, cyl, strut, put, M4, withFrame, def, std } = K;
 
@@ -37,7 +38,7 @@ function mats() {
   }, { srgb: false, repeat: true });
   def('pal_stone', std({ map: stone(150), color: 0xc8c4bc, roughness: .95 }), 4);
   def('pal_stoneL', std({ map: stone(185), color: 0xe0dcd2, roughness: .9 }), 3);
-  def('pal_gravel', std({ map: gravel, color: 0xe2ddd0, roughness: 1 }), 4);
+  def('pal_gravel', std({ map: gravel, color: 0x9c978c, roughness: 1, normalMap: K.normalFrom(gravel, 2.5) }), 4);
   def('pal_mud', std({ map: mud, roughness: 1 }), 6);
   def('pal_plaster', std({ color: 0xe9e5da, roughness: .9 }));
   def('pal_wood', std({ color: 0x2c2520, roughness: .8 }));
@@ -261,6 +262,7 @@ export function build(ctx, d) {
     for (const x of [-12, 72]) for (const z of [44, 100]) { cyl('pal_stoneL', .5, 1.4, x, .7, z, 0, 0, 0, 6); put('pal_tile', frustum(1.6, 1.6, .3, .3, .6), M4(x, 1.4, z)); }   // stone lanterns
     // pines: lawns + forecourt edges + outer bank
     for (const L of LAWN) for (let i = 0; i < 14; i++) pine(L[0] + r() * (L[2] - L[0]), L[1] + r() * (L[3] - L[1]), .9 + r() * .5, 0, r);
+    for (const L of LAWN) scatterDecay((L[0] + L[2]) / 2, (L[1] + L[3]) / 2, L[2] - L[0], L[3] - L[1], 0, 380, []);   // long unmown grass
     for (let x = -14; x <= 96; x += 11) pine(x, 104 + r() * 2, .8 + r() * .3, 0, r);
     for (let i = 0; i < 220; i++) {
       const x = (r() - .5) * 2 * W2, z = (r() - .5) * 2 * D2;

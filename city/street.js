@@ -133,5 +133,5 @@ export function scatterDecay(cx, cz, w, d, y = .1, n = 60, props = ['trash_bags'
     if (i % 4 === 0) { const g = new THREE.PlaneGeometry(1.5 + Math.random() * 3, .8 + Math.random() * 1.5); g.rotateX(-Math.PI / 2); put('stLitter', g, M4(x + 1, y + .015, z, 0, Math.random() * 3, 0)); }
   }
   setZone(zone);
-  for (let i = 0; i < Math.max(2, n / 12); i++) prop(props[Math.floor(Math.random() * props.length)], cx + (Math.random() - .5) * w * .9, y, cz + (Math.random() - .5) * d * .9, Math.random() * 6.28);
+  if (props.length) for (let i = 0; i < Math.max(2, n / 12); i++) prop(props[Math.floor(Math.random() * props.length)], cx + (Math.random() - .5) * w * .9, y, cz + (Math.random() - .5) * d * .9, Math.random() * 6.28);
 }

@@ -18,7 +18,7 @@ import * as shibuya from './shibuya.js';
 import * as fire from './fire.js';
 import { cityBuilding } from './buildings.js';
 import { prop, loadProps, propColliders, propCount } from './props.js';
-import { streetSegment, intersection } from './street.js';
+import { streetSegment, intersection, scatterDecay } from './street.js';
 import { hunt } from './hunt.js';
 import { atmosphere } from './atmos.js';
 
@@ -355,7 +355,7 @@ export function buildCity({ scene, camera }) {
       const sx = cx + (R() - .5) * (inner - 20), sz = cz + inner / 2 - 4; prop('torii', sx, .12, sz, Math.PI / 2); tree(sx - 2.5, sz - 2, .8, .12); tree(sx + 2.5, sz - 2.5, .9, .12);
     }
     box(park ? 'grass' : 'walk', inner, .12, inner, cx, .06, cz);
-    if (park) { for (let k = 0; k < 40; k++) tree(cx + (R() - .5) * (inner - 8), cz + (R() - .5) * (inner - 8), .8 + R() * .7, .12); continue; }
+    if (park) { for (let k = 0; k < 40; k++) tree(cx + (R() - .5) * (inner - 8), cz + (R() - .5) * (inner - 8), .8 + R() * .7, .12); scatterDecay(cx, cz, inner - 4, inner - 4, .12, 420, []); continue; }   // overgrown meadow
     const sx = 2 + Math.floor(R() * 3), sz = 2 + Math.floor(R() * 3), lw = (inner - 8) / sx, ld = (inner - 8) / sz;   // 15–39 m lots
     for (let a = 0; a < sx; a++) for (let b = 0; b < sz; b++) {
       if (R() < .08) continue;
