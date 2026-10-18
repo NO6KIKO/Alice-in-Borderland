@@ -22,10 +22,20 @@ export function createDayNight({ scene, renderer, hemi, moon, bloom, spots, nigh
   const sunDir = sunDay.clone();
   u.sunPosition.value.copy(sunDir);
   // bake the sky into environment maps (day + dusk) so water / glass / metal reflect it
-  const bake = (dir, turb) => { const es = new THREE.Scene(), s2 = new Sky(); s2.scale.setScalar(1000); s2.material.uniforms.sunPosition.value.copy(dir);
+  // …from the sky as it is drawn (×0.38, zenith, haze), without the sun disc, over a dim ground hemisphere — so
+  // surfaces are not lit from below as if the ground were sky, and the sun stays the key light
+  const FOG_DAY = 0x9fb6cc, FOG_DUSK = 0xc9a48a;
+  const bake = (dir, turb, dusk) => {
+    const es = new THREE.Scene(), s2 = new Sky(); s2.scale.setScalar(1000); s2.material.uniforms.sunPosition.value.copy(dir);
     for (const k of ['rayleigh', 'mieCoefficient', 'mieDirectionalG']) s2.material.uniforms[k].value = u[k].value; s2.material.uniforms.turbidity.value = turb;
-    es.add(s2); return pmrem.fromScene(es).texture; };
-  const dayEnv = bake(sunDay, 3.2), duskEnv = bake(sunDusk, 6);
+    s2.material.fragmentShader = sky.material.fragmentShader.replace('L0 += ( vSunE * 19000.0 * Fex ) * sundisk;', '');
+    s2.material.uniforms.uHaze = { value: new THREE.Color(dusk ? FOG_DUSK : FOG_DAY) }; s2.material.uniforms.uBlue = { value: dusk ? .25 : 1 };
+    const gc = new THREE.Color().setRGB(...(dusk ? [.08, .06, .045] : [.18, .17, .15]), THREE.LinearSRGBColorSpace);
+    const ground = new THREE.Mesh(new THREE.SphereGeometry(60, 32, 8, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), new THREE.MeshBasicMaterial({ color: gc, side: THREE.BackSide }));
+    es.add(s2, ground); const tex = pmrem.fromScene(es).texture;
+    s2.geometry.dispose(); s2.material.dispose(); ground.geometry.dispose(); ground.material.dispose(); return tex;
+  };
+  const dayEnv = bake(sunDay, 2.8, false), duskEnv = bake(sunDusk, 6, true);
 
   const sun = new THREE.DirectionalLight(0xfff1dc, 0);
   sun.castShadow = true; sun.shadow.mapSize.set(4096, 4096);
@@ -74,14 +84,14 @@ export function createDayNight({ scene, renderer, hemi, moon, bloom, spots, nigh
     sunDir.copy(isDusk ? sunDusk : sunDay); u.sunPosition.value.copy(sunDir); u.turbidity.value = isDusk ? 6 : 2.8;
     sky.visible = day; if (nightBackdrop) nightBackdrop.visible = !day;
     scene.background = day ? null : night.bg;
-    scene.environment = day ? (isDusk ? duskEnv : dayEnv) : nightEnv; scene.environmentIntensity = day ? .5 : .22;
-    scene.fog.color.set(isDusk ? 0xc9a48a : day ? 0x9fb6cc : night.fogC); scene.fog.density = isDusk ? .00017 : day ? .00011 : night.fogD;
+    scene.environment = day ? (isDusk ? duskEnv : dayEnv) : nightEnv; scene.environmentIntensity = day ? 1.0 : .22;
+    scene.fog.color.set(isDusk ? FOG_DUSK : day ? FOG_DAY : night.fogC); scene.fog.density = isDusk ? .00017 : day ? .00011 : night.fogD;
     scene.fog.height = isDusk ? .0011 : day ? .0006 : .0016;   // ground haze layer (see hfog.js)
     u.uHaze.value.copy(scene.fog.color); u.uBlue.value = isDusk ? .25 : 1;
-    hemi.color.set(isDusk ? 0x9aa6c8 : day ? 0xc4d8f0 : night.hemiS); hemi.groundColor.set(day ? 0x6b6252 : night.hemiG); hemi.intensity = isDusk ? .8 : day ? 1.0 : night.hemiI;
+    hemi.color.set(isDusk ? 0x9aa6c8 : day ? 0xc4d8f0 : night.hemiS); hemi.groundColor.set(day ? 0x4a4438 : night.hemiG); hemi.intensity = isDusk ? .4 : day ? .5 : night.hemiI;   // the env map now carries the sky fill
     moon.intensity = day ? 0 : night.moonI;
     sun.color.set(isDusk ? 0xffa45c : 0xfff1dc); sun.intensity = isDusk ? 4.2 : day ? 5.9 : 0; sun.visible = day;
-    renderer.toneMappingExposure = isDusk ? .82 : day ? .74 : night.exp;
+    renderer.toneMappingExposure = isDusk ? .88 : day ? .82 : night.exp;
     bloom.strength = day ? .18 : night.bloom; bloom.threshold = day ? 1.6 : 1.0;
     for (const s of spots) s.visible = !day;
     clouds.material.color.set(day ? 0xffffff : 0x1a2230); clouds.material.opacity = day ? .85 : .7;
@@ -90,13 +100,13 @@ export function createDayNight({ scene, renderer, hemi, moon, bloom, spots, nigh
   }
   // enclosed halls: by day, fade sky light out while the camera is inside one of these boxes
   const interiors = []; let inside = 0;
-  function base() { return isDusk ? { h: .8, s: 4.2, e: .55 } : isDay ? { h: 1.0, s: 5.9, e: .5 } : { h: night.hemiI, s: 0, e: .22 }; }
+  function base() { return isDusk ? { h: .4, s: 4.2, e: 1.0 } : isDay ? { h: .5, s: 5.9, e: 1.0 } : { h: night.hemiI, s: 0, e: .22 }; }
   function update(focus, cam) {
     cloudTex.offset.x += .000012; cloudTex.offset.y += .000006;
     if (cam) { stars.position.copy(cam); moonDisc.position.copy(cam).addScaledVector(_moonDir, 5500); }
     const target = cam && interiors.some((b) => cam.x > b[0] && cam.x < b[1] && cam.y < b[2] && cam.y > (b[5] ?? -1e9) && cam.z > b[3] && cam.z < b[4]) ? 1 : 0;
     inside += (target - inside) * .08;
-    if (isDay) { const b0 = base(), k = 1 - inside * .85; hemi.intensity = b0.h * k; sun.intensity = b0.s * (1 - inside); scene.environmentIntensity = b0.e * (1 - inside * .8); }
+    if (isDay) { const b0 = base(), k = 1 - inside * .85; hemi.intensity = b0.h * k; sun.intensity = b0.s * (1 - inside); scene.environmentIntensity = b0.e * (1 - inside * .9); }
     sun.target.position.set(Math.round(focus.x / 8) * 8, 0, Math.round(focus.z / 8) * 8);
     sun.position.copy(sun.target.position).addScaledVector(sunDir, 700);
   }

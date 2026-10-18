@@ -21,7 +21,7 @@ function cast(cars) {
   const A = [];
   // foreground / mid: crouched behind the nearest stranded cars, on the side away from the gunman
   const hide = ['salaryman', 'office_lady', 'worker', 'mom', 'tourist', 'young_suit', 'streetwear'];   // every actor is a different person
-  const clips = ['frightened', 'scared_01', 'afraid', 'frightened', 'scared_02', 'look_around'];
+  const clips = ['frightened', 'scared_01', 'scared_01', 'frightened', 'frightened', 'look_around'];   // clips every hider rig has
   cars.sort((a, b) => a.p.distanceTo(C) - b.p.distanceTo(C)).slice(0, 7).forEach((c, i) => {
     const d = new THREE.Vector3().subVectors(c.p, C).setY(0).normalize();
     const p = c.p.clone().addScaledVector(d, 2.6).add(new THREE.Vector3(-d.z, 0, d.x).multiplyScalar((i % 2 ? 1 : -1) * .8));
@@ -44,11 +44,11 @@ function cast(cars) {
   A.push({ id: 'grandma', clip: 'afraid', x: -967.6, z: 203.4, y: PV, target: C });   // the nurse shelters an old woman
   // far: watchers on the podium deck and the store roof
   A.push({ id: 'punk', clip: 'look_around', x: -1040, z: 204, y: 7.2, target: C });
-  A.push({ id: 'courier', clip: 'scared_01', x: -962, z: 246, y: 3.9, target: C });
+  A.push({ id: 'courier', clip: 'scared_01', x: -962, z: 246, y: 4.18, target: C });   // on the konbini roof (top at PV + 4)
   A.push({ id: 'cook', clip: 'frightened', x: -1016, z: 196, y: PV, target: C });   // ramen cook ducking out of a side street
   // more participants up high: on the stalled rail viaduct, on a roof edge
   A.push({ id: 'player_m', clip: 'look_around', x: -985, z: 87.5, y: 9.45, target: C });
-  A.push({ id: 'player_f', clip: 'afraid', x: -958, z: 249, y: 3.95, target: C, crouch: true });
+  A.push({ id: 'player_f', clip: 'afraid', x: -958, z: 249, y: 4.18, target: C, crouch: true });
   // the gunman
   A.push({ id: 'gunman', clip: 'fire', x: C.x - 1.5, z: C.z + 1, y: .06, yaw: Math.atan2(.9, .6), gunman: true });
   return A;
@@ -154,7 +154,8 @@ export function hunt(ctx) {
       const o = cloneSkinned(g.scene); o.traverse((c) => { if (c.isMesh) { c.castShadow = true; c.geometry.computeBoundingSphere(); c.boundingSphere = c.geometry.boundingSphere.clone(); c.boundingSphere.radius *= 1.4; } });   // cull on the bind-pose sphere (skeleton not posed at first cull)
       const body = new THREE.Group(); o.rotation.y = -Math.PI / 2; body.add(o);   // Tripo characters face +X → +Z
       const h = new THREE.Group(); h.add(body); root.add(h);
-      const mx = new THREE.AnimationMixer(o), clip = g.animations.find((c) => c.name === a.clip) || g.animations[0];
+      const pick = (re) => g.animations.find((c) => re.test(c.name));   // role-aware fallback: never a run cycle under a crouch
+      const mx = new THREE.AnimationMixer(o), clip = g.animations.find((c) => c.name === a.clip) || (a.path ? pick(/^(run|flee)/) : pick(/frightened|scared|afraid/)) || g.animations[0];
       const act = mx.clipAction(clip); act.play(); act.time = Math.random() * clip.duration; act.timeScale = .9 + Math.random() * .2; mixers.push(mx);
       if (a.crouch) {   // crouched behind a car: knees bent, hips ~45 cm lower
         const bones = {}; o.traverse((x) => { if (x.isBone) bones[x.name] = x; });
@@ -233,5 +234,6 @@ export function hunt(ctx) {
     casings.instanceMatrix.needsUpdate = true;
     for (const o of smokes) { if (o.life <= 0) { o.s.visible = false; continue; } o.life -= dt; o.s.position.addScaledVector(o.v, dt); o.s.scale.multiplyScalar(1 + dt * .9); o.s.material.opacity = .45 * (o.life / o.max); }
   });
-  ctx.pois.push({ id: 'hunt', cam: [-989, 3.0, 287], tgt: [-991.5, 1.8, 221], spawn: [-1010, PV + .1, 252], yaw: Math.atan2(-20, 32) });   // camera looks along (−sin yaw, −cos yaw): toward the crossing
+  ctx.pois.push({ id: 'hunt', cam: [-989, 3.0, 287], tgt: [-991.5, 1.8, 221], spawn: [-1010, PV + .1, 252], yaw: Math.atan2(-20, 32) });
+  ctx.pois.push({ id: 'hunt_konbini', cam: [-959.0, 2.3, 249.0], tgt: [-991.5, 1.0, 221] });   // from the back aisle, over the shelves, out through the glass   // camera looks along (−sin yaw, −cos yaw): toward the crossing
 }

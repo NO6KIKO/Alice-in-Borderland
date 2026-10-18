@@ -42,7 +42,25 @@ export function cardTexture(rank, suit) {
 // painted card art: generated stand-in until the image loads, then the material's maps are swapped
 // cards/<rank><suit>.webp (e.g. cards/JS.webp) — any court card with a file there uses the painting
 const PAINTED = Object.fromEntries(['J', 'Q', 'K'].flatMap((r) => ['S', 'H', 'D', 'C'].map((s) => [r + s, `./cards/${r}${s}.webp`])));
-const matCache = new Map();
+const matCache = new Map(), painted = new Map(), waiting = new Map();
+let LITE = false;
+export function setCardLite(v) { LITE = !!v; }   // lite: paintings are drawn into the 512×768 stand-in canvas instead of a full-size texture
+function done(key, m, p) {
+  const t = cache.get(key);
+  if (LITE && t) {
+    const c = t.image, g = c.getContext('2d'); g.clearRect(0, 0, c.width, c.height); g.drawImage(p.image, 0, 0, c.width, c.height);
+    t.needsUpdate = true; p.image = null; p.dispose(); p = t;
+  } else {
+    p.colorSpace = THREE.SRGBColorSpace; p.anisotropy = 8; m.map = m.emissiveMap = p; m.needsUpdate = true;
+    if (t) { t.dispose(); cache.delete(key); }   // free the generated stand-in
+  }
+  painted.set(key, p); (waiting.get(key) || []).forEach((cb) => cb(p)); waiting.delete(key);
+}
+// the painting for a court card (shared texture), once loaded
+export function paintedMap(rank, suit, cb) {
+  const key = rank + suit; cardMaterial(rank, suit);
+  if (painted.has(key)) cb(painted.get(key)); else { if (!waiting.has(key)) waiting.set(key, []); waiting.get(key).push(cb); }
+}
 // self-lit-ish card material: readable by day, softly glowing at night (night factor set by setCardGlow)
 export function cardMaterial(rank, suit) {
   const key = rank + suit; if (matCache.has(key)) return matCache.get(key);
@@ -50,7 +68,7 @@ export function cardMaterial(rank, suit) {
   const m = new THREE.MeshStandardMaterial({ map: t, emissiveMap: t, emissive: 0xffffff, emissiveIntensity: .05, roughness: .7, side: THREE.DoubleSide, alphaTest: .5 });
   if (PAINTED[key]) {   // try .webp, .png, .jpg; no file → keep generated art
     const exts = ['webp', 'png', 'jpg'], base = PAINTED[key].replace(/\.webp$/, '');
-    const tryLoad = (i) => i < exts.length && new THREE.TextureLoader().load(`${base}.${exts[i]}`, (p) => { p.colorSpace = THREE.SRGBColorSpace; p.anisotropy = 8; m.map = m.emissiveMap = p; m.needsUpdate = true; }, undefined, () => tryLoad(i + 1));
+    const tryLoad = (i) => i < exts.length && new THREE.TextureLoader().load(`${base}.${exts[i]}`, (p) => done(key, m, p), undefined, () => tryLoad(i + 1));
     tryLoad(0);
   }
   matCache.set(key, m); return m;

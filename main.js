@@ -19,6 +19,7 @@ import { createDayNight } from './city/sky.js';
 import { DISTRICTS } from './city/map.js';
 import { createGrade } from './city/grade.js';
 import { createGodRays } from './city/godrays.js';
+import { paintedMap, setCardLite } from './city/cards.js';
 import { createAudio } from './city/audio.js';
 import { huntState } from './city/hunt.js';
 
@@ -46,6 +47,7 @@ renderer.domElement.addEventListener('webglcontextlost', () => {   // out of GPU
   try { if (sessionStorage.getItem('lite') !== '1') { sessionStorage.setItem('lite', '1'); setTimeout(() => location.reload(), 300); } } catch (e) {}
 });
 renderer.setPixelRatio(Math.min(devicePixelRatio, DPR_MAX));
+setCardLite(LITE);
 renderer.setSize(innerWidth, innerHeight);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
@@ -277,7 +279,7 @@ function cardTower() {
   // card on the front face (≈11 × 16.5m)
   const cw = 11, ch = cw * 1.5, cy = 23, fz = cz + S / 2 + .9;
   const card = new THREE.Mesh(new THREE.PlaneGeometry(cw, ch), new THREE.MeshStandardMaterial({ map: cardTex, emissiveMap: cardTex, emissive: 0xffffff, emissiveIntensity: .22, roughness: .6, transparent: true, alphaTest: .5 }));
-  new THREE.TextureLoader().load('./cards/QH.webp', (t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; card.material.map = t; card.material.emissiveMap = t; card.material.needsUpdate = true; });
+  paintedMap('Q', 'H', (t) => { card.material.map = card.material.emissiveMap = t; card.material.needsUpdate = true; });   // shares the city's Q♥ painting
   card.position.set(cx, cy, fz); scene.add(card);
   box('steel', cw + 1, ch + 1, .3, cx, cy, fz - .3);
   for (const s of [-1, 1]) box('steel', .3, ch + 1.4, .5, cx + s * (cw / 2 + .5), cy, fz - .1);
@@ -495,6 +497,7 @@ for (const d of DISTRICTS) {
   const li = document.createElement('li'); li.innerHTML = `<b style="background:#d8242a;color:#fff">!</b>涩谷 · 狩猎现场 <span class="go" title="在这里漫游">▶</span>`;
   li.onclick = (e) => { if (e.target.classList.contains('go')) { player.enter(); player.teleport(new THREE.Vector3(...h.spawn), h.yaw); } else fly(h.cam, h.tgt); };
   cityList.prepend(li);
+  const k = cityPOI.get('hunt_konbini'); if (k) { const kl = document.createElement('li'); kl.innerHTML = '<b style="background:#d8242a;color:#fff">!</b>涩谷 · 便利店内'; kl.onclick = () => fly(k.cam, k.tgt); li.after(kl); }
 } }
 const dayBtn = document.createElement('button'); vb.insertBefore(dayBtn, playBtn);
 const cineBtn = document.createElement('button'); cineBtn.textContent = '▭ 电影模式'; vb.insertBefore(cineBtn, playBtn);
