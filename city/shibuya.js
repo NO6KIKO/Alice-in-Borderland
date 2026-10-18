@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import * as K from '../kit.js';
 import { prop } from './props.js';
+import { konbini } from './konbini.js';
 const { box, cyl, sph, put, M4, withFrame, def, std, canvasTex, noise, strut } = K;
 
 const RD = .06, PV = .18, DECK = 7.2;           // asphalt top, pavement top, podium deck top
@@ -348,11 +349,9 @@ function car(kind, x, z, ry) {
       for (let i = 0; i < 10; i++) tuft((R() - .5) * 9, (R() - .5) * 2, 1, 3.4);
       for (let i = 0; i < 6; i++) hang((R() - .5) * 10, 3.2, (R() < .5 ? -1 : 1) * 1.3, .4 + R() * 1.6);
     } else if (kind === 'truck') {
-      box('steel', 6.4, .35, 1.7, 0, .62, 0); box('truckW', 1.8, 1.8, 2, 2.4, 1.6, 0); box('shib_glass', .06, .8, 1.8, 3.31, 2.0, 0);
-      box('truckW', 4.5, 2.4, 2.2, -.95, 2.0, 0); box('steelL', .05, 2.2, 2, -3.21, 2.0, 0);
-      wheels([2.4, -1.4, -2.5], .45, .85);
-      box('roofG', 3.6, .2, 1.9, -1, 3.28, 0); box('ivy', 3, 1.4, .3, -1, 2.1, 1.15);
-      for (let i = 0; i < 5; i++) tuft(-1 + (R() - .5) * 3.5, (R() - .5) * 1.6, 1, 3.3);
+      prop('box_truck', 0, 0, 0);
+      box('roofG', 3.6, .15, 1.9, -1, 3.08, 0);
+      for (let i = 0; i < 5; i++) tuft(-1 + (R() - .5) * 3.5, (R() - .5) * 1.6, 1, 3.1);
     } else if (kind === 'van') {
       prop(R() < .5 ? 'kcar' : 'kei_truck', 0, 0, 0);
       if (R() < .6) box('roofG', 1.8, .1, 1.2, -.3, 1.82, 0);
@@ -454,7 +453,9 @@ export function build(ctx, d) {
     bld(100, -30, 128, 10, 45, 'fac1', { st: 'sw' });                           // NE3
     bld(10, -95, 60, -48, 63, 'fac5', { st: 'w' });                             // NE4
     bld(66, -95, 128, -52, 35, 'fac3', {});                                     // NE5
-    bld(10, 50, 50, 112, 31.5, 'fac2', { st: 'nw' });                           // SE1
+    bld(10, 62, 50, 112, 31.5, 'fac2', { st: 'nw' });                           // SE1 (set back for the store)
+    bld(26, 50, 50, 62, 14, 'fac0', { st: 'n' });                               // SE1b
+    konbini(ctx, 10.4, PV, 50.4, 0);                                             // corner convenience store
     bld(56, 50, 100, 88, 21, 'fac0', { st: 'n' });                              // SE2
     bld(106, 50, 128, 112, 42, 'fac1', { st: 'nw' });                           // SE3
     bld(56, 94, 100, 112, 10.5, 'fac3', {});                                    // SE4
@@ -510,7 +511,7 @@ export function build(ctx, d) {
     // trees through the pavement and the broken asphalt
     for (const [x, z, s] of [[-30, 80, 1.1], [-60, 46, .9], [-100, 46.5, 1], [6, -60, 1], [6, 66, 1.1], [30, 46, .9], [70, 14, 1], [110, 46.5, 1], [-27, -62, 1.2], [-27, -22, .9],
       [-110, 15.5, .9], [-40, -112, 1], [-120, -112, 1.1], [6, 100, 1], [118, 14, .9], [-27, 104, 1]]) { X.tree(x, z, s, groundY(x, z)); cyl('shib_soil', 1, .05, x, groundY(x, z) + .02, z, 0, 0, 0, 10); for (let k = 0; k < 5; k++) tuft(x + (R() - .5) * 2.4, z + (R() - .5) * 2.4); }
-    for (const [x, z, s] of [[-16, 22, 1.2], [60, 30.5, 1], [-10, 104, .9], [-14, -60, 1.1], [...along(110, 1), 1], [-90, 30, .9]]) {
+    for (const [x, z, s] of [[-40, 6, 1.2], [60, 30.5, 1], [-10, 104, .9], [-14, -60, 1.1], [...along(110, 1), 1], [-90, 30, .9]]) {
       X.tree(x, z, s, RD); cyl('shib_soil', 1.6, .06, x, RD + .02, z, 0, 0, 0, 10);
       for (let k = 0; k < 5; k++) { const a = R() * 6.28; box('shib_road', .8 + R(), .12, .6 + R() * .6, x + Math.cos(a) * 1.9, RD + .05, z + Math.sin(a) * 1.9, a, (R() - .5) * .4, (R() - .5) * .4); }
       for (let k = 0; k < 10; k++) tuft(x + (R() - .5) * 4, z + (R() - .5) * 4, 1.1, RD);
@@ -545,10 +546,10 @@ export function build(ctx, d) {
     M.ad.emissiveIntensity = base * (Math.random() < .015 ? 0 : 1);
   });
   ctx.dayNight.push((day) => {
-    // "no electricity": screens/shops mostly dead at night, just a faint flicker here and there
-    base = day ? .35 : .3; M.static.emissiveIntensity = base;
-    M.shop.emissiveIntensity = day ? .15 : .12; M.twin.emissiveIntensity = day ? .3 : .25; M.sign.emissiveIntensity = day ? .2 : .1;
-    M.mural.emissiveIntensity = day ? 0 : .06; M.subSign.emissiveIntensity = day ? .2 : .25;
+    // Shibuya is the live game venue: the only part of the city with power at night (screens, neon, shops)
+    base = day ? .35 : 1.1; M.static.emissiveIntensity = base;
+    M.shop.emissiveIntensity = day ? .15 : .9; M.twin.emissiveIntensity = day ? .3 : 1.1; M.sign.emissiveIntensity = day ? .2 : 1.2;
+    M.mural.emissiveIntensity = day ? 0 : .25; M.subSign.emissiveIntensity = day ? .2 : 1.4;
   });
   ctx.pois.push({ id: d.id, cam: [d.x + 25, 50, d.z + 112], tgt: [d.x - 18, 10, d.z], spawn: [d.x - 27, PV + .1, d.z + 47], yaw: Math.atan2(-17, 37) });
 }

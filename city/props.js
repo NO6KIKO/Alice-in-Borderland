@@ -30,6 +30,33 @@ export const PROPS = {
   trash_bags: { size: [1.6, .9, 1.2], fit: 'x', range: 110 },
   deer: { size: [1.5, 1.4, .5], fit: 'x', range: 180 },
   traffic_signal: { size: [1.3, .45, .45], fit: 'x', range: 220 },
+  box_truck: { size: [6.5, 3.0, 2.2], fit: 'x', range: 280 },
+  motorcycle: { size: [2.1, 1.15, .8], fit: 'x', range: 160 },
+  koban: { size: [4.5, 6, 4.5], fit: 'y', range: 300 },
+  phone_booth: { size: [1, 2.3, 1], fit: 'y', range: 140 },
+  bus_stop: { size: [.6, 2.5, .6], fit: 'y', range: 140 },
+  street_light: { size: [3, 7, .4], fit: 'y', range: 260 },
+  torii: { size: [3.2, 3, 1.2], fit: 'y', range: 200 },
+  tiger: { size: [2.8, 1.1, .6], fit: 'x', range: 200 },
+  panther: { size: [2.2, .8, .5], fit: 'x', range: 200 },
+  potted_plants: { size: [1.5, 1, .8], fit: 'x', range: 100 },
+  beer_crates: { size: [1, .9, .6], fit: 'x', range: 90 },
+  aframe_sign: { size: [.55, .95, .5], fit: 'y', range: 90 },
+  chochin: { size: [.35, .6, .35], fit: 'y', range: 110 },
+  trash_bin: { size: [1.2, 1.1, .5], fit: 'x', range: 110 },
+  recycle_bin: { size: [.6, .9, .6], fit: 'y', range: 100 },
+  shutter_shop: { size: [4, 3.5, 1], fit: 'x', range: 160 },
+  ac_outdoor: { size: [.8, .6, .3], fit: 'x', range: 90 },
+  rifle: { size: [.95, .25, .08], fit: 'x', range: 120 },
+  magazine_rack: { size: [2.2, 1.3, .5], fit: 'x', range: 70 },
+  bento_case: { size: [2.2, 2.0, 1.0], fit: 'x', range: 70 },
+  konbini_counter: { size: [2.2, 1.1, .8], fit: 'x', range: 70 },
+  coffee_machine: { size: [.8, 1.6, .6], fit: 'y', range: 70 },
+  atm: { size: [.8, 1.6, .7], fit: 'y', range: 70 },
+  ticket_machine: { size: [.8, 1.8, .6], fit: 'y', range: 70 },
+  karaoke_sofa: { size: [2.5, .9, 2], fit: 'x', range: 70 },
+  station_gate: { size: [4, 1.1, 1.5], fit: 'x', range: 120 },
+  tatami_room_set: { size: [1.4, .5, 1.4], fit: 'x', range: 70 },
 };
 
 const placements = new Map();   // name → [{ m: Matrix4 (world), p: Vector3 }]
@@ -41,6 +68,12 @@ export function prop(name, x, y, z, ry = 0, scale = 1, tilt = 0) {
   const m = K.frame.clone().multiply(new THREE.Matrix4().compose(_p.set(x, y, z), _q.setFromEuler(_e.set(tilt, ry, 0, 'YXZ')), _s.setScalar(scale)));
   if (!placements.has(name)) placements.set(name, []);
   placements.get(name).push({ m, p: new THREE.Vector3().setFromMatrixPosition(m) });
+}
+// world placements of the given prop names within r of (x, z) — used to stage people behind cars etc.
+export function placementsNear(names, x, z, r) {
+  const out = [];
+  for (const n of names) for (const it of placements.get(n) || []) if (Math.hypot(it.p.x - x, it.p.z - z) < r) out.push({ name: n, ...it, yaw: Math.atan2(-it.m.elements[2], it.m.elements[0]) });
+  return out;
 }
 export const propCount = () => [...placements.values()].reduce((a, l) => a + l.length, 0);
 

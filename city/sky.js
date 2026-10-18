@@ -9,7 +9,7 @@ export function createDayNight({ scene, renderer, hemi, moon, bloom, spots, nigh
 
   const sky = new Sky(); sky.scale.setScalar(8000); sky.visible = false; scene.add(sky);
   const u = sky.material.uniforms;
-  u.turbidity.value = 6; u.rayleigh.value = 1.4; u.mieCoefficient.value = .004; u.mieDirectionalG.value = .82;
+  u.turbidity.value = 3.2; u.rayleigh.value = 2.4; u.mieCoefficient.value = .003; u.mieDirectionalG.value = .8;   // clear, slightly hazy Tokyo blue
   const sunDir = new THREE.Vector3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(52), THREE.MathUtils.degToRad(215));
   u.sunPosition.value.copy(sunDir);
   // bake the sky into an environment map so water / glass / metal reflect it
@@ -33,7 +33,7 @@ export function createDayNight({ scene, renderer, hemi, moon, bloom, spots, nigh
     sky.visible = day; if (nightBackdrop) nightBackdrop.visible = !day;
     scene.background = day ? null : night.bg;
     scene.environment = day ? dayEnv : nightEnv; scene.environmentIntensity = day ? .75 : .22;
-    scene.fog.color.set(day ? 0xa9bccf : night.fogC); scene.fog.density = day ? .00016 : night.fogD;
+    scene.fog.color.set(day ? 0x9fb6cc : night.fogC); scene.fog.density = day ? .00011 : night.fogD;
     hemi.color.set(day ? 0xc4d8f0 : night.hemiS); hemi.groundColor.set(day ? 0x6b6252 : night.hemiG); hemi.intensity = day ? 1.9 : night.hemiI;
     moon.intensity = day ? 0 : night.moonI;
     sun.intensity = day ? 4 : 0; sun.visible = day;

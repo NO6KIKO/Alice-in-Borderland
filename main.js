@@ -514,6 +514,11 @@ for (const d of DISTRICTS) {
   li.onclick = (e) => { if (e.target.classList.contains('go')) { player.enter(); player.teleport(new THREE.Vector3(...p.spawn), p.yaw || 0); } else fly(p.cam, p.tgt); };
   cityList.appendChild(li);
 }
+{ const h = cityPOI.get('hunt'); if (h) {   // cinematic entry for the Shibuya gunfight
+  const li = document.createElement('li'); li.innerHTML = `<b style="background:#d8242a;color:#fff">!</b>涩谷 · 狩猎现场 <span class="go" title="在这里漫游">▶</span>`;
+  li.onclick = (e) => { if (e.target.classList.contains('go')) { player.enter(); player.teleport(new THREE.Vector3(...h.spawn), h.yaw); } else fly(h.cam, h.tgt); };
+  cityList.prepend(li);
+} }
 const dayBtn = document.createElement('button'); vb.insertBefore(dayBtn, playBtn);
 window.__player = player;   // console helper
 Promise.all([load('./models/truck_semi.glb'), load('./models/truck_box.glb')]).then(([semi, boxT]) => {

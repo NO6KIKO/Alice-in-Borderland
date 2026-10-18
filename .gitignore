@@ -13,3 +13,4 @@ models/props/*.log
 models/people/*_tpose*
 models/people/*_rig*
 models/people/*.log
+models/people/*.glb

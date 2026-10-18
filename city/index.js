@@ -1,6 +1,7 @@
 // The city around the night compound: land + bay, quay walls, street grid, overgrown filler blocks,
 // street trees, card airships, and the hero districts (one module each, see DISTRICT_MODULES).
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import * as K from '../kit.js';
 import * as cards from './cards.js';
 import * as map from './map.js';
@@ -18,6 +19,7 @@ import * as fire from './fire.js';
 import { cityBuilding } from './buildings.js';
 import { prop, loadProps, propColliders, propCount } from './props.js';
 import { streetSegment, intersection } from './street.js';
+import { hunt } from './hunt.js';
 
 const DISTRICT_MODULES = { port, arena, prison, tokyotower, palace, diamond, clubs, hearts, shibuya, fire };
 const { box, cyl, sph, plane, put, strut, beacon, M4, withFrame, setZone, canvasTex, noise, def, std } = K;
@@ -181,17 +183,29 @@ function airships(scene, updates) {
   const body = new THREE.MeshStandardMaterial({ color: 0xc9ccd0, roughness: .35, metalness: .75 });
   const dark = new THREE.MeshStandardMaterial({ color: 0x2c3036, roughness: .5, metalness: .6 });
   const list = [['Q', 'H', -900, -250, 330, 170], ['K', 'D', -300, -420, 260, 190], ['J', 'C', -620, -720, 300, 160], ['K', 'S', -200, 120, 380, 210], ['K', 'S', -1150, 80, 260, 150], ['Q', 'D', 150, -500, 340, 230], ['J', 'S', -1350, -600, 250, 180], ['Q', 'S', -800, 250, 280, 175], ['J', 'H', 60, -250, 300, 200], ['Q', 'C', -400, -900, 260, 185], ['J', 'D', -1000, -650, 300, 165]];
+  const groups = [];
+  new GLTFLoader().load('./models/props/lod/airship.glb', (gl) => {   // Tripo rigid airship: replaces the primitive hull
+    const m = gl.scene; m.updateMatrixWorld(true);
+    const bb = new THREE.Box3().setFromObject(m), sz = bb.getSize(new THREE.Vector3()), c = bb.getCenter(new THREE.Vector3());
+    const rot = sz.z > sz.x, len = rot ? sz.z : sz.x, wid = rot ? sz.x : sz.z;
+    const inner = new THREE.Group(); m.position.sub(c); inner.add(m); if (rot) inner.rotation.y = Math.PI / 2;
+    const tpl = new THREE.Group(); tpl.add(inner);
+    tpl.scale.set(62 / len, 17 / sz.y, 17 / wid);   // stretch the stubby hull into a 62 m zeppelin
+    m.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.material.side = THREE.FrontSide; } });
+    for (const g of groups) { g.userData.primitive.forEach((o) => { o.visible = false; }); const h = tpl.clone(); h.position.y = 2; g.add(h); }
+  });
   list.forEach(([rk, st, cx, cz, R, y], i) => {
     const g = new THREE.Group();
     const hull = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 16), body); hull.scale.set(26, 6.5, 6.5); g.add(hull);
     for (let k = 0; k < 4; k++) { const fin = new THREE.Mesh(new THREE.BoxGeometry(7, .3, 5), body); fin.position.x = -22; fin.rotation.x = k * Math.PI / 2; fin.translateY(0); fin.geometry.translate(0, 0, 4.5); g.add(fin); }
     for (let k = -2; k <= 2; k++) { const rib = new THREE.Mesh(new THREE.TorusGeometry(6.4 * Math.sqrt(1 - (k * 8 / 26) ** 2), .08, 6, 40), dark); rib.position.x = k * 8; rib.rotation.y = Math.PI / 2; g.add(rib); }
     const gond = new THREE.Mesh(new THREE.BoxGeometry(9, 2.4, 3), dark); gond.position.y = -7.4; g.add(gond);
-    const card = new THREE.Mesh(new THREE.PlaneGeometry(14, 21), cards.cardMaterial(rk, st)); card.position.set(0, -21, 0); g.add(card);
-    for (const s of [-1, 1]) { const c = new THREE.Mesh(new THREE.CylinderGeometry(.05, .05, 4.6), dark); c.position.set(s * 6.5, -8.6, 0); g.add(c); }
-    const bar = new THREE.Mesh(new THREE.BoxGeometry(15, .35, .35), dark); bar.position.y = -10.7; g.add(bar);
+    const card = new THREE.Mesh(new THREE.PlaneGeometry(14, 21), cards.cardMaterial(rk, st)); card.position.set(0, -24, 0); g.add(card);
+    for (const s of [-1, 1]) { const c = new THREE.Mesh(new THREE.CylinderGeometry(.05, .05, 4.6), dark); c.position.set(s * 6.5, -10, 0); c.scale.y = 1.6; g.add(c); }
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(15, .35, .35), dark); bar.position.y = -13.7; g.add(bar);
     const blink = new THREE.Mesh(new THREE.SphereGeometry(.4, 8, 6), new THREE.MeshBasicMaterial({ color: new THREE.Color(4, .2, .1) })); blink.position.set(-26, 0, 0); g.add(blink);
     g.traverse((o) => { o.castShadow = true; });
+    g.userData.primitive = g.children.filter((o) => o !== card && o !== bar && o !== blink && o.geometry?.type !== 'CylinderGeometry'); groups.push(g);
     scene.add(g);
     const w = (i % 2 ? 1 : -1) * (.012 + i * .002), ph = i * 1.7;
     updates.push((dt, t) => {
@@ -364,6 +378,7 @@ export function buildCity({ scene, camera }) {
   }
   setZone('compound');
 
+  try { hunt(ctx); } catch (e) { console.error('hunt scene failed', e); }
   setZone('express');
   expressway(-100, -700, -100, -105); expressway(-500, -700, 300, -700); box('hwy', 30, 2.6, 30, -100, 27, -700);
   rainbowBridge();
