@@ -45,6 +45,13 @@ export const texWall = canvasTex(256, 256, (g, w, h) => {
   noise(g, w, h, 22);
   const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(30,20,10,.25)'); g.fillStyle = gr; g.fillRect(0, 0, w, h);
 }, { repeat: true });
+export const texCorr = canvasTex(256, 256, (g, w, h) => {   // painted corrugated steel (light, tinted by material colour)
+  g.fillStyle = '#e8e8e8'; g.fillRect(0, 0, w, h);
+  for (let x = 0; x < w; x += 16) { const gr = g.createLinearGradient(x, 0, x + 16, 0); gr.addColorStop(0, 'rgba(255,255,255,.25)'); gr.addColorStop(.5, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(0,0,0,.22)'); g.fillStyle = gr; g.fillRect(x, 0, 16, h); }
+  noise(g, w, h, 16);
+  for (let i = 0; i < 14; i++) { const x = Math.random() * w, gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, 'rgba(90,50,20,.3)'); gr.addColorStop(1, 'rgba(90,50,20,0)'); g.fillStyle = gr; g.fillRect(x, 0, 2 + Math.random() * 4, h * Math.random()); }
+  const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(.7, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(60,40,20,.25)'); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+}, { repeat: true });
 export const texGrate = canvasTex(128, 128, (g, w, h) => {
   g.fillStyle = '#1c2026'; g.fillRect(0, 0, w, h); g.strokeStyle = '#9aa2ac'; g.lineWidth = 3;
   for (let i = 0; i <= w; i += 16) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i, h); g.stroke(); g.beginPath(); g.moveTo(0, i); g.lineTo(w, i); g.stroke(); }
@@ -110,9 +117,9 @@ def('valve', std({ color: 0xb02820, roughness: .5, metalness: .4 }));
 def('truckW', std({ color: 0xd2d6d9, roughness: .45, metalness: .3 }));
 def('truckB', std({ color: 0x1c3a5f, roughness: .35, metalness: .5 }));
 def('tire', std({ color: 0x0c0d0f, roughness: .8 }));
-def('contG', std({ map: texWall, color: 0x5d6a66, roughness: .55, metalness: .4 }), 2.4);
-def('contR', std({ map: texWall, color: 0x8a4a3a, roughness: .55, metalness: .4 }), 2.4);
-def('contB', std({ map: texWall, color: 0x3d5878, roughness: .55, metalness: .4 }), 2.4);
+def('contG', std({ map: texCorr, color: 0x3f6e58, roughness: .7, metalness: .08 }), 2.4);
+def('contR', std({ map: texCorr, color: 0xa8402e, roughness: .7, metalness: .08 }), 2.4);
+def('contB', std({ map: texCorr, color: 0x2f5d92, roughness: .7, metalness: .08 }), 2.4);
 def('cone', std({ color: 0xe8631a, roughness: .6 }));
 def('barrel', std({ color: 0x264f8c, roughness: .5, metalness: .4 }));
 def('glow', bas({ color: new THREE.Color(3.2, 2.8, 2.1) }));

@@ -1,5 +1,5 @@
 // Worn playing-card textures drawn on canvas (murals, airship banners, signage).
-// The Queen of Hearts uses the painted card.webp; every other card is generated.
+// Court cards use the paintings in cards/<rank><suit>.webp when present; everything else is generated.
 import * as THREE from 'three';
 
 const SUITS = { S: ['♠', '#16181c'], H: ['♥', '#b3202f'], D: ['♦', '#b3202f'], C: ['♣', '#16181c'] };
@@ -40,14 +40,15 @@ export function cardTexture(rank, suit) {
 }
 
 // painted card art: generated stand-in until the image loads, then the material's maps are swapped
-const PAINTED = { QH: './card.webp', KS: './card_ks.webp', JC: './card_jc.webp' };
+// cards/<rank><suit>.webp (e.g. cards/JS.webp) — any court card with a file there uses the painting
+const PAINTED = Object.fromEntries(['J', 'Q', 'K'].flatMap((r) => ['S', 'H', 'D', 'C'].map((s) => [r + s, `./cards/${r}${s}.webp`])));
 const matCache = new Map();
 // self-lit-ish card material: readable by day, softly glowing at night (night factor set by setCardGlow)
 export function cardMaterial(rank, suit) {
   const key = rank + suit; if (matCache.has(key)) return matCache.get(key);
   const t = cardTexture(rank, suit);
   const m = new THREE.MeshStandardMaterial({ map: t, emissiveMap: t, emissive: 0xffffff, emissiveIntensity: .05, roughness: .7, side: THREE.DoubleSide, alphaTest: .5 });
-  if (PAINTED[key]) new THREE.TextureLoader().load(PAINTED[key], (p) => { p.colorSpace = THREE.SRGBColorSpace; p.anisotropy = 8; m.map = m.emissiveMap = p; m.needsUpdate = true; });
+  if (PAINTED[key]) new THREE.TextureLoader().load(PAINTED[key], (p) => { p.colorSpace = THREE.SRGBColorSpace; p.anisotropy = 8; m.map = m.emissiveMap = p; m.needsUpdate = true; }, undefined, () => {});   // no file yet → keep generated art
   matCache.set(key, m); return m;
 }
 export const queenOfHearts = () => cardMaterial('Q', 'H').map;

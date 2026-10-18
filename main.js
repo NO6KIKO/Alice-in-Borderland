@@ -249,7 +249,7 @@ function cardTower() {
   // card on the front face (≈11 × 16.5m)
   const cw = 11, ch = cw * 1.5, cy = 23, fz = cz + S / 2 + .9;
   const card = new THREE.Mesh(new THREE.PlaneGeometry(cw, ch), new THREE.MeshStandardMaterial({ map: cardTex, emissiveMap: cardTex, emissive: 0xffffff, emissiveIntensity: .22, roughness: .6, transparent: true, alphaTest: .5 }));
-  new THREE.TextureLoader().load('./card.webp', (t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; card.material.map = t; card.material.emissiveMap = t; card.material.needsUpdate = true; });
+  new THREE.TextureLoader().load('./cards/QH.webp', (t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; card.material.map = t; card.material.emissiveMap = t; card.material.needsUpdate = true; });
   card.position.set(cx, cy, fz); scene.add(card);
   box('steel', cw + 1, ch + 1, .3, cx, cy, fz - .3);
   for (const s of [-1, 1]) box('steel', .3, ch + 1.4, .5, cx + s * (cw / 2 + .5), cy, fz - .1);

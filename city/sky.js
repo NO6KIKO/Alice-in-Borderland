@@ -35,15 +35,15 @@ export function createDayNight({ scene, renderer, hemi, moon, bloom, spots, nigh
     scene.fog.color.set(day ? 0xa9bccf : night.fogC); scene.fog.density = day ? .00016 : night.fogD;
     hemi.color.set(day ? 0xc4d8f0 : night.hemiS); hemi.groundColor.set(day ? 0x6b6252 : night.hemiG); hemi.intensity = day ? 1.1 : night.hemiI;
     moon.intensity = day ? 0 : night.moonI;
-    sun.intensity = day ? 3.2 : 0; sun.visible = day;
-    renderer.toneMappingExposure = day ? .82 : night.exp;
+    sun.intensity = day ? 4 : 0; sun.visible = day;
+    renderer.toneMappingExposure = day ? .95 : night.exp;
     bloom.strength = day ? .18 : night.bloom; bloom.threshold = day ? 1.6 : 1.0;
     for (const s of spots) s.visible = !day;
     for (const f of onChange) f(day);
   }
   // enclosed halls: by day, fade sky light out while the camera is inside one of these boxes
   const interiors = []; let inside = 0;
-  function base() { return isDay ? { h: 1.1, s: 3.2, e: .9 } : { h: night.hemiI, s: 0, e: .22 }; }
+  function base() { return isDay ? { h: 1.1, s: 4, e: .9 } : { h: night.hemiI, s: 0, e: .22 }; }
   function update(focus, cam) {
     const target = cam && interiors.some((b) => cam.x > b[0] && cam.x < b[1] && cam.y < b[2] && cam.z > b[3] && cam.z < b[4]) ? 1 : 0;
     inside += (target - inside) * .08;

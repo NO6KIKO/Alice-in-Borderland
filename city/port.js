@@ -17,8 +17,8 @@ let r = K.rng(330175);
 /* ───────────── materials ───────────── */
 function defMats() {
   if (K.mats.port_red) return;
-  const c = (hex) => K.std({ map: K.texWall, color: hex, roughness: .55, metalness: .4 });
-  K.def('port_cW', c(0xd4d6d2), 2.4);    // white
+  const c = (hex) => K.std({ map: K.texCorr, color: hex, roughness: .7, metalness: .08 });   // painted steel
+  K.def('port_cW', c(0xe2e2dc), 2.4);    // white
   K.def('port_cS', c(0x7f868b), 2.4);    // grey
   K.def('port_cD', c(0x4a4f54), 2.4);    // dark grey
   K.def('port_cO', c(0xa9502c), 2.4);    // rust orange
@@ -56,7 +56,7 @@ function ctr(k, len, x, y, z, ry = 0, lod = 1, h = CH) {
 }
 // stacked block: nc columns along the container axis `ax`, nr rows across; H(c,r) tiers. Only boxes with an
 // exposed face are drawn (the hidden core stays solid for collision because it is fully enclosed).
-function blockGrid(x0, z0, nc, nr, ax, len, H, colF = col, lod = 1) {
+function blockGrid(x0, z0, nc, nr, ax, len, H, colF = col, lod = 2) {
   const pl = len + .06, pr = 2.5;
   const h = (c, q) => (c < 0 || q < 0 || c >= nc || q >= nr) ? 0 : H(c, q);
   for (let c = 0; c < nc; c++) for (let q = 0; q < nr; q++) {
@@ -389,9 +389,9 @@ function frontRoad() {
   // forklifts parked on the left foreground + a couple of stacks beyond the road
   for (let i = 0; i < 4; i++) forklift(163, 203 + i * 3.2, Math.PI / 2 + (r() - .5) * .3);
   forklift(184.5, 214, .2);
-  blockGrid(146, 196, 1, 5, 'x', L40, () => 2 + Math.floor(r() * 2));
-  blockGrid(146, 240, 1, 6, 'x', L40, () => 1 + Math.floor(r() * 3));
-  blockGrid(130, 170, 2, 3, 'z', L20, () => 1 + Math.floor(r() * 3));
+  blockGrid(146, 196, 1, 5, 'x', L40, () => 2 + Math.floor(r() * 2), col, 1);
+  blockGrid(146, 240, 1, 6, 'x', L40, () => 1 + Math.floor(r() * 3), col, 1);
+  blockGrid(130, 170, 2, 3, 'z', L20, () => 1 + Math.floor(r() * 3), col, 1);
   crates(160, 230, 4); crates(158, 188, 3);
   K.chainFence(94, 30, 94, 320, G, 2.6);
   for (const [x, z] of [[100, 60], [104, 130], [99, 210], [106, 300], [120, 40], [115, 260]]) { K.box('grass', 8 + r() * 8, .04, 6 + r() * 6, x, G + .02, z); tree(x, z, 1 + r() * .4, G); }

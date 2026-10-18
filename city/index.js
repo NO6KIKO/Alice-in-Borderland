@@ -131,7 +131,7 @@ function heightAt(x, z, r) {
 function airships(scene, updates) {
   const body = new THREE.MeshStandardMaterial({ color: 0xc9ccd0, roughness: .35, metalness: .75 });
   const dark = new THREE.MeshStandardMaterial({ color: 0x2c3036, roughness: .5, metalness: .6 });
-  const list = [['Q', 'H', -900, -250, 330, 170], ['K', 'D', -300, -420, 260, 190], ['J', 'C', -620, -720, 300, 160], ['K', 'S', -200, 120, 380, 210], ['K', 'S', -1150, 80, 260, 150], ['10', 'D', 150, -500, 340, 230]];
+  const list = [['Q', 'H', -900, -250, 330, 170], ['K', 'D', -300, -420, 260, 190], ['J', 'C', -620, -720, 300, 160], ['K', 'S', -200, 120, 380, 210], ['K', 'S', -1150, 80, 260, 150], ['Q', 'D', 150, -500, 340, 230], ['J', 'S', -1350, -600, 250, 180], ['Q', 'S', -800, 250, 280, 175], ['J', 'H', 60, -250, 300, 200], ['Q', 'C', -400, -900, 260, 185], ['J', 'D', -1000, -650, 300, 165]];
   list.forEach(([rk, st, cx, cz, R, y], i) => {
     const g = new THREE.Group();
     const hull = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 16), body); hull.scale.set(26, 6.5, 6.5); g.add(hull);
