@@ -172,7 +172,12 @@ export const texPool = canvasTex(128, 128, (g) => { const gr = g.createRadialGra
 export const poolMat = (c) => new THREE.MeshBasicMaterial({ map: texPool, color: c, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 });
 def('poolC', poolMat(new THREE.Color(.24, .28, .34)));
 def('poolY', poolMat(new THREE.Color(.36, .25, .1)));
-def('beam', new THREE.MeshBasicMaterial({ color: 0xaecbff, transparent: true, opacity: .018, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, side: THREE.DoubleSide }));
+// light-beam cones: additive, fading toward the rim and toward the ground (no hard cone edges)
+const beamMat = (c) => new THREE.ShaderMaterial({ uniforms: { uCol: { value: new THREE.Color(c) } },
+  vertexShader: 'varying vec3 vN; varying vec3 vV; varying float vH; void main(){ vec4 mv = modelViewMatrix * vec4(position, 1.); vN = normalMatrix * normal; vV = -mv.xyz; vH = uv.y; gl_Position = projectionMatrix * mv; }',
+  fragmentShader: 'uniform vec3 uCol; varying vec3 vN; varying vec3 vV; varying float vH; void main(){ float rim = pow(abs(dot(normalize(vN), normalize(vV))), 2.); gl_FragColor = vec4(uCol * .03 * rim * vH * vH, 1.); }',
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false });
+def('beam', beamMat(0xaecbff)); def('beamY', beamMat(0xffd2a0));
 
 export let frame = new THREE.Matrix4();
 export const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _v = new THREE.Vector3(), _s = new THREE.Vector3(1, 1, 1);
@@ -217,21 +222,21 @@ export const beacon = (x, y, z, mast = .5) => { const p = fpos(x, y, z); beacons
 /* lights (budgeted) */
 export const MAX_SPOTS = 48; export let spotCount = 0;
 export const spots = [];
-export function addSpot(col, I, dist, a, pen, pos, tgt) {
+export function addSpot(col, I, dist, a, pen, pos, tgt, decay = 1.7) {
   if (spotCount >= MAX_SPOTS) return; spotCount++;
-  const L = new THREE.SpotLight(col, I, dist, a, pen, 1.7); L.position.copy(pos); L.target.position.copy(tgt); _scene.add(L, L.target);
+  const L = new THREE.SpotLight(col, I, dist, a, pen, decay); L.position.copy(pos); L.target.position.copy(tgt); _scene.add(L, L.target);
   L.userData.I = I; spots.push(L); return L;
 }
-export function lamp(x, z, h, { dir = 0, spot = true, warm = false, intensity = 900, arm = 1.6, y0 = 0 } = {}) {
+export function lamp(x, z, h, { dir = 0, spot = true, warm = false, intensity = 900, arm = 1.6, y0 = 0, angle = .95, pen = .75, dist = 70, decay = 1.7, decal = true, col = null } = {}) {
   const ax = x + Math.sin(dir) * arm, az = z + Math.cos(dir) * arm, top = y0 + h;
   box('steel', .16, h, .16, x, y0 + h / 2, z);
   strut('steel', [x, top, z], [ax, top + .2, az], .06);
   withFrame(ax, top + .1, az, dir, () => { box(warm ? 'glowY' : 'glow', .5, .1, 1.0, 0, 0, 0); box('steel', .6, .08, 1.1, 0, .08, 0); });
   if (spot) {
-    addSpot(warm ? 0xffc27a : 0xd8ecff, intensity, 70, .95, .75, new THREE.Vector3(ax, top, az), new THREE.Vector3(ax * .85 + x * .15, 0, az * .85 + z * .15));
-    put('beam', new THREE.ConeGeometry(top * .62, top, 20, 1, true), M4(ax, top / 2, az));
+    addSpot(col ?? (warm ? 0xffc27a : 0xd8ecff), intensity, dist, angle, pen, new THREE.Vector3(ax, top, az), new THREE.Vector3(ax * .85 + x * .15, y0, az * .85 + z * .15), decay);
+    put(warm ? 'beamY' : 'beam', new THREE.ConeGeometry(h * .62, h, 20, 1, true), M4(ax, y0 + h / 2, az));
   }
-  pool(ax, az, spot ? h * .55 : h * 1.1, warm, y0);
+  if (decal) pool(ax, az, spot ? h * .55 : h * 1.1, warm, y0);
 }
 // fake light pool decal on the floor (cheap stand-in for extra lights)
 export function pool(x, z, r, warm = false, y = 0) {
@@ -364,7 +369,7 @@ export function gasCylinders(x, z) { for (let i = 0; i < 5; i++) { cyl(i % 2 ? '
 export function container(k, x, y, z, ry = 0) { withFrame(x, y, z, ry, () => { box(k, 6.06, 2.59, 2.44, 0, 1.3, 0); for (const s of [-1, 1]) { for (const t of [-1, 1]) box('steel', .14, 2.6, .14, s * 3, 1.3, t * 1.16); for (const t of [-.6, -.2, .2, .6]) box('steelL', .04, 2.3, .05, s * 3.04, 1.3, t); } box('steel', 6.1, .1, 2.46, 0, 2.58, 0); box('steelL', .03, 2.3, 1, 3.04, 1.3, .55); box('steelL', .03, 2.3, 1, 3.04, 1.3, -.55); }); }
 
 /* ───────────── merge everything into meshes, one per (zone, material) ───────────── */
-export const NO_COLLIDE = new Set(['beam', 'poolC', 'poolY', 'arrow']);
+export const NO_COLLIDE = new Set(['beam', 'beamY', 'poolC', 'poolY', 'arrow']);
 export const zoneMeshes = new Map();   // zone → Mesh[]
 export function buildBatches(scene) {
   railJobs.forEach((j) => j()); railJobs.length = 0;

@@ -619,8 +619,8 @@ export function build(ctx, d) {
     }
   });
   // two real warm street lights on opposite corners (world coords: kit lamp spot positions are not framed)
-  K.lamp(d.x + 4.2, d.z + 15.8, 9, { dir: -Math.PI / 4, warm: true, intensity: 900, y0: PV });
-  K.lamp(d.x - 24.5, d.z + 62, 9, { dir: Math.PI * .75, warm: true, intensity: 900, y0: PV });
+  K.lamp(d.x + 4.2, d.z + 15.8, 9, { dir: -Math.PI / 4, warm: true, intensity: 315, y0: PV, angle: .62, pen: .9, dist: 30, decay: 2, decal: false, col: 0xffd6a8 });   // soft ~10 m pool, not a flood
+  K.lamp(d.x - 24.5, d.z + 62, 9, { dir: Math.PI * .75, warm: true, intensity: 315, y0: PV, angle: .62, pen: .9, dist: 30, decay: 2, decal: false, col: 0xffd6a8 });
 
   // screens flicker; static noise scrolls
   let base = .6, acc = 0;

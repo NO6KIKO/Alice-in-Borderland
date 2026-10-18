@@ -606,7 +606,7 @@ const dayNight = createDayNight({ scene, renderer, hemi, moon, bloom, spots, nig
     refl.visible = !day; const am = asphalt.material;
     am.alphaMap = day ? null : texPuddle; am.transparent = !day; am.roughness = day ? .95 : 1; am.roughnessMap = day ? null : texPuddle; am.color.set(day ? 0xf0f2f4 : 0x74767a); am.needsUpdate = true;
   },
-  (day) => { for (const k of ['poolC', 'poolY', 'beam']) mats[k].visible = !day; },   // fake light pools / cones are night-only
+  (day) => { for (const k of ['poolC', 'poolY', 'beam', 'beamY']) mats[k].visible = !day; },   // fake light pools / cones are night-only
   (day) => grade.setDay(day, dayNight?.isDusk),
   (day, dusk) => rays.setDay(day, dusk),
   (day) => audio.setDay(day),
