@@ -297,6 +297,7 @@ function roof() {
 export function build(ctx, d) {
   defineMats();
   const M = K.mats;
+  ctx.dayNight.push((day, dusk) => { const dry = day && !dusk; M.prison_floor.roughness = dry ? .72 : .28; M.prison_floor.metalness = dry ? .05 : .3; });   // the yard slab only reads wet after dark (glossy under the sun it blew out white)
   ctx.dayNight.push((day) => { M.prison_ext.emissiveIntensity = day ? 0 : .3; M.prison_dwin.emissiveIntensity = day ? .6 : 2.6; M.prison_cab.emissiveIntensity = day ? .5 : 3; });
   withFrame(d.x, 0, d.z, 0, () => {
     box('prison_floor', WX1 - WX0 + 1, .1, WZ1 - WZ0 + 1, (WX0 + WX1) / 2, 0, 0);   // wet slab inside the walls (top y .05)

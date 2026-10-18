@@ -114,6 +114,16 @@ function defineMaterials() {
   def('leaf', std({ map: texIvy, color: 0xc4dca8, roughness: .95 }), 1.5);
   def('trunk', std({ color: 0x4a3a2c, roughness: 1 }));
   def('road', std({ map: texRoad, normalMap: K.normalFrom(texRoad, 3), color: 0xb8bcc0, roughness: .9 }), 12);
+  def('lot', std({ map: canvasTex(512, 512, (g, w, h) => {   // 16 m tile, 32 px/m: two 5 m stall rows back to back + a 6 m aisle
+    g.fillStyle = '#383a3d'; g.fillRect(0, 0, w, h); noise(g, w, h, 28);
+    for (let i = 0; i < 18; i++) { g.fillStyle = `rgba(12,12,14,${.15 + Math.random() * .25})`; g.beginPath(); g.ellipse(Math.random() * w, Math.random() * 320, 10 + Math.random() * 26, 6 + Math.random() * 14, Math.random() * 3, 0, 7); g.fill(); }   // oil stains in the bays
+    g.fillStyle = 'rgba(205,203,192,.82)';
+    for (let k = 0; k <= 6; k++) { const x = Math.round(k * w / 6) - 2; g.fillRect(x, 0, 4, 158); g.fillRect(x, 162, 4, 158); }
+    g.fillRect(0, 158, w, 4);
+    g.fillStyle = 'rgba(56,58,61,.6)'; for (let i = 0; i < 60; i++) g.fillRect(Math.random() * w, Math.random() * 320, 3 + Math.random() * 12, 2 + Math.random() * 5);   // worn paint
+    for (let i = 0; i < 26; i++) { g.strokeStyle = `rgba(8,8,9,${.35 + Math.random() * .4})`; g.lineWidth = 1 + Math.random() * 2; g.beginPath(); let x = Math.random() * w, y = Math.random() * h; g.moveTo(x, y); for (let k = 0; k < 5; k++) { x += (Math.random() - .5) * 90; y += (Math.random() - .5) * 90; g.lineTo(x, y); } g.stroke(); }
+    for (let i = 0; i < 90; i++) { g.fillStyle = `rgba(${60 + Math.random() * 40},${95 + Math.random() * 50},${30},.75)`; g.fillRect(Math.random() * w, Math.random() * h, 2 + Math.random() * 6, 2 + Math.random() * 4); }   // weeds in the cracks
+  }, { repeat: true }), roughness: .92, color: 0xb4b6b8 }), 16);
   def('walk', std({ map: K.texConcrete, normalMap: K.normalFrom(K.texConcrete, 1.5), color: 0x9a9a94, roughness: .9 }), 4);
   def('quay', std({ map: K.texPanel, color: 0x8e9294, roughness: .9 }), 5);
   def('lineW', std({ color: 0xd8d8d0, roughness: .6 }));
@@ -129,6 +139,21 @@ const mats = K.mats;
 // crown (so it shades like one soft canopy), and a dark core to stop it looking hollow
 const _c = new THREE.Vector3(), _p = new THREE.Vector3();
 let treeCount = 0;
+// abandoned open-air car park filling a block (UVs in world metres so the painted bays line up with the parked cars)
+function parkingLot(cx, cz, inner, R) {
+  const g = new THREE.PlaneGeometry(inner, inner); g.rotateX(-Math.PI / 2);
+  const pos = g.attributes.position, uv = g.attributes.uv;
+  for (let i = 0; i < pos.count; i++) uv.setXY(i, (pos.getX(i) + inner / 2) / 16, -(pos.getZ(i) + inner / 2) / 16);
+  put('lot', g, M4(cx, .075, cz));
+  for (const s of [-1, 1]) { box('walk', inner, .18, .35, cx, .09, cz + s * (inner / 2 - .2)); box('walk', .35, .18, inner, cx + s * (inner / 2 - .2), .09, cz); }   // kerbs
+  const cars = ['jp_sedan', 'kcar', 'wreck_car', 'kei_truck', 'jp_sedan', 'kcar', 'jp_taxi'], bay = 16 / 6;
+  for (let p = 0; p + 10 <= inner; p += 16) for (const rz of [2.5, 7.5]) for (let j = 0; (j + 1) * bay <= inner; j++) {
+    if (R() > .13) continue;
+    prop(cars[Math.floor(R() * cars.length)], cx - inner / 2 + (j + .5) * bay + (R() - .5) * .3, .08, cz - inner / 2 + p + rz + (R() - .5) * .4, (rz < 5 ? Math.PI / 2 : -Math.PI / 2) + (R() - .5) * .12);
+  }
+  for (const [a, b] of [[-.3, -.3], [.3, .3]]) prop('street_light', cx + a * inner, .08, cz + b * inner, R() * 6);
+  scatterDecay(cx, cz, inner - 6, inner - 6, .08, 160, ['trash_bags', 'shopping_cart', 'bicycle_fallen']);
+}
 function tree(x, z, s = 1, y = 0) {
   treeCount++;
   const r = Math.random, h = (5 + r() * 4) * s, lean = (r() - .5) * .12, la = r() * 6.283;
@@ -351,7 +376,7 @@ export function buildCity({ scene, camera }) {
     const corners = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([a, b]) => [cx + a * inner / 2, cz + b * inner / 2]);
     if (!corners.every(([x, z]) => onLand(x, z))) continue;
     if (inDistrict(cx, cz, inner / 2 - 4) || corners.some(([x, z]) => inDistrict(x, z, 2))) continue;
-    if (nearCompound(cx, cz, inner / 2)) continue;
+    if (nearCompound(cx, cz, inner / 2)) { if (!underExpress(cx, cz, inner / 2)) parkingLot(cx, cz, inner, R); continue; }   // the compound's apron: abandoned car parks
     const park = R() < .07;
     if (!park && R() < .08) {   // a tiny shrine squeezed between buildings on the block's edge
       const sx = cx + (R() - .5) * (inner - 20), sz = cz + inner / 2 - 4; prop('torii', sx, .12, sz, Math.PI / 2); tree(sx - 2.5, sz - 2, .8, .12); tree(sx + 2.5, sz - 2.5, .9, .12);

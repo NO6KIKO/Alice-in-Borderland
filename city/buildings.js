@@ -147,6 +147,16 @@ function defineMats() {
   def('bSlide', std({ map: texSlide, roughness: .5 }), 1);
   def('bAwnB', std({ map: texAwning('#2f5c9a'), roughness: .7, side: THREE.DoubleSide }), 2);
   def('bAwnR', std({ map: texAwning('#8c3328'), roughness: .7, side: THREE.DoubleSide }), 2);
+  const roofTex = (base, seed) => { const rr = K.rng(seed); return canvasTex(256, 256, (g, w, h) => {   // coated slab: stains, patched seams, drain streaks
+    g.fillStyle = base; g.fillRect(0, 0, w, h); noise(g, w, h, 26);
+    for (let i = 0; i < 14; i++) { g.fillStyle = `rgba(${rr() < .5 ? '30,32,28' : '210,212,205'},${.08 + rr() * .12})`; g.beginPath(); g.ellipse(rr() * w, rr() * h, 10 + rr() * 50, 6 + rr() * 30, rr() * 3, 0, 7); g.fill(); }
+    g.strokeStyle = 'rgba(20,20,18,.35)'; g.lineWidth = 2; for (let i = 0; i < 4; i++) { const y = rr() * h; g.beginPath(); g.moveTo(0, y); g.lineTo(w, y + (rr() - .5) * 8); g.stroke(); }
+    for (let i = 0; i < 40; i++) { g.fillStyle = `rgba(${70 + rr() * 30},${95 + rr() * 40},${40},.55)`; g.fillRect(rr() * w, rr() * h, 2 + rr() * 8, 2 + rr() * 6); }   // moss specks
+  }, { repeat: true }); };
+  def('bRoofG', std({ map: roofTex('#8c9e90', 7), roughness: .9 }), 8);    // pale green coating
+  def('bRoofL', std({ map: roofTex('#a3a29b', 8), roughness: .9 }), 8);    // light grey
+  def('bRoofT', std({ map: roofTex('#4b4c4a', 9), roughness: .95 }), 8);   // old tar
+  def('bRoofR', std({ map: roofTex('#7d6c5c', 10), roughness: .8, metalness: .3 }), 8);   // rusty sheet
   def('bTank', std({ map: K.texConcrete, color: 0xc4c2bc, roughness: .6, metalness: .4 }), 3);
   def('bVend', std({ color: 0x2a5fb0, emissive: 0x9fd0ff, emissiveIntensity: .25, roughness: .4 }));
   for (let i = 0; i < 10; i++) def('bSign' + i, std({ map: texSign(i), emissiveMap: texSign(i), emissive: 0xffffff, emissiveIntensity: 0, roughness: .8 }), 1);
@@ -278,6 +288,7 @@ function shop(w, d, GH, r, mk) {
 function typeC(w, d, nf, r) {   // narrow apartment
   const FH = 3, H = 3.6 + (nf - 1) * FH, mk = 'bTile' + Math.floor(r() * 3);
   body(mk, w, H - 3.6, d, 0, 0, 3.6); shop(w, d, 3.6, r, mk);
+  if (w > 7.5 && d > 8) roofscape(w, d, H + .15, r, mk, -1, 1);
   det(() => {
     const awn = r() < .7 ? 'bAwnB' : 'bAwnR'; box(awn, w * .7, .06, 1.5, 0, 3.4, d / 2 + .7, 0, 0, -.32);
     if (r() < .6) { box('bVend', .9, 1.8, .7, w / 2 - .7, .9, d / 2 + .5); }
@@ -309,7 +320,8 @@ function typeA(w, d, nf, r) {   // corner office with curved glass corner (front
   const g = new THREE.CylinderGeometry(c, c, H, 10, 1, true, 0, Math.PI / 2), uv = g.attributes.uv;
   for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * c * 1.57 / TILE, uv.getY(i) * H / TILE);
   put('bGlass', g, M4(w / 2 - c, H / 2 + .12, d / 2 - c));
-  put('roof', new THREE.CylinderGeometry(c + .05, c + .05, .3, 10, 1, false, 0, Math.PI / 2), M4(w / 2 - c, H + .27, d / 2 - c));
+  put(roofK, new THREE.CylinderGeometry(c + .05, c + .05, .3, 10, 1, false, 0, Math.PI / 2), M4(w / 2 - c, H + .27, d / 2 - c));
+  roofscape(w, d, H + .15, r, mk, -1, 1, [w * .3, d * .12]);
   det(() => {
     for (let f = 1; f <= nf; f++) {   // floor bands wrapping the corner
       const y = f * FH - .2;
@@ -378,8 +390,19 @@ function vines(w, d, H, r, n) {   // ivy curtains: climbing from the street or d
 }
 
 /* ───────────── zone plumbing ───────────── */
-let baseZone = 'city', detZone = 'det';
-function body(k, w, h, d, x = 0, z = 0, y0 = 0) { const o = K.zone; setZone(baseZone); box(k, w, h, d, x, y0 + h / 2 + .12, z); box('roof', w + .1, .3, d + .1, x, y0 + h + .27, z); setZone(o); }   // + roof cap
+let baseZone = 'city', detZone = 'det', roofK = 'roof';
+const ROOFS = ['bRoofG', 'bRoofG', 'bRoofL', 'bRoofL', 'bRoofT', 'bRoofR', 'roof'];
+// far-visible roofscape (massing zone, never culled): stair house with its door, an elevated tank, moss and puddle patches
+function roofscape(w, d, top, r, mk, px, pz, tk = null) {   // tk: [x, z] of an elevated tank, clear of the detail-layer roof kit
+  const o = K.zone; setZone(baseZone);
+  const pw = 2.6 + r() * 1.4, pd = 2.8 + r() * 1.4, ph = 2.7, x = px * (w / 2 - pw / 2 - 1), z = pz * (d / 2 - pd / 2 - 1), y = top + .12;
+  box(mk, pw, ph, pd, x, y + ph / 2, z); box(roofK, pw + .3, .25, pd + .3, x, y + ph + .12, z);
+  box('bShutter', .05, 2, 1, x - px * (pw / 2 + .03), y + 1, z);   // stair door
+  if (tk && r() < .55) { const [tx, tz] = tk; box('bRust', 2, .9, 2, tx, y + .45, tz); cyl('bTank', .95, 2, tx, y + 1.9, tz, 0, 0, 0, 12); }
+  for (let i = 0; i < 1 + r() * 3; i++) box('roofG', 1.5 + r() * w * .3, .05, 1.5 + r() * d * .3, (r() - .5) * (w - 4), y + .03, (r() - .5) * (d - 4));
+  setZone(o);
+}
+function body(k, w, h, d, x = 0, z = 0, y0 = 0) { const o = K.zone; setZone(baseZone); box(k, w, h, d, x, y0 + h / 2 + .12, z); box(roofK, w + .1, .3, d + .1, x, y0 + h + .27, z); setZone(o); }   // + roof cap
 function climbable(fn) { const o = K.zone; setZone(baseZone); fn(); setZone(o); }   // walkable (collides), drawn with the massing
 function det(fn) { const o = K.zone; setZone(detZone); withFrame(0, .12, 0, 0, fn); setZone(o); }
 
@@ -390,6 +413,7 @@ export function cityBuilding(x, z, w, d, h, r, opts = {}) {
   defineMats();
   const wp = K.fpos(x, 0, z);
   baseZone = K.zone; detZone = `det_${Math.floor((wp.x + 2000) / 165)}_${Math.floor((wp.z + 2000) / 165)}`;
+  roofK = ROOFS[Math.floor(r() * ROOFS.length)];
   const rot = opts.rot ?? Math.floor(r() * 4) * Math.PI / 2, sw = Math.round(rot / (Math.PI / 2)) % 2 ? d : w, sd = Math.round(rot / (Math.PI / 2)) % 2 ? w : d;
   let H;
   withFrame(x, 0, z, rot, () => {
