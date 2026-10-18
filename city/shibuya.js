@@ -318,8 +318,9 @@ function bld(x0, z0, x1, z1, h, fk, o = {}) {
     }
     if (R() < .7 && nf > 2) {
       const t = .35 + R() * .3, fl = Math.min(nf - 1, 3 + Math.floor(R() * 4));
-      if (f === 's') signStack(x0 + w * t, y0 + 4.6, z1, 0, fl, R); if (f === 'n') signStack(x0 + w * t, y0 + 4.6, z0, Math.PI, fl, R);
-      if (f === 'e') signStack(x1, y0 + 4.6, z0 + dd * t, Math.PI / 2, fl, R); if (f === 'w') signStack(x0, y0 + 4.6, z0 + dd * t, -Math.PI / 2, fl, R);
+      const L = { lit: true };   // the venue has power: its blades glow
+      if (f === 's') signStack(x0 + w * t, y0 + 4.6, z1, 0, fl, R, L); if (f === 'n') signStack(x0 + w * t, y0 + 4.6, z0, Math.PI, fl, R, L);
+      if (f === 'e') signStack(x1, y0 + 4.6, z0 + dd * t, Math.PI / 2, fl, R, L); if (f === 'w') signStack(x0, y0 + 4.6, z0 + dd * t, -Math.PI / 2, fl, R, L);
     }
   }
   // ivy curtains and hanging vines
@@ -704,6 +705,7 @@ export function build(ctx, d) {
     base = mix(.35, 1.1); M.static.emissiveIntensity = mix(.1, .45); liveBase = mix(.35, .9);   // dead channels stay dim
     M.shop.emissiveIntensity = mix(.15, .9); M.twin.emissiveIntensity = mix(.3, 1.1); M.sign.emissiveIntensity = mix(.2, 1.2);
     M.mural.emissiveIntensity = mix(0, .25); M.subSign.emissiveIntensity = mix(.2, 1.4);
+    if (K.mats.bSignL) K.mats.bSignL.emissiveIntensity = mix(.05, .8);
   });
   ctx.pois.push({ id: d.id, cam: [d.x + 25, 50, d.z + 112], tgt: [d.x - 18, 10, d.z], spawn: [d.x - 27, PV + .1, d.z + 47], yaw: Math.atan2(-17, 37) });
 }

@@ -113,19 +113,35 @@ function glowFrom(rects, S) {   // rgb = lit windows; alpha = every window (inte
   const panes = _panes;
   return canvasTex(S, S, (g) => { g.clearRect(0, 0, S, S); g.fillStyle = '#000'; for (const [x, y, w, h] of panes) g.fillRect(x, y, w, h); for (const [x, y, w, h] of rects) { g.fillStyle = Math.random() < .7 ? 'rgb(255,200,130)' : 'rgb(190,225,255)'; g.fillRect(x, y, w, h); } }, { repeat: true });
 }
-const SIGN_TEXT = ['居酒屋', 'カラオケ', 'ラーメン', '質', '薬', 'BAR', '歯科', '不動産', '麻雀', 'HOTEL'];
-function texSign(i) {
-  const r = K.rng(900 + i), vert = i % 3 !== 2, W = vert ? 128 : 512, H = vert ? 512 : 160;
-  const bg = ['#c9c2ae', '#8a2e2a', '#e2ddd0', '#2f4a6a', '#d7c26a', '#3a3a3a'][i % 6], fg = ['#2a2a2a', '#f0e6d0', '#a82a22', '#f2f2f2', '#2a2a2a', '#e8c040'][i % 6];
-  return canvasTex(W, H, (g) => {
-    g.fillStyle = bg; g.fillRect(0, 0, W, H); g.strokeStyle = 'rgba(0,0,0,.5)'; g.lineWidth = 8; g.strokeRect(4, 4, W - 8, H - 8);
-    g.fillStyle = fg; g.textAlign = 'center'; g.textBaseline = 'middle';
-    const t = SIGN_TEXT[i % SIGN_TEXT.length];
-    if (vert) { g.font = 'bold 84px "Yu Gothic","Meiryo",sans-serif'; [...t].forEach((c, k, a) => g.fillText(c, W / 2, H / 2 + (k - (a.length - 1) / 2) * 96)); }
-    else { g.font = 'bold 96px "Yu Gothic","Meiryo",sans-serif'; g.fillText(t, W / 2, H / 2); }
-    noise(g, W, H, 50); grime(g, W, H, r, 30);
-    for (let k = 0; k < 30; k++) { g.fillStyle = `rgba(110,60,30,${r() * .4})`; g.fillRect(r() * W, r() * H, 3 + r() * 20, 2 + r() * 14); }   // rust blooms
+// one sign atlas for the city (1024²): 16 vertical tenant blades (128×384) and 8 horizontal boards (256×128)
+const SIGN_V = ['居酒屋', 'カラオケ', 'スナック', '焼肉', '整骨院', '麻雀', '歯科', '学習塾', '質', '薬', '美容室', '喫茶', '中華', '寿司', '眼科', '不動産'];
+const SIGN_H = ['ラーメン', 'HOTEL', 'BAR', 'クリーニング', '英会話', 'パチンコ', 'テナント募集', 'P 駐車場'];
+const SLOT = [];   // [u0, v0, u1, v1] per slot: 0-15 vertical, 16-23 horizontal (22 = テナント募集)
+function texSignAtlas() {
+  const r = K.rng(900), A = 1024, pal = [['#c9c2ae', '#2a2a2a'], ['#8a2e2a', '#f0e6d0'], ['#e2ddd0', '#a82a22'], ['#2f4a6a', '#f2f2f2'], ['#d7c26a', '#2a2a2a'], ['#3a3a3a', '#e8c040'], ['#e8e4dc', '#1d4a8a'], ['#5a2a4a', '#f2e2ea']];
+  const t = canvasTex(A, A, (g) => {
+    g.fillStyle = '#555'; g.fillRect(0, 0, A, A);
+    const slot = (x, y, W, H, text, vert) => {
+      const [bg, fg] = pal[Math.floor(r() * pal.length)];
+      g.save(); g.beginPath(); g.rect(x, y, W, H); g.clip();
+      g.fillStyle = bg; g.fillRect(x, y, W, H); g.strokeStyle = 'rgba(0,0,0,.5)'; g.lineWidth = 8; g.strokeRect(x + 4, y + 4, W - 8, H - 8);
+      g.fillStyle = fg; g.textAlign = 'center'; g.textBaseline = 'middle';
+      if (vert) {
+        const n = [...text].length, fs = Math.min(84, (H - 70) / n * .88); g.font = `bold ${fs | 0}px "Yu Gothic","Meiryo",sans-serif`;
+        [...text].forEach((c, k) => g.fillText(c, x + W / 2, y + 30 + (H - 70) * (k + .5) / n));
+        g.font = '15px sans-serif'; g.fillText('☎ 03-' + (1000 + Math.floor(r() * 8999)), x + W / 2, y + H - 22);
+      } else { g.font = `bold ${Math.min(70, W / [...text].length * 1.05) | 0}px "Yu Gothic","Meiryo",sans-serif`; g.fillText(text, x + W / 2, y + H / 2); }
+      if (r() < .5) { const gr = g.createLinearGradient(0, y, 0, y + H * .4); gr.addColorStop(0, 'rgba(240,236,226,.45)'); gr.addColorStop(1, 'rgba(240,236,226,0)'); g.fillStyle = gr; g.fillRect(x, y, W, H * .4); }   // sun-faded top
+      g.save(); g.translate(x, y); grime(g, W, H, r, 6); g.restore();
+      for (let k = 0; k < 8; k++) { g.fillStyle = `rgba(110,60,30,${r() * .4})`; g.fillRect(x + r() * W, y + r() * H, 3 + r() * 14, 2 + r() * 10); }   // rust blooms
+      g.restore();
+      SLOT.push([(x + 2) / A, 1 - (y + H - 2) / A, (x + W - 2) / A, 1 - (y + 2) / A]);
+    };
+    SIGN_V.forEach((tx, k) => slot((k % 8) * 128, Math.floor(k / 8) * 384, 128, 384, tx, true));
+    SIGN_H.forEach((tx, k) => slot((k % 4) * 256, 768 + Math.floor(k / 4) * 128, 256, 128, tx, false));
+    noise(g, A, A, 40);
   });
+  t.anisotropy = 8; return t;
 }
 const texShutter = canvasTex(128, 128, (g, w, h) => { g.fillStyle = '#8b8e8f'; g.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 8) { g.fillStyle = 'rgba(255,255,255,.18)'; g.fillRect(0, y, w, 2); g.fillStyle = 'rgba(0,0,0,.28)'; g.fillRect(0, y + 6, w, 2); } noise(g, w, h, 30); for (let i = 0; i < 8; i++) { g.fillStyle = 'rgba(110,60,30,.35)'; g.fillRect(Math.random() * w, Math.random() * h, 4 + Math.random() * 16, 30); } }, { repeat: true });
 const texRail = canvasTex(64, 64, (g, w, h) => {   // balusters + rails, alpha cut-out
@@ -178,9 +194,10 @@ function defineMats() {
   def('bRoofR', std({ map: roofTex('#7d6c5c', 10), roughness: .8, metalness: .3 }), 8);   // rusty sheet
   def('bTank', std({ map: K.texConcrete, color: 0xc4c2bc, roughness: .6, metalness: .4 }), 3);
   def('bVend', std({ color: 0x2a5fb0, emissive: 0x9fd0ff, emissiveIntensity: .25, roughness: .4 }));
-  for (let i = 0; i < 10; i++) def('bSign' + i, std({ map: texSign(i), emissiveMap: texSign(i), emissive: 0xffffff, emissiveIntensity: 0, roughness: .8 }), 1);
+  const sa = texSignAtlas();
+  def('bSignA', std({ map: sa, roughness: .8 }), 1);   // the city has no power: signs stay dark at night
+  def('bSignL', std({ map: sa, emissiveMap: sa, emissive: 0xffffff, emissiveIntensity: 0, roughness: .8 }), 1);   // lit twin, driven by the Shibuya venue
   K.mats.bShop.userData.nightGlow = .9; K.mats.bVend.userData.nightGlow = 1.2;
-  for (let i = 0; i < 10; i++) K.mats['bSign' + i].userData.nightGlow = .35;
   def('bDrape', std({ map: texDrape, color: 0xd8ecc0, roughness: .95, alphaTest: .45, side: THREE.DoubleSide }), 1);
   def('bInWall', std({ color: 0xd9d4ca, roughness: .85 }));
   def('bInFloor', std({ map: canvasTex(128, 128, (g, w, h) => { g.fillStyle = '#b9b2a6'; g.fillRect(0, 0, w, h); g.strokeStyle = 'rgba(0,0,0,.18)'; for (let i = 0; i <= w; i += 32) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i, h); g.stroke(); g.beginPath(); g.moveTo(0, i); g.lineTo(w, i); g.stroke(); } noise(g, w, h, 18); }, { repeat: true }), roughness: .5 }), 1.6);
@@ -200,8 +217,10 @@ function defineMats() {
 }
 
 /* ───────────── small modules (local frame) ───────────── */
-const planeU = (k, w, h, x, y, z, ry = 0) => {   // plane with 0..1 UVs (single image, not tiled)
-  put(k, new THREE.PlaneGeometry(w, h), M4(x, y, z, 0, ry, 0));
+const planeU = (k, w, h, x, y, z, ry = 0, uv = null, rz = 0) => {   // plane with 0..1 UVs (single image), or remapped into an atlas slot
+  const g = new THREE.PlaneGeometry(w, h);
+  if (uv) { const a = g.attributes.uv; for (let i = 0; i < 4; i++) a.setXY(i, uv[0] + a.getX(i) * (uv[2] - uv[0]), uv[1] + a.getY(i) * (uv[3] - uv[1])); }
+  put(k, g, M4(x, y, z, 0, ry, rz));
 };
 function rail(x1, z1, x2, z2, y, h = 1.1) {   // see-through baluster railing: 1 plane + a top tube
   const dx = x2 - x1, dz = z2 - z1, L = Math.hypot(dx, dz); if (L < .2) return;
@@ -234,37 +253,31 @@ function fireStair(x, z, ry, nf, FH, y0 = 0) {
   });
 }
 function signFrame(x, y, z, ry, r, big = false) {   // rusty bracket frame holding a faded sign board
-  const i = Math.floor(r() * 10), vert = i % 3 !== 2, w = big ? 7 : vert ? 1.3 : 4, h = big ? 3 : vert ? 4.5 + r() * 2.5 : 1.3;
+  const i = Math.floor(r() * 10), vert = !big && i % 3 !== 2, w = big ? 7 : vert ? 1.3 : 4, h = big ? 3 : vert ? 3.9 + r() * 1.1 : 1.3;
+  const sl = SLOT[vert ? Math.floor(sr() * 16) : 16 + Math.floor(sr() * 8)], tilt = sr() < .05 ? (sr() - .5) * .5 : 0;   // 5% hang askew
   withFrame(x, y, z, ry, () => {
     box('bRust', w + .2, .1, .1, 0, h / 2 + .05, .5); box('bRust', w + .2, .1, .1, 0, -h / 2 - .05, .5);
     box('bRust', .1, h + .2, .1, -w / 2 - .05, 0, .5); box('bRust', .1, h + .2, .1, w / 2 + .05, 0, .5);
     for (const s of [-1, 1]) { box('bRust', .08, .08, .6, s * w * .35, h * .35, .25); box('bRust', .08, .08, .6, s * w * .35, -h * .35, .25); }
-    planeU('bSign' + i, w, h, 0, 0, .56); planeU('bSign' + i, w, h, 0, 0, .44, Math.PI);
+    planeU('bSignA', w, h, 0, 0, .56, 0, sl, tilt);
   });
 }
 // vertical stack of tenant signs (one per floor) projecting from a facade: x,z on the wall, ry = facade facing
-export function signStack(x, y0, z, ry, floors, r) {
+export function signStack(x, y0, z, ry, floors, r, { pitch = 3.5, bh = 2.9, lit = false, rd = null } = {}) {
   defineMats();
+  const k = lit ? 'bSignL' : 'bSignA';
   withFrame(x, 0, z, ry, () => {
-    box('bRust', .12, floors * 3.5 + .4, .12, 0, y0 + floors * 1.75, .9);
+    box('bRust', .12, floors * pitch + .4, .12, 0, y0 + floors * pitch / 2, .9);
     for (let f = 0; f < floors; f++) {
-      const i = Math.floor(r() * 10), y = y0 + 1.75 + f * 3.5;
-      box('bRust', .9, .08, .08, 0, y + 1.3, .45); box('bRust', .9, .08, .08, 0, y - 1.3, .45);
-      planeU('bSign' + i, .95, 2.9, 0, y, 1.02, Math.PI / 2); planeU('bSign' + i, .95, 2.9, 0, y, .78, -Math.PI / 2);
+      const i = Math.floor(r() * 10), y = y0 + pitch / 2 + f * pitch, sl = SLOT[(i * 7 + f * 3 + Math.floor(sr() * 16)) % 16], tilt = rd && rd() < .06 ? (rd() - .5) * .4 : 0;
+      box('bRust', .9, .08, .08, 0, y + bh / 2 - .15, .45);   // one cleat per blade
+      planeU(k, .95, bh, 0, y, 1.02, Math.PI / 2, sl, tilt); planeU(k, .95, bh, 0, y, .78, -Math.PI / 2, sl, -tilt);
     }
   });
 }
 function ivyDrape(x, y, z, ry, w, h, up = false) {   // up: climbing from the ground (strands point up)
   withFrame(x, 0, z, ry, () => { const g = new THREE.PlaneGeometry(w, h); if (up) g.rotateZ(Math.PI); put('bDrape', g, M4(0, y, 0)); });
 }
-function storefront(w, z, r, awn = r() < .5 ? 'bAwnB' : 'bAwnR') {   // ground floor of a facade at local z, width w
-  const sw = Math.min(w * .5, 4 + r() * 3);
-  plane('bShutter', sw, 2.6, -w * .2, 1.3, z + .02);
-  planeU('bShop', Math.min(w * .35, 4), 2.6, w * .25, 1.3, z + .02);
-  box(awn, sw + 1, .06, 1.5, -w * .2, 3.1, z + .7, 0, 0, -.32);
-  box('bRust', sw + 1, .08, .08, -w * .2, 2.85, z + 1.4);
-}
-
 // hollow ground-floor shop (front on +z at d/2): walls / floor / rear fill are massing, glass + fit-out are detail
 const SHOPS = ['ramen', 'izakaya', 'grocery', 'office', 'closed', 'ramen', 'izakaya'];
 function shop(w, d, GH, r, mk) {
@@ -281,7 +294,7 @@ function shop(w, d, GH, r, mk) {
     const wallK = { ramen: 'bInWood', izakaya: 'bInDark' }[kind];   // wall finish / dressing per shop type
     if (wallK) { box(wallK, w - .7, GH - .3, .05, 0, (GH - .3) / 2 + .05, zb + .25); for (const sd of [-1, 1]) box(wallK, .05, GH - .3, D2 - .4, sd * (w / 2 - .35), (GH - .3) / 2 + .05, zf - D2 / 2); box('bMenu', Math.min(w - 2, 4), 1, .03, 0, GH - 1, zb + .3); }
     if (kind === 'office') { box('bWhite', 2.4, 1.2, .03, 0, 1.7, zb + .3); plane('bBlind', w - .8, 1.6, 0, GH - 1.2, zf - .1); }
-    if (kind === 'grocery') for (let i = 0; i < 3; i++) planeU('bSign' + (i * 3 + 1), .55, .78, -w / 2 + 1.5 + i * 1.2, 1.7, zf - .06);   // posters in the window
+    if (kind === 'grocery') for (let i = 0; i < 3; i++) { const q = SLOT[i * 5]; planeU('bSignA', .55, .78, -w / 2 + 1.5 + i * 1.2, 1.7, zf - .06, 0, [q[0], q[1] + (q[3] - q[1]) * .66, q[2], q[3]]); }   // posters in the window
     for (let x = -w / 2 + 2; x < w / 2 - 1; x += 3) box('bInLight', 1.6, .04, .25, x, GH - .25, zf - D2 / 2);
     if (kind === 'closed') { plane('bShutter', w - .6, GH - .6, 0, (GH - .6) / 2 + .1, zf + .02); return; }
     // glass front with mullions and a door gap at one end
@@ -295,7 +308,8 @@ function shop(w, d, GH, r, mk) {
     const sx = door * (w / 2 - .3 - dw / 2);
     // fit-out
     if (kind === 'ramen') { prop('ramen_counter', 0, .1, zb + 1.6, 0); prop('ticket_machine', sx - door * 1.4, .1, zf - .7, Math.PI); for (let i = 0; i < 2; i++) prop('chochin', -w / 2 + 1 + i * 1.5, GH - .8, zf + .45, 0); }
-    else if (kind === 'izakaya') { for (let i = 0; i < Math.max(1, Math.floor(w / 3.5)); i++) prop('izakaya_table', -w / 2 + 2 + i * 3.2, .1, zf - D2 / 2 + (i % 2 - .5), r() * .4); prop('beer_crates', -door * (w / 2 - 1), .1, zf + .9, 0); prop('chochin', sx, GH - .8, zf + .45, 0); }
+    if ((kind === 'ramen' || kind === 'izakaya') && sr() < .3) prop('aframe_sign', -sx * .6, .1, zf + 1.3, sr() * .6 - .3);
+    if (kind === 'ramen') {} else if (kind === 'izakaya') { for (let i = 0; i < Math.max(1, Math.floor(w / 3.5)); i++) prop('izakaya_table', -w / 2 + 2 + i * 3.2, .1, zf - D2 / 2 + (i % 2 - .5), r() * .4); prop('beer_crates', -door * (w / 2 - 1), .1, zf + .9, 0); prop('chochin', sx, GH - .8, zf + .45, 0); }
     else if (kind === 'grocery') { for (let x = -w / 2 + 2; x < w / 2 - 1.5; x += 2.6) prop('konbini_shelf', x, .1, zf - D2 / 2, Math.PI / 2); prop('drink_fridge', 0, .1, zb + .7, Math.PI); prop('aframe_sign', sx, .1, zf + 1.2, 0); }
     else { for (let i = 0; i < Math.max(1, Math.floor(w / 3)); i++) prop('office_desk', -w / 2 + 1.8 + i * 2.8, .1, zf - D2 / 2, Math.PI + (r() - .5) * .3); }
     if (r() < .4) prop('potted_plants', -door * (w / 2 - 1), .12, zf + .9, 0);
@@ -309,7 +323,11 @@ function typeC(w, d, nf, r) {   // narrow apartment
   body(mk, w, H - 3.6, d, 0, 0, 3.6); shop(w, d, 3.6, r, mk);
   if (w > 7.5 && d > 8) roofscape(w, d, H + .15, r, mk, -1, 1);
   det(() => {
-    const awn = r() < .7 ? 'bAwnB' : 'bAwnR'; box(awn, w * .7, .06, 1.5, 0, 3.4, d / 2 + .7, 0, 0, -.32);
+    const awn = r() < .7 ? 'bAwnB' : 'bAwnR';
+    if (sr() < .65) box(awn, w * .7, .06, 1.5, 0, 3.4, d / 2 + .7, 0, 0, -.32);
+    else { box('bRust', w * .72, .8, .08, 0, 3.2, d / 2 + .15); planeU('bSignA', w * .7, .7, 0, 3.2, d / 2 + .2, 0, SLOT[16 + Math.floor(sr() * 8)]); }   // fascia board
+    if (nf >= 3 && w >= 9 && sr() < .6) signStack(-(w / 2 - .35), 3.6, d / 2, 0, nf - 1, sr, { pitch: FH, bh: 2.4, rd: sr });   // tenant blades up the front
+    if (sr() < .03) { const q = SLOT[Math.floor(sr() * 16)]; box('bRust', 1.05, .06, 3, w * .2, .14, d / 2 + 2.2, sr()); planeU('bSignA', .95, 2.9, w * .2, .19, d / 2 + 2.2, sr(), q, 0); }   // fallen sign on the pavement
     if (r() < .6) { box('bVend', .9, 1.8, .7, w / 2 - .7, .9, d / 2 + .5); }
     for (let f = 1; f < nf; f++) {
       const y = 3.6 + (f - 1) * FH, bw = w * .8;
@@ -352,6 +370,9 @@ function typeA(w, d, nf, r) {   // corner office with curved glass corner (front
     plane('bShutter', d * .4, 3, w / 2 + .02, 1.5, -d * .25, Math.PI / 2);
     for (let i = 0; i < 1 + Math.floor(r() * 3); i++) signFrame(-w / 2 + 1.5 + r() * (w - c - 3), 6 + r() * (H - 12), d / 2 + .1, 0, r);
     if (r() < .7) signFrame(w / 2 + .1, 6 + r() * Math.max(1, H - 14), -d * .1, Math.PI / 2, r);
+    { const n = Math.min(nf - 1, 6); if (n >= 2) { signStack(w / 2 - c - .4, FH + .5, d / 2, 0, n, sr, { pitch: FH, bh: 3, rd: sr }); if (sr() < .5) signStack(-w / 2 + .6, FH + .5, d / 2, 0, n, sr, { pitch: FH, bh: 3, rd: sr }); } }
+    if (sr() < .4) for (let f = 2; f < nf; f++) if (sr() < .2) planeU('bSignA', 3.2, 1.4, -w / 2 + 2.4 + sr() * (w - c - 6), f * FH + 1.6, d / 2 + .12, 0, SLOT[22]);   // テナント募集 banners
+    if (sr() < .4) planeU('bSignA', Math.min(6, w - c - 1), 1.1, -c / 2, FH + .85, d / 2 + 1.52, 0, SLOT[16 + Math.floor(sr() * 8)]);   // board on the canopy
     climbable(() => fireStair(-w / 2, -d * .1, -Math.PI / 2, nf, FH));   // reaches the roof
     if (r() < .5) for (let f = 2; f < nf; f += 2) { box('bBand', 3, .9, 1, -w / 2 + 2.5, f * FH + .3, d / 2 + .6); foliage(-w / 2 + 2.5, f * FH + 1.2, d / 2 + .6, 1.1, .6, 8, 'crown2', .6); }   // planter balconies
     // roof: parapet + rail, AC cluster, tank, trees, rooftop sign
@@ -409,7 +430,7 @@ function vines(w, d, H, r, n) {   // ivy curtains: climbing from the street or d
 }
 
 /* ───────────── zone plumbing ───────────── */
-let baseZone = 'city', detZone = 'det', roofK = 'roof';
+let baseZone = 'city', detZone = 'det', roofK = 'roof', sr = Math.random;   // sr: per-building stream for signage choices
 const ROOFS = ['bRoofG', 'bRoofG', 'bRoofL', 'bRoofL', 'bRoofT', 'bRoofR', 'roof'];
 // far-visible roofscape (massing zone, never culled): stair house with its door, an elevated tank, moss and puddle patches
 function roofscape(w, d, top, r, mk, px, pz, tk = null) {   // tk: [x, z] of an elevated tank, clear of the detail-layer roof kit
@@ -433,6 +454,7 @@ export function cityBuilding(x, z, w, d, h, r, opts = {}) {
   const wp = K.fpos(x, 0, z);
   baseZone = K.zone; detZone = `det_${Math.floor((wp.x + 2000) / 165)}_${Math.floor((wp.z + 2000) / 165)}`;
   roofK = ROOFS[Math.floor(r() * ROOFS.length)];
+  sr = K.rng(((Math.round(wp.x * 10) * 73856093) ^ (Math.round(wp.z * 10) * 19349663)) | 0);
   const rot = opts.rot ?? Math.floor(r() * 4) * Math.PI / 2, sw = Math.round(rot / (Math.PI / 2)) % 2 ? d : w, sd = Math.round(rot / (Math.PI / 2)) % 2 ? w : d;
   let H;
   withFrame(x, 0, z, rot, () => {

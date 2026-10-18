@@ -66,10 +66,15 @@ function facade(kind, seed) {
 }
 const FACADES = ['conc', 'glass', 'tile', 'dark', 'white', 'conc'];
 const texLeaf = canvasTex(128, 128, (g, w, h) => { g.fillStyle = '#3d5a2a'; g.fillRect(0, 0, w, h); for (let i = 0; i < 500; i++) { g.fillStyle = `rgba(${30 + Math.random() * 60},${70 + Math.random() * 70},${20 + Math.random() * 30},.8)`; g.fillRect(Math.random() * w, Math.random() * h, 3, 3); } }, { repeat: true });
-const ROAD_CRACKS = Array.from({ length: 30 }, () => [Math.random() * 256, Math.random() * 256, Math.random() * 256, Math.random() * 256, Math.random() * .3]);
-const texRoad = canvasTex(256, 256, (g, w, h) => { g.fillStyle = '#4c4f53'; g.fillRect(0, 0, w, h); noise(g, w, h, 30); for (const [x0, y0, x1, y1, a] of ROAD_CRACKS) { g.strokeStyle = `rgba(0,0,0,${a})`; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke(); } for (let i = 0; i < 25; i++) { g.fillStyle = 'rgba(70,100,40,.5)'; g.fillRect(Math.random() * w, Math.random() * h, 2 + Math.random() * 10, 1 + Math.random() * 3); } }, { repeat: true });
+const ROAD_CRACKS = Array.from({ length: 16 }, () => {   // short wandering cracks (polylines), not tile-long straight lines
+  let x = Math.random() * 256, y = Math.random() * 256, a = Math.random() * 6.283; const pts = [[x, y]];
+  for (let k = 0, n = 3 + Math.floor(Math.random() * 4); k < n; k++) { a += (Math.random() - .5) * 1.2; const L = 6 + Math.random() * 14; x += Math.cos(a) * L; y += Math.sin(a) * L; pts.push([x, y]); }
+  return [pts, .15 + Math.random() * .25];
+});
+const crackPath = (g, pts) => { g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.stroke(); };
+const texRoad = canvasTex(256, 256, (g, w, h) => { g.fillStyle = '#4c4f53'; g.fillRect(0, 0, w, h); noise(g, w, h, 30); for (const [pts, a] of ROAD_CRACKS) { g.strokeStyle = `rgba(0,0,0,${a})`; crackPath(g, pts); } for (let i = 0; i < 25; i++) { g.fillStyle = 'rgba(70,100,40,.5)'; g.fillRect(Math.random() * w, Math.random() * h, 2 + Math.random() * 10, 1 + Math.random() * 3); } }, { repeat: true });
 // road relief from a quiet height field (just the cracks), not the colour noise — no orange peel
-const roadH = canvasTex(256, 256, (g, w, h) => { g.fillStyle = 'rgb(128,128,128)'; g.fillRect(0, 0, w, h); noise(g, w, h, 8); g.lineWidth = 1.5; for (const [x0, y0, x1, y1, a] of ROAD_CRACKS) { g.strokeStyle = `rgba(40,40,40,${.4 + a})`; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke(); } }, { repeat: true });
+const roadH = canvasTex(256, 256, (g, w, h) => { g.fillStyle = 'rgb(128,128,128)'; g.fillRect(0, 0, w, h); noise(g, w, h, 8); g.lineWidth = 1.5; for (const [pts, a] of ROAD_CRACKS) { g.strokeStyle = `rgba(40,40,40,${.4 + a})`; crackPath(g, pts); } }, { repeat: true });
 const texWaterN = canvasTex(512, 512, (g, w, h) => {   // tileable ripple normal map
   const id = g.createImageData(w, h), d = id.data, P = Math.PI * 2;
   const waves = Array.from({ length: 9 }, () => [Math.ceil(Math.random() * 6) * (Math.random() < .5 ? -1 : 1), Math.ceil(Math.random() * 6), Math.random() * P, .3 + Math.random()]);
