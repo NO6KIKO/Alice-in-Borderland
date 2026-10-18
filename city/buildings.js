@@ -162,6 +162,10 @@ function defineMats() {
   def('bWhite', std({ map: canvasTex(256, 128, (g, w, h) => { g.fillStyle = '#eef0ee'; g.fillRect(0, 0, w, h); g.strokeStyle = '#2a4a8a'; g.lineWidth = 2; for (let i = 0; i < 9; i++) { g.beginPath(); g.moveTo(20 + Math.random() * 60, 20 + i * 11); g.lineTo(80 + Math.random() * 150, 20 + i * 11 + Math.random() * 4); g.stroke(); } g.strokeStyle = '#a02020'; g.strokeRect(150, 70, 80, 40); }), roughness: .3 }), 1);
   def('bBlind', std({ map: canvasTex(64, 64, (g, w, h) => { g.clearRect(0, 0, w, h); g.fillStyle = '#d8d6cf'; for (let y = 0; y < h; y += 6) g.fillRect(0, y, w, 4); }, { repeat: true }), alphaTest: .5, side: THREE.DoubleSide, roughness: .7 }), .6);
   K.mats.bBlind.userData.noCollide = true;
+  const cloth = (cols) => canvasTex(128, 64, (g, w, h) => { g.clearRect(0, 0, w, h); let x = 2; while (x < w - 10) { const cw = 10 + Math.random() * 22, ch = 24 + Math.random() * 36; g.fillStyle = cols[Math.floor(Math.random() * cols.length)]; g.fillRect(x, 4, cw, ch); g.fillStyle = 'rgba(0,0,0,.15)'; g.fillRect(x, 4, cw, 3); x += cw + 3 + Math.random() * 6; } g.fillStyle = '#9aa0a4'; g.fillRect(0, 2, w, 2); });
+  def('bLaundry', std({ map: cloth(['#e8e6e0', '#5a7aa8', '#c84a4a', '#3a3a3a', '#d8c088', '#88a888']), alphaTest: .5, side: THREE.DoubleSide, roughness: .9 }), 1);
+  def('bFuton', std({ map: canvasTex(64, 64, (g, w, h) => { g.fillStyle = ['#d8d0c0', '#c86a6a', '#6a8ac8', '#e0c890'][Math.floor(Math.random() * 4)]; g.fillRect(0, 0, w, h); for (let i = 0; i < 6; i++) { g.fillStyle = 'rgba(255,255,255,.35)'; g.fillRect(0, i * 11, w, 3); } noise(g, w, h, 16); }), side: THREE.DoubleSide, roughness: .95 }), 1.4);
+  for (const k of ['bLaundry', 'bFuton']) K.mats[k].userData.noCollide = true;
   K.mats.bRail.userData.noCollide = true; K.mats.bDrape.userData.noCollide = true;
 }
 
@@ -253,6 +257,7 @@ function shop(w, d, GH, r, mk) {
     else if (kind === 'grocery') { for (let x = -w / 2 + 2; x < w / 2 - 1.5; x += 2.6) prop('konbini_shelf', x, .1, zf - D2 / 2, Math.PI / 2); prop('drink_fridge', 0, .1, zb + .7, Math.PI); prop('aframe_sign', sx, .1, zf + 1.2, 0); }
     else { for (let i = 0; i < Math.max(1, Math.floor(w / 3)); i++) prop('office_desk', -w / 2 + 1.8 + i * 2.8, .1, zf - D2 / 2, Math.PI + (r() - .5) * .3); }
     if (r() < .4) prop('potted_plants', -door * (w / 2 - 1), .12, zf + .9, 0);
+    if (r() < .3) prop('trash_bags', door * (w / 2 - 1.2), .1, zf + 1.1, r() * 3);
   });
 }
 
@@ -268,6 +273,8 @@ function typeC(w, d, nf, r) {   // narrow apartment
       box('bBand', bw + .3, .16, 1.15, 0, y, d / 2 + .57); box('bBandD', bw + .3, .3, .1, 0, y - .1, d / 2 + 1.12);
       rail(-bw / 2, d / 2 + 1.12, bw / 2, d / 2 + 1.12, y, 1.05); rail(-bw / 2, d / 2, -bw / 2, d / 2 + 1.12, y, 1.05); rail(bw / 2, d / 2, bw / 2, d / 2 + 1.12, y, 1.05);
       planeU('bSlide', bw * .75, 2.1, 0, y + 1.15, d / 2 + .02);
+      if (r() < .35) { strut('steelL', [-bw / 2 + .2, y + 1.9, d / 2 + .75], [bw / 2 - .2, y + 1.9, d / 2 + .75], .02, 4); plane('bLaundry', bw - .6, .9, 0, y + 1.45, d / 2 + .75); }   // laundry pole
+      else if (r() < .25) box('bFuton', bw * .45, .05, 1.1, (r() - .5) * bw * .3, y + .78, d / 2 + 1.12, 0, Math.PI / 2 - .05);       // futon over the rail
       ac(bw / 2 - .7, y + .08, d / 2 + .6, Math.PI);
       if (r() < .35) foliage(-bw / 2 + .5, y + .6, d / 2 + .7, .5, .45, 6, 'crown1', .5);
     }

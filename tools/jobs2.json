@@ -1,0 +1,51 @@
+[
+ {
+  "kind": "model",
+  "out": "models/props/umbrella_open.glb",
+  "prompt": "open black umbrella lying on its side on the ground, realistic PBR",
+  "neg": "text, logo, brand name, letters, watermark, people, hands, ground plane, base platform",
+  "faces": 6000
+ },
+ {
+  "kind": "model",
+  "out": "models/props/umbrella_clear.glb",
+  "prompt": "clear plastic umbrella closed lying on the ground, realistic PBR",
+  "neg": "text, logo, brand name, letters, watermark, people, hands, ground plane, base platform",
+  "faces": 4000
+ },
+ {
+  "kind": "model",
+  "out": "models/props/handbag.glb",
+  "prompt": "dropped beige leather handbag with strap, realistic PBR",
+  "neg": "text, logo, brand name, letters, watermark, people, hands, ground plane, base platform",
+  "faces": 5000
+ },
+ {
+  "kind": "model",
+  "out": "models/props/school_bag.glb",
+  "prompt": "Japanese black leather school bag randoseru style satchel lying on ground, realistic PBR",
+  "neg": "text, logo, brand name, letters, watermark, people, hands, ground plane, base platform",
+  "faces": 5000
+ },
+ {
+  "kind": "model",
+  "out": "models/props/smartphone.glb",
+  "prompt": "smartphone with shattered cracked screen lying flat, realistic PBR",
+  "neg": "text, logo, brand name, letters, watermark, people, hands, ground plane, base platform",
+  "faces": 2000
+ },
+ {
+  "kind": "model",
+  "out": "models/props/shopping_bag.glb",
+  "prompt": "white plastic convenience store shopping bag with drinks and snacks spilling out, realistic PBR",
+  "neg": "text, logo, brand name, letters, watermark, people, hands, ground plane, base platform",
+  "faces": 5000
+ },
+ {
+  "kind": "model",
+  "out": "models/props/bicycle_fallen.glb",
+  "prompt": "Japanese city bicycle lying on its side on the ground, front basket, realistic PBR",
+  "neg": "text, logo, brand name, letters, watermark, people, hands, ground plane, base platform",
+  "faces": 12000
+ }
+]

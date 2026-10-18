@@ -57,6 +57,13 @@ export const PROPS = {
   karaoke_sofa: { size: [2.5, .9, 2], fit: 'x', range: 70 },
   station_gate: { size: [4, 1.1, 1.5], fit: 'x', range: 120 },
   tatami_room_set: { size: [1.4, .5, 1.4], fit: 'x', range: 70 },
+  umbrella_open: { size: [1.0, .6, 1.0], fit: 'x', range: 80 },
+  umbrella_clear: { size: [.9, .12, .12], fit: 'x', range: 70 },
+  handbag: { size: [.38, .3, .14], fit: 'x', range: 60 },
+  school_bag: { size: [.42, .3, .2], fit: 'x', range: 60 },
+  smartphone: { size: [.15, .01, .075], fit: 'x', range: 40 },
+  shopping_bag: { size: [.5, .3, .35], fit: 'x', range: 60 },
+  bicycle_fallen: { size: [1.8, .55, .9], fit: 'x', range: 110 },
 };
 
 const placements = new Map();   // name → [{ m: Matrix4 (world), p: Vector3 }]

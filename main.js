@@ -14,6 +14,7 @@ import { M4, MAX_SPOTS, R, _e, _m, _q, _s, _v, acUnit, addSpot, ang, arrow, bas,
 import { buildCity } from './city/index.js';
 import { createDayNight } from './city/sky.js';
 import { DISTRICTS } from './city/map.js';
+import { createGrade } from './city/grade.js';
 
 /* 场地尺寸（来自参考图）: 120m × 85m，围墙 6m，廊道 10m / 15m，04 牌塔 38m，05 控制塔 28m */
 const SX = 60, SZ = 42.5, WH = 6, L1 = 10, L2 = 15;
@@ -520,6 +521,8 @@ for (const d of DISTRICTS) {
   cityList.prepend(li);
 } }
 const dayBtn = document.createElement('button'); vb.insertBefore(dayBtn, playBtn);
+const cineBtn = document.createElement('button'); cineBtn.textContent = '▭ 电影模式'; vb.insertBefore(cineBtn, playBtn);
+let cine = false; cineBtn.onclick = () => { cine = !cine; grade.setBars(cine); document.body.classList.toggle('cine', cine); };
 window.__player = player;   // console helper
 Promise.all([load('./models/truck_semi.glb'), load('./models/truck_box.glb')]).then(([semi, boxT]) => {
   const src = { truck_semi: semi.scene, truck_box: boxT.scene };
@@ -592,6 +595,8 @@ function updateWalkers(dt) {
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
 const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.55, 0.6, 1.0); composer.addPass(bloom);
+composer.addPass(new OutputPass());
+const grade = createGrade(composer);   // the show's teal / amber film look
 const facadeMats = Object.values(mats).filter((m) => m.userData.nightGlow);   // lit windows / signs / shopfronts at night
 const CITY_NIGHT_LIGHTS = .15;
 const dayNight = createDayNight({ scene, renderer, hemi, moon, bloom, spots, nightBackdrop: city, onChange: [
@@ -602,6 +607,7 @@ const dayNight = createDayNight({ scene, renderer, hemi, moon, bloom, spots, nig
     am.alphaMap = day ? null : texPuddle; am.transparent = !day; am.roughness = day ? .95 : 1; am.roughnessMap = day ? null : texPuddle; am.color.set(day ? 0xf0f2f4 : 0xb0b4ba); am.needsUpdate = true;
   },
   (day) => { for (const k of ['poolC', 'poolY', 'beam']) mats[k].visible = !day; },   // fake light pools / cones are night-only
+  (day) => grade.setDay(day),
   (day) => { dayBtn.textContent = day ? '☾ 切换夜晚' : '☀ 切换白天'; },
   ...(cityInfo.dayNight || []),
 ] });
@@ -609,7 +615,6 @@ dayBtn.onclick = () => dayNight.set(!dayNight.isDay);
 dayNight.set(true);
 window.__day = dayNight; window.__renderer = renderer; window.__scene = scene; window.__camera = camera;
 dayNight.interiors.push([402, 618, 40, -224, -76]);   // black warehouse hall (x0,x1,yTop,z0,z1)
-composer.addPass(new OutputPass());
 addEventListener('resize', () => { const pr = Math.min(devicePixelRatio, 2); renderer.setPixelRatio(pr); composer.setPixelRatio(pr); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight); refl.getRenderTarget().setSize(Math.max(512, Math.floor(innerWidth * .6)), Math.max(512, Math.floor(innerHeight * .6))); });
 
 // moving the window to a screen with another pixel ratio doesn't fire 'resize' — watch the ratio directly
@@ -643,6 +648,7 @@ function tick() {
   dayNight.update(player.active ? player.pos : controls.target, camera.position);
   updateMarkers();
   const tr = performance.now();
+  grade.update(t, innerWidth, innerHeight);
   if (innerWidth > 0 && innerHeight > 0) composer.render();   // hidden pane → zero-size targets
   prof.render = prof.render * .9 + (performance.now() - tr) * .1; prof.js = prof.js * .9 + (tr - t0) * .1;
   requestAnimationFrame(tick);

@@ -19,6 +19,8 @@ function defineMats() {
   def('stGuard', std({ map: canvasTex(128, 64, (g, w, h) => { g.clearRect(0, 0, w, h); g.fillStyle = '#e8e8e2'; g.fillRect(0, 4, w, 7); g.fillRect(0, 30, w, 5); g.fillRect(0, h - 8, w, 4); for (const x of [2, w / 2, w - 9]) g.fillRect(x, 0, 7, h); for (let i = 0; i < 6; i++) { g.fillStyle = 'rgba(120,70,30,.5)'; g.fillRect(Math.random() * w, Math.random() * h, 3 + Math.random() * 8, 2); g.fillStyle = '#e8e8e2'; } }, { repeat: true }), roughness: .5, metalness: .3, alphaTest: .5, side: THREE.DoubleSide }), 2);
   def('stManhole', std({ map: canvasTex(128, 128, (g, w, h) => { g.fillStyle = '#3b3d3f'; g.beginPath(); g.arc(64, 64, 62, 0, 7); g.fill(); g.strokeStyle = '#5c5e60'; g.lineWidth = 3; for (let r = 12; r < 62; r += 10) { g.beginPath(); g.arc(64, 64, r, 0, 7); g.stroke(); } for (let a = 0; a < 6.28; a += .52) { g.beginPath(); g.moveTo(64, 64); g.lineTo(64 + Math.cos(a) * 60, 64 + Math.sin(a) * 60); g.stroke(); } noise(g, w, h, 30); }), roughness: .45, metalness: .6, transparent: true, alphaTest: .5, polygonOffset: true, polygonOffsetFactor: -2 }), 1);
   def('stSignal', std({ color: 0x2e3236, roughness: .5, metalness: .5 }));
+  def('stLitter', std({ map: canvasTex(256, 64, (g, w, h) => { g.clearRect(0, 0, w, h); for (let i = 0; i < 260; i++) { const k = Math.random(); g.fillStyle = k < .7 ? `rgba(${90 + Math.random() * 60},${70 + Math.random() * 40},${30},.9)` : k < .85 ? 'rgba(230,228,220,.9)' : 'rgba(60,90,40,.9)'; g.save(); g.translate(Math.random() * w, h * (.2 + Math.pow(Math.random(), 1.6) * .8)); g.rotate(Math.random() * 6); g.fillRect(-3, -1.5, 3 + Math.random() * 6, 2 + Math.random() * 4); g.restore(); } }, { repeat: true }), alphaTest: .4, roughness: .9, polygonOffset: true, polygonOffsetFactor: -2 }), 4);
+  K.mats.stLitter.userData.noCollide = true;
   def('stLamp', std({ color: 0x1a2a24, roughness: .3, emissive: 0x000000 }));
   for (const k of ['stWire', 'stGuard', 'stZebra', 'stManhole', 'stTactile']) K.mats[k].userData.noCollide = true;
 }
@@ -70,6 +72,7 @@ export function streetSegment(cx, cz, dir, L, W) {
     for (const sd of [-1, 1]) for (let s = -L / 2 + 10; s < L / 2 - 12; s += 14) if (Math.random() < .55) {
       const len = 6 + Math.random() * 6; plane('stGuard', len, .85, s + len / 2, .55, sd * (W / 2 - .2), sd > 0 ? Math.PI : 0);
     }
+    for (const sd of [-1, 1]) { const g = new THREE.PlaneGeometry(L - 4, 1); g.rotateX(-Math.PI / 2); const uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setX(i, uv.getX(i) * (L - 4) / 4); put('stLitter', g, M4(0, .072, sd * (W / 2 - .5), 0, sd > 0 ? Math.PI : 0, 0)); }   // leaves + litter in the gutters
     for (let s = -L / 2 + 15; s < L / 2 - 10; s += 30) if (Math.random() < .6) { const g = new THREE.CircleGeometry(.32, 12); g.rotateX(-Math.PI / 2); put('stManhole', g, M4(s, .085, (Math.random() - .5) * W * .5)); }
   });
   setZone(zone);

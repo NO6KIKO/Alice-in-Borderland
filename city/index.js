@@ -190,7 +190,7 @@ function airships(scene, updates) {
     const rot = sz.z > sz.x, len = rot ? sz.z : sz.x, wid = rot ? sz.x : sz.z;
     const inner = new THREE.Group(); m.position.sub(c); inner.add(m); if (rot) inner.rotation.y = Math.PI / 2;
     const tpl = new THREE.Group(); tpl.add(inner);
-    tpl.scale.set(62 / len, 17 / sz.y, 17 / wid);   // stretch the stubby hull into a 62 m zeppelin
+    tpl.scale.set(70 / len, 13 / sz.y, 13 / wid);   // stretch the stubby hull into a slim 70 m zeppelin
     m.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.material.side = THREE.FrontSide; } });
     for (const g of groups) { g.userData.primitive.forEach((o) => { o.visible = false; }); const h = tpl.clone(); h.position.y = 2; g.add(h); }
   });
@@ -200,9 +200,9 @@ function airships(scene, updates) {
     for (let k = 0; k < 4; k++) { const fin = new THREE.Mesh(new THREE.BoxGeometry(7, .3, 5), body); fin.position.x = -22; fin.rotation.x = k * Math.PI / 2; fin.translateY(0); fin.geometry.translate(0, 0, 4.5); g.add(fin); }
     for (let k = -2; k <= 2; k++) { const rib = new THREE.Mesh(new THREE.TorusGeometry(6.4 * Math.sqrt(1 - (k * 8 / 26) ** 2), .08, 6, 40), dark); rib.position.x = k * 8; rib.rotation.y = Math.PI / 2; g.add(rib); }
     const gond = new THREE.Mesh(new THREE.BoxGeometry(9, 2.4, 3), dark); gond.position.y = -7.4; g.add(gond);
-    const card = new THREE.Mesh(new THREE.PlaneGeometry(14, 21), cards.cardMaterial(rk, st)); card.position.set(0, -24, 0); g.add(card);
-    for (const s of [-1, 1]) { const c = new THREE.Mesh(new THREE.CylinderGeometry(.05, .05, 4.6), dark); c.position.set(s * 6.5, -10, 0); c.scale.y = 1.6; g.add(c); }
-    const bar = new THREE.Mesh(new THREE.BoxGeometry(15, .35, .35), dark); bar.position.y = -13.7; g.add(bar);
+    const card = new THREE.Mesh(new THREE.PlaneGeometry(14, 21), cards.cardMaterial(rk, st)); card.position.set(0, -19, 0); card.scale.setScalar(1.25); g.add(card);
+    for (const s of [-1, 1]) { const c = new THREE.Mesh(new THREE.CylinderGeometry(.05, .05, 4.6), dark); c.position.set(s * 8, -7, 0); c.scale.y = .5; g.add(c); }
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(15, .35, .35), dark); bar.position.y = -5.8; bar.scale.x = 1.25; g.add(bar);
     const blink = new THREE.Mesh(new THREE.SphereGeometry(.4, 8, 6), new THREE.MeshBasicMaterial({ color: new THREE.Color(4, .2, .1) })); blink.position.set(-26, 0, 0); g.add(blink);
     g.traverse((o) => { o.castShadow = true; });
     g.userData.primitive = g.children.filter((o) => o !== card && o !== bar && o !== blink && o.geometry?.type !== 'CylinderGeometry'); groups.push(g);
