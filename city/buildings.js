@@ -132,7 +132,7 @@ let defined = false;
 export function buildingMats() { defineMats(); }
 function defineMats() {
   if (defined) return; defined = true;
-  const facade = (key, [day, glow], { glow: ng = 1, tile = TILE, ...o } = {}) => { const m = std({ map: day, normalMap: K.normalFrom(day, 3), emissiveMap: glow, emissive: 0xffffff, emissiveIntensity: 0, roughness: .85, ...o }); m.userData.nightGlow = ng; def(key, m, tile); };
+  const facade = (key, [day, glow], { glow: ng = 1, tile = TILE, ...o } = {}) => { const m = std({ map: day, normalMap: K.normalFrom(day, 3), roughnessMap: day, emissiveMap: glow, emissive: 0xffffff, emissiveIntensity: 0, roughness: 1, metalness: .15, ...o }); m.userData.nightGlow = ng; def(key, m, tile); };   // roughness from the facade: dark glass glossy, concrete matte
   facade('bOff0', texOffice(11, '#a4a39c')); facade('bOff1', texOffice(12, '#b9b1a0')); facade('bOff2', texOffice(13, '#77797a'));
   facade('bCur0', texCurtain(21), { roughness: .3, metalness: .5, glow: .8 }); facade('bCur1', texCurtain(22), { roughness: .3, metalness: .5, glow: .8, color: 0xc8d8d0 });
   facade('bTile0', texTiles(31, '#d9d6cc')); facade('bTile1', texTiles(32, '#c7bba3')); facade('bTile2', texTiles(33, '#b4b8b6'));
@@ -179,7 +179,7 @@ function rail(x1, z1, x2, z2, y, h = 1.1) {   // see-through baluster railing: 1
   plane('bRail', L, h, (x1 + x2) / 2, y + h / 2, (z1 + z2) / 2, K.ang(dx, dz));
 }
 function railRect(w, d, y, h) { rail(-w / 2, d / 2, w / 2, d / 2, y, h); rail(w / 2, d / 2, w / 2, -d / 2, y, h); rail(w / 2, -d / 2, -w / 2, -d / 2, y, h); rail(-w / 2, -d / 2, -w / 2, d / 2, y, h); }
-function ac(x, y, z, ry = 0) { withFrame(x, y, z, ry, () => { box('steelL', .82, .58, .3, 0, .29, 0); plane('grille', .5, .46, -.1, .29, .151); }); }
+function ac(x, y, z, ry = 0) { prop('ac_outdoor', x, y, z, ry - Math.PI / 2); }   // Tripo outdoor unit (fan side facing out)
 function tank(x, y, z, r) {
   const R = 1 + r() * .4, L = 2.2;
   for (const [a, b] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) strut('bRust', [x + a * R * .7, y, z + b * R * .7], [x + a * R * .7, y + L, z + b * R * .7], .07, 4);

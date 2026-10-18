@@ -57,7 +57,7 @@ function facade(kind, seed) {
       if (kind === 'conc') g.fillRect(x + 2, y + ch * .32, cw - 4, ch * .38); else if (kind === 'glass') g.fillRect(x + 3, y + 3, cw - 6, ch - 10); else g.fillRect(x + cw * .24, y + ch * .24, cw * .52, ch * .5);
     }
   }, { repeat: true });
-  const m = std({ map: day, normalMap: K.normalFrom(day, kind === 'glass' ? 1.2 : 2.5), emissiveMap: glow, emissive: 0xffffff, emissiveIntensity: 0, roughness: kind === 'glass' ? .25 : .85, metalness: kind === 'glass' ? .6 : .05 });
+  const m = std({ map: day, normalMap: K.normalFrom(day, kind === 'glass' ? 1.2 : 2.5), roughnessMap: day, emissiveMap: glow, emissive: 0xffffff, emissiveIntensity: 0, roughness: kind === 'glass' ? .6 : 1, metalness: kind === 'glass' ? .6 : .12 });
   m.userData.nightGlow = kind === 'glass' ? .9 : 1.1;
   return m;
 }
@@ -111,8 +111,8 @@ function defineMaterials() {
   def('crownP', std({ map: texCrown[1], color: 0x8fae80, roughness: .9, alphaTest: .45, side: THREE.DoubleSide }), 1);   // dark pine needles
   def('leaf', std({ map: texIvy, color: 0xc4dca8, roughness: .95 }), 1.5);
   def('trunk', std({ color: 0x4a3a2c, roughness: 1 }));
-  def('road', std({ map: texRoad, color: 0xb8bcc0, roughness: .9 }), 12);
-  def('walk', std({ map: K.texConcrete, color: 0x9a9a94, roughness: .9 }), 4);
+  def('road', std({ map: texRoad, normalMap: K.normalFrom(texRoad, 3), color: 0xb8bcc0, roughness: .9 }), 12);
+  def('walk', std({ map: K.texConcrete, normalMap: K.normalFrom(K.texConcrete, 1.5), color: 0x9a9a94, roughness: .9 }), 4);
   def('quay', std({ map: K.texPanel, color: 0x8e9294, roughness: .9 }), 5);
   def('lineW', std({ color: 0xd8d8d0, roughness: .6 }));
   def('lineY', std({ color: 0xd8a820, roughness: .6 }));
