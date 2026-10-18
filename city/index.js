@@ -15,6 +15,7 @@ import * as clubs from './clubs.js';
 import * as hearts from './hearts.js';
 import * as shibuya from './shibuya.js';
 import * as fire from './fire.js';
+import { cityBuilding } from './buildings.js';
 
 const DISTRICT_MODULES = { port, arena, prison, tokyotower, palace, diamond, clubs, hearts, shibuya, fire };
 const { box, cyl, sph, plane, put, strut, beacon, M4, withFrame, setZone, canvasTex, noise, def, std } = K;
@@ -125,17 +126,17 @@ function tree(x, z, s = 1, y = 0) {
   treeCount++;
   const r = Math.random, h = (5 + r() * 4) * s, lean = (r() - .5) * .12, la = r() * 6.283;
   const tx = x + Math.cos(la) * lean * h, tz = z + Math.sin(la) * lean * h;   // trunk top
-  K.strut('trunk', [x, y, z], [tx, y + h * .62, tz], .26 * s, 7);
+  K.strut('trunk', [x, y, z], [tx, y + h * .62, tz], .26 * s, 5);
   const cy = y + h * .74, rx = (2.2 + r() * 1.3) * s, ry = rx * (.75 + r() * .35);
-  for (let i = 0; i < 4; i++) {   // limbs
-    const a = la + i * 1.57 + r(), d = rx * (.45 + r() * .3);
-    K.strut('trunk', [tx, y + h * (.45 + r() * .15), tz], [tx + Math.cos(a) * d, cy + (r() - .3) * ry * .6, tz + Math.sin(a) * d], .09 * s, 5);
+  for (let i = 0; i < 3; i++) {   // limbs
+    const a = la + i * 2.1 + r(), d = rx * (.45 + r() * .3);
+    K.strut('trunk', [tx, y + h * (.45 + r() * .15), tz], [tx + Math.cos(a) * d, cy + (r() - .3) * ry * .6, tz + Math.sin(a) * d], .09 * s, 3);
   }
   foliage(tx, cy, tz, rx, ry, 18 + Math.floor(r() * 6), 'crown' + Math.floor(r() * 3), s);
 }
 // a clump of leaf cards around (x,y,z) with radii rx/ry; normals face out of the clump
 export function foliage(x, y, z, rx, ry, n, k = 'crown0', s = 1) {
-  const r = Math.random, core = new THREE.IcosahedronGeometry(1, 1); core.scale(rx * .62, ry * .62, rx * .62);
+  const r = Math.random, core = new THREE.IcosahedronGeometry(1, 0); core.scale(rx * .55, ry * .55, rx * .55);
   put('crownCore', core, M4(x, y, z));
   _c.set(x, y, z).applyMatrix4(K.frame);
   const card = Math.min(rx, ry * 1.6);
@@ -151,30 +152,8 @@ export function foliage(x, y, z, rx, ry, n, k = 'crown0', s = 1) {
 export function treeStats() { return treeCount; }
 export { tree };
 
-// one filler building on a lot (lot centre x,z; footprint w×d; height h)
-function building(x, z, w, d, h, r) {
-  const fk = 'fac' + Math.floor(r() * FACADES.length);
-  const floors = Math.max(1, Math.round(h / FLOOR)); h = floors * FLOOR;
-  box(fk, w, h, d, x, h / 2 + .12, z);
-  const green = r() < .35;
-  box(green ? 'roofG' : 'roof', w + .4, .5, d + .4, x, h + .37, z);
-  if (h > 30 && r() < .55) {   // setback crown
-    const w2 = w * (.5 + r() * .3), d2 = d * (.5 + r() * .3), h2 = FLOOR * (2 + Math.floor(r() * 5));
-    box(fk, w2, h2, d2, x, h + .62 + h2 / 2, z); box('roof', w2 + .3, .4, d2 + .3, x, h + .62 + h2 + .2, z);
-  }
-  if (!green && r() < .5) for (let i = 0; i < 1 + r() * 3; i++) box('steelL', 2 + r() * 2, 1.4, 1.6 + r(), x + (r() - .5) * (w - 4), h + 1.3, z + (r() - .5) * (d - 4));
-  if (green) for (let i = 0; i < Math.min(6, w * d / 120); i++) tree(x + (r() - .5) * (w - 4), z + (r() - .5) * (d - 4), .7 + r() * .4, h + .6);
-  // ivy curtains climbing the facades
-  const nIvy = r() < .7 ? 1 + Math.floor(r() * 5) : 0;
-  for (let i = 0; i < nIvy; i++) {
-    const side = Math.floor(r() * 4), ih = h * (.2 + r() * .8), iw = 2 + r() * Math.min(10, (side % 2 ? d : w) * .5);
-    const along = (r() - .5) * ((side % 2 ? d : w) - iw), yc = r() < .5 ? ih / 2 + .1 : h + .1 - ih / 2;   // climbing up or draping down
-    if (side === 0) plane('ivy', iw, ih, x + along, yc, z + d / 2 + .12);
-    else if (side === 1) plane('ivy', iw, ih, x + w / 2 + .12, yc, z + along, Math.PI / 2);
-    else if (side === 2) plane('ivy', iw, ih, x + along, yc, z - d / 2 - .12, Math.PI);
-    else plane('ivy', iw, ih, x - w / 2 - .12, yc, z + along, -Math.PI / 2);
-  }
-}
+// one filler building on a lot (lot centre x,z; footprint w×d; height h) — see buildings.js
+function building(x, z, w, d, h, r) { return cityBuilding(x, z, w, d, h, r); }
 
 // height falloff: tallest around the business core west of the palace, low near the docks
 function heightAt(x, z, r) {
@@ -306,7 +285,7 @@ export function buildCity({ scene, camera }) {
   const roadOK = (x, z) => onLand(x, z) && !inDistrict(x, z, -6) && !(Math.abs(x) < 300 && Math.abs(z) < 300);
   for (let i = 0; i <= nx; i++) for (let j = 0; j <= nz; j++) {
     const x = GRID_X0 + i * BLOCK, z = GRID_Z0 + j * BLOCK;
-    setZone(`city_${Math.floor((x - GRID_X0) / 440)}_${Math.floor((z - GRID_Z0) / 440)}`);
+    setZone(`city_${Math.floor((x - GRID_X0) / 220)}_${Math.floor((z - GRID_Z0) / 220)}`);
     // a segment is kept when its middle is clear; ends may run up to a district edge
     if (roadOK(x + BLOCK / 2, z) && onLand(x, z) && onLand(x + BLOCK, z)) {   // E-W segment
       box('road', BLOCK, .06, ROAD_W, x + BLOCK / 2, .03, z);
@@ -322,7 +301,7 @@ export function buildCity({ scene, camera }) {
   const inner = BLOCK - ROAD_W;
   for (let i = 0; i < nx; i++) for (let j = 0; j < nz; j++) {
     const cx = GRID_X0 + i * BLOCK + BLOCK / 2, cz = GRID_Z0 + j * BLOCK + BLOCK / 2;
-    setZone(`city_${Math.floor((cx - GRID_X0) / 440)}_${Math.floor((cz - GRID_Z0) / 440)}`);
+    setZone(`city_${Math.floor((cx - GRID_X0) / 220)}_${Math.floor((cz - GRID_Z0) / 220)}`);
     const corners = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([a, b]) => [cx + a * inner / 2, cz + b * inner / 2]);
     if (!corners.every(([x, z]) => onLand(x, z))) continue;
     if (inDistrict(cx, cz, inner / 2 - 4) || corners.some(([x, z]) => inDistrict(x, z, 2))) continue;
@@ -330,11 +309,11 @@ export function buildCity({ scene, camera }) {
     const park = R() < .07;
     box(park ? 'grass' : 'walk', inner, .12, inner, cx, .06, cz);
     if (park) { for (let k = 0; k < 40; k++) tree(cx + (R() - .5) * (inner - 8), cz + (R() - .5) * (inner - 8), .8 + R() * .7, .12); continue; }
-    const sx = 1 + Math.floor(R() * 3), sz = 1 + Math.floor(R() * 3), lw = (inner - 8) / sx, ld = (inner - 8) / sz;
+    const sx = 2 + Math.floor(R() * 3), sz = 2 + Math.floor(R() * 3), lw = (inner - 8) / sx, ld = (inner - 8) / sz;   // 15–39 m lots
     for (let a = 0; a < sx; a++) for (let b = 0; b < sz; b++) {
       if (R() < .08) continue;
       const bx = cx - (inner - 8) / 2 + lw * (a + .5), bz = cz - (inner - 8) / 2 + ld * (b + .5);
-      const w = lw - 3 - R() * 6, d = ld - 3 - R() * 6;
+      const w = lw - 2 - R() * 3, d = ld - 2 - R() * 3;
       if (underExpress(bx, bz, Math.max(w, d) / 2 + 2)) continue;
       building(bx, bz, w, d, heightAt(bx, bz, R), R);
     }

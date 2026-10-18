@@ -398,7 +398,7 @@ const cityInfo = buildCity({ scene, camera });
 /* ───────────── build merged meshes ───────────── */
 const built = buildBatches(scene);
 const collidables = [asphalt, ...built.collidables, ...cityInfo.collidables];
-for (const ms of zoneMeshes.values()) for (const m of ms) { m.castShadow = !m.material.transparent && !m.material.isMeshBasicMaterial; m.receiveShadow = true; }
+for (const ms of zoneMeshes.values()) for (const m of ms) { m.castShadow = !m.material.transparent && !m.material.isMeshBasicMaterial && !m.name.startsWith('det_'); m.receiveShadow = true; }
 console.log('triangles', built.tris, 'spots', spotCount, 'beacons', beacons.length);
 
 /* beacons: instanced, two blink phases, with additive halos */
@@ -498,7 +498,7 @@ function updateMarkers() {
 /* ───────────── GLB assets: Blender trucks + rigged Mixamo characters ───────────── */
 const loader = new GLTFLoader();
 const load = (u) => new Promise((res, rej) => loader.load(u, res, undefined, rej));
-const mixers = [], walkers = [];
+const mixers = [], walkers = [], charRoots = [];   // charRoots: distance-culled (skinned meshes can't frustum-cull reliably)
 window.__walkers = walkers;   // console helper
 const player = createPlayer({ scene, camera, renderer, controls, spawn: new THREE.Vector3(0, .2, 64), spawnYaw: 0 });
 playBtn.onclick = () => player.enter();
@@ -546,7 +546,7 @@ Promise.all([load('./models/chars/Soldier.glb'), load('./models/chars/Xbot.glb')
   const spawn = (name, clipName) => {
     const g = lib[name], o = cloneSkinned(g.scene);
     o.traverse((c) => { if (c.isMesh) c.frustumCulled = false; });
-    const root = new THREE.Group(); root.add(o); scene.add(root);
+    const root = new THREE.Group(); root.add(o); scene.add(root); charRoots.push(root);
     if (name === 'Soldier') o.rotation.y = Math.PI;   // Soldier.glb faces −Z, Xbot faces +Z
     const mx = new THREE.AnimationMixer(o), clip = THREE.AnimationClip.findByName(g.animations, clipName);
     const act = mx.clipAction(clip); act.play(); act.time = Math.random() * clip.duration; mixers.push(mx);
@@ -586,7 +586,7 @@ function updateWalkers(dt) {
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
 const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.55, 0.6, 1.0); composer.addPass(bloom);
-const facadeMats = Object.keys(mats).filter((k) => /^fac\d/.test(k)).map((k) => mats[k]);
+const facadeMats = Object.values(mats).filter((m) => m.userData.nightGlow);   // lit windows / signs / shopfronts at night
 const dayNight = createDayNight({ scene, renderer, hemi, moon, bloom, spots, nightBackdrop: city, onChange: [
   (day) => { for (const m of facadeMats) m.emissiveIntensity = day ? 0 : m.userData.nightGlow; },
   (day) => {   // the wet-asphalt mirror is a night look; by day the apron is plain dry asphalt
@@ -599,17 +599,19 @@ const dayNight = createDayNight({ scene, renderer, hemi, moon, bloom, spots, nig
 ] });
 dayBtn.onclick = () => dayNight.set(!dayNight.isDay);
 dayNight.set(true);
-window.__day = dayNight;
+window.__day = dayNight; window.__renderer = renderer; window.__scene = scene; window.__camera = camera;
 dayNight.interiors.push([402, 618, 40, -224, -76]);   // black warehouse hall (x0,x1,yTop,z0,z1)
 composer.addPass(new OutputPass());
 addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight); refl.getRenderTarget().setSize(Math.max(512, Math.floor(innerWidth * .6)), Math.max(512, Math.floor(innerHeight * .6))); });
 
 /* ───────────── loop ───────────── */
 const clock = new THREE.Clock(), up = new THREE.Vector3(0, 1, 0);
-const foliageMeshes = [...zoneMeshes.values()].flat().filter((m) => /\|(crown|ivy|leaf|trunk)/.test(m.name));
+const foliageMeshes = [...zoneMeshes.values()].flat().filter((m) => /^det_|\|(crown|ivy|leaf|trunk)/.test(m.name));   // + building detail zones
 let cullT = 0;
 let lastT = 0;
+const prof = window.__prof = { js: 0, render: 0 };
 function tick() {
+  const t0 = performance.now();
   const t = clock.getElapsedTime(), dt = Math.min(.05, t - lastT); lastT = t;
   for (const mx of mixers) mx.update(dt);
   updateWalkers(dt);
@@ -621,13 +623,17 @@ function tick() {
   halos[0].opacity = .25 + .75 * a; halos[1].opacity = .25 + .75 * b;
   updateCars(dt);
   for (const f of cityInfo.updates) f(dt, t);
+  if (!dayNight.isDay) refl.visible = Math.hypot(camera.position.x, camera.position.z) < 650;   // the wet-ground mirror re-renders the whole scene: only near the compound
   if ((cullT -= dt) < 0) {   // foliage / ivy beyond ~700 m is lost in haze — skip drawing it
     cullT = .4;
-    for (const m of foliageMeshes) { const bs = m.geometry.boundingSphere; m.visible = camera.position.distanceTo(bs.center) - bs.radius < 700; }
+    for (const o of charRoots) o.visible = camera.position.distanceTo(o.position) < 260;
+    for (const m of foliageMeshes) { const bs = m.geometry.boundingSphere; m.visible = camera.position.distanceTo(bs.center) - bs.radius < (m.name.startsWith('det_') ? 320 : 700); }
   }
   dayNight.update(player.active ? player.pos : controls.target, camera.position);
   updateMarkers();
+  const tr = performance.now();
   if (innerWidth > 0 && innerHeight > 0) composer.render();   // hidden pane → zero-size targets
+  prof.render = prof.render * .9 + (performance.now() - tr) * .1; prof.js = prof.js * .9 + (tr - t0) * .1;
   requestAnimationFrame(tick);
 }
 tick();

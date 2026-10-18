@@ -349,7 +349,7 @@ export function buildBatches(scene) {
     const m = new THREE.Mesh(geo, mats[k]); m.name = id; m.userData.zone = z;
     m.frustumCulled = !NO_COLLIDE.has(k);   // additive decals/beams stay drawn (huge flat spheres)
     scene.add(m);
-    if (!NO_COLLIDE.has(k) && !mats[k].userData.noCollide) collidables.push(m);
+    if (!NO_COLLIDE.has(k) && !mats[k].userData.noCollide && !z.startsWith('det_')) collidables.push(m);   // det_* zones: near-only facade detail
     if (!zoneMeshes.has(z)) zoneMeshes.set(z, []); zoneMeshes.get(z).push(m);
     list.forEach((g) => g.dispose());
   }
