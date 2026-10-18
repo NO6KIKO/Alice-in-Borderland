@@ -121,3 +121,17 @@ export function intersection(x, z, arms, W) {
   }
 }
 function diamondShape() { return new THREE.Shape([new THREE.Vector2(0, -.75), new THREE.Vector2(2.2, 0), new THREE.Vector2(0, .75), new THREE.Vector2(-2.2, 0)]); }
+
+// abandonment dressing for an open area (local rect centred cx,cz of w×d at height y): weed clumps, litter /
+// leaf patches, moss stains and a few dropped objects (Tripo props)
+export function scatterDecay(cx, cz, w, d, y = .1, n = 60, props = ['trash_bags', 'shopping_cart', 'umbrella_clear', 'bicycle_fallen', 'school_bag']) {
+  defineMats();
+  const zone = K.zone; setZone(detZone(K.fpos(cx, 0, cz).x, K.fpos(cx, 0, cz).z));
+  for (let i = 0; i < n; i++) {
+    const x = cx + (Math.random() - .5) * w, z = cz + (Math.random() - .5) * d, sz = .3 + Math.random() * .8, a = Math.random() * 3;
+    for (const ry of [a, a + Math.PI / 2]) { const g = new THREE.PlaneGeometry(sz * 1.3, sz); g.translate(0, sz / 2, 0); put('stWeed', g, M4(x, y, z, 0, ry, 0)); }
+    if (i % 4 === 0) { const g = new THREE.PlaneGeometry(1.5 + Math.random() * 3, .8 + Math.random() * 1.5); g.rotateX(-Math.PI / 2); put('stLitter', g, M4(x + 1, y + .015, z, 0, Math.random() * 3, 0)); }
+  }
+  setZone(zone);
+  for (let i = 0; i < Math.max(2, n / 12); i++) prop(props[Math.floor(Math.random() * props.length)], cx + (Math.random() - .5) * w * .9, y, cz + (Math.random() - .5) * d * .9, Math.random() * 6.28);
+}

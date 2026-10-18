@@ -499,7 +499,7 @@ window.__view = fly;   // console helper: __view([x,y,z],[tx,ty,tz])
 function fly(c, t) { anim = { t0: performance.now(), d: 1400, c0: camera.position.clone(), t0v: controls.target.clone(), c1: new THREE.Vector3(...c), t1: new THREE.Vector3(...t) }; }
 function updateMarkers() {
   const v = new THREE.Vector3();
-  for (const o of POI) { v.copy(o.v).project(camera); const vis = v.z < 1 && Math.abs(v.x) < 1.05 && Math.abs(v.y) < 1.05 && camera.position.distanceTo(o.v) < 420; o.el.style.display = vis ? 'block' : 'none'; o.el.style.left = ((v.x + 1) / 2 * innerWidth) + 'px'; o.el.style.top = ((1 - v.y) / 2 * innerHeight) + 'px'; }
+  for (const o of POI) { v.copy(o.v).project(camera); const vis = v.z < 1 && Math.abs(v.x) < 1.05 && Math.abs(v.y) < 1.05 && camera.position.distanceTo(o.v) < 200; o.el.style.display = vis ? 'block' : 'none'; o.el.style.left = ((v.x + 1) / 2 * innerWidth) + 'px'; o.el.style.top = ((1 - v.y) / 2 * innerHeight) + 'px'; }
 }
 
 /* ───────────── GLB assets: Blender trucks + rigged Mixamo characters ───────────── */
@@ -668,6 +668,7 @@ function tick() {
   }
   dayNight.update(player.active ? player.pos : controls.target, camera.position);
   updateMarkers();
+  if (renderer.getPixelRatio() !== Math.min(devicePixelRatio, 2)) dispatchEvent(new Event('resize'));   // pane / monitor DPR changed
   const tr = performance.now();
   grade.update(t, innerWidth, innerHeight);
   if (dof.enabled) dof.uniforms.focus.value = player.active ? 6 : camera.position.distanceTo(controls.target);

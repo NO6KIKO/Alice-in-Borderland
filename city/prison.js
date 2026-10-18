@@ -4,6 +4,7 @@
 // Local frame: centre of the footprint; block U opens south onto the forecourt, main gate in the west wall.
 import * as THREE from 'three';
 import * as K from '../kit.js';
+import { scatterDecay } from './street.js';
 const { box, cyl, plane, strut, withFrame, def, std, bas, canvasTex, noise } = K;
 
 const FL = 4, NF = 5, H = FL * NF;           // floor height, storeys, block height
@@ -300,6 +301,7 @@ export function build(ctx, d) {
   withFrame(d.x, 0, d.z, 0, () => {
     box('prison_floor', WX1 - WX0 + 1, .1, WZ1 - WZ0 + 1, (WX0 + WX1) / 2, 0, 0);   // wet slab inside the walls (top y .05)
     street(ctx); perimeter(); cellBlock(); mess(); guardStation(); washBlock(); lockers(); roof();
+    scatterDecay(5, -18, 66, 62, .06, 70, ['trash_bags', 'umbrella_clear', 'school_bag', 'shopping_bag']); scatterDecay(0, 40, 140, 40, .06, 60);   // courtyard + forecourt left to rot
     for (const [x, z] of [[-36, 32], [-36, 62], [-8, 60], [26, 60], [62, 30], [62, 62], [70, -20], [-60, -40]]) K.lamp(x, z, 6, { spot: false, dir: 0 });
   });
   // the district's two real lights (world coords): gate street lamp + courtyard flood from the north roof

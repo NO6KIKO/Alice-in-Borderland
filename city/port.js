@@ -6,6 +6,7 @@
 // loose container yard north of the enclosure and two moored container ships in the bay.
 import * as THREE from 'three';
 import * as K from '../kit.js';
+import { scatterDecay } from './street.js';
 
 const { box, cyl, sph, strut, put, M4, withFrame } = K;
 const G = .06;                                   // slab top
@@ -583,6 +584,7 @@ export function build(ctx, d) {
   tree = ctx.tree;
   const lampMats = [K.mats.port_chrome, K.mats.port_head];
   ctx.dayNight.push((isDay) => { lampMats[0].emissiveIntensity = isDay ? 0 : 1.6; lampMats[1].emissiveIntensity = isDay ? 0 : .5; });
+  scatterDecay(250, 232, 40, 44, .07, 40, ['trash_bags', 'shopping_cart', 'umbrella_clear']); scatterDecay(250, 100, 90, 120, .07, 60);   // weeds through the slabs
   // concrete apron over the whole district
   box('port_slab', 240, .06, 303, 210, .03, 177);
   frontEdge(); plaza(); northBlock(); backRow(); southBlock();
