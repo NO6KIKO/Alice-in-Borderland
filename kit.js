@@ -29,21 +29,86 @@ export function noise(g, w, h, amt) {
 // normal map from a canvas texture's luminance (Sobel): dark = recessed (window reveals, joints, stains)
 // facade parallax: dark texels (glass) read as recessed `depth` metres behind the frames, so windows shift with the
 // view angle. One extra map fetch; fades out by 140 m. Assumes map / normal / roughness / emissive share UVs.
-export function parallaxFacade(m, depth, tile) {
+// int = { cells: [rooms across, floors up] per texture tile, roomD: metres } adds INTERIOR MAPPING: behind every window
+// texel (emissive-map alpha = 1) a ray-traced box room — back wall, floor, ceiling, side walls and a curtain/blind layer,
+// picked per room from texRooms — drawn unlit (emissive) under the glass reflection; beyond FAC_INT.uIntFar a mean colour.
+export const texRooms = canvasTex(256, 256, (g) => {   // 4×4 tiles of 64 px; canvas row 0 = UV row 3 (flipY)
+  const T = 64, rr = rng(3131), tile = (cx, cy, f) => { g.save(); g.translate(cx * T, cy * T); g.beginPath(); g.rect(0, 0, T, T); g.clip(); f(); g.restore(); };
+  const fill = (c, x = 0, y = 0, w = T, h = T) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
+  const speck = (n, a) => { for (let i = 0; i < n; i++) fill(`rgba(${rr() < .5 ? '0,0,0' : '255,255,255'},${a * rr()})`, rr() * T, rr() * T, 1 + rr() * 3, 1 + rr() * 3); };
+  // UV row 3 — back walls: office with whiteboard / flat with a doorway / gutted concrete / storage shelves
+  tile(0, 0, () => { fill('#9a9890'); fill('#c4c6c2', 10, 16, 30, 20); fill('#5a6a7a', 14, 22, 18, 1); fill('#7a4a40', 14, 27, 12, 1); fill('#6e6a62', 46, 10, 12, 54); speck(40, .12); });
+  tile(1, 0, () => { fill('#8c8274'); fill('#2a2622', 40, 14, 16, 50); fill('#6a5a48', 8, 20, 18, 14); fill('#b8b0a0', 10, 22, 14, 10); speck(40, .12); });
+  tile(2, 0, () => { fill('#6c6a64'); for (let i = 0; i < 6; i++) fill('rgba(30,26,20,.25)', rr() * T, 0, 3 + rr() * 6, T); fill('#3a3836', 0, 30, T, 2); fill('#3a3836', 20, 0, 2, T); speck(60, .2); });
+  tile(3, 0, () => { fill('#4a4844'); for (let y = 12; y < T; y += 14) { fill('#2c2a28', 0, y, T, 2); for (let x = 2; x < T - 6; x += 7 + rr() * 6) fill(['#7a6a50', '#5a6470', '#8a8478'][Math.floor(rr() * 3)], x, y - 4 - rr() * 6, 4 + rr() * 4, 10); } speck(30, .15); });
+  // UV row 2 — mid layer (alpha): curtain half drawn / venetian blind / desk + partition silhouettes / nothing
+  g.clearRect(0, T, 4 * T, T);
+  tile(0, 1, () => { for (let x = 0; x < 30; x += 3) fill(`rgba(${150 + rr() * 20},${138 + rr() * 16},112,.95)`, x, 0, 3, T); });
+  tile(1, 1, () => { for (let y = 0; y < 38; y += 3) fill(`rgba(200,200,194,${rr() < .1 ? 0 : 1})`, 0, y, T, 2); });
+  tile(2, 1, () => { fill('#2e2c2a', 0, 42, T, 4); fill('#2e2c2a', 4, 46, 3, 18); fill('#2e2c2a', 56, 46, 3, 18); fill('#1c1c1e', 14, 30, 16, 12); fill('#3a3836', 40, 20, 3, 44); fill('#3a3836', 40, 20, 24, 3); });
+  // UV row 1 — floors (carpet tiles / concrete with papers), ceilings (grid with a strip light / bare slab)
+  tile(0, 2, () => { fill('#5c5e60'); g.strokeStyle = 'rgba(0,0,0,.25)'; for (let i = 0; i <= T; i += 16) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i, T); g.moveTo(0, i); g.lineTo(T, i); g.stroke(); } speck(50, .15); });
+  tile(1, 2, () => { fill('#6a6862'); for (let i = 0; i < 10; i++) fill(`rgba(220,216,205,${.5 + rr() * .4})`, rr() * T, rr() * T, 5 + rr() * 6, 4 + rr() * 5); speck(60, .2); });
+  tile(2, 2, () => { fill('#b2b2ac'); g.strokeStyle = 'rgba(60,60,58,.5)'; for (let i = 0; i <= T; i += 16) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i, T); g.moveTo(0, i); g.lineTo(T, i); g.stroke(); } fill('#d8dcd8', 26, 4, 12, 56); fill('#3a3a38', 48, 32, 16, 16); });
+  tile(3, 2, () => { fill('#7a7872'); fill('#2a2a28', 30, 0, 2, 40); fill('#d0d2cc', 26, 40, 10, 4); speck(40, .2); });
+  // UV row 0 — side walls: plaster / with a door / filing cabinets / concrete
+  tile(0, 3, () => { fill('#928e86'); speck(40, .1); });
+  tile(1, 3, () => { fill('#8a8070'); fill('#3a322a', 18, 12, 22, 52); fill('#c0b8a0', 34, 38, 3, 3); });
+  tile(2, 3, () => { fill('#8a8880'); for (let x = 4; x < T; x += 14) { fill('#5c6064', x, 26, 12, 38); fill('#3a3c3e', x + 2, 36, 8, 1); fill('#3a3c3e', x + 2, 50, 8, 1); } });
+  tile(3, 3, () => { fill('#6a6862'); speck(70, .22); });
+});
+export const FAC_INT = { uAtlas: { value: texRooms }, uIntLight: { value: 1.2 }, uIntFar: { value: 150 }, uRoomAvg: { value: new THREE.Vector3(.06, .058, .054) } };
+export function parallaxFacade(m, depth, tile, int = null) {
   const k = (depth / tile).toFixed(4), swap = (c) => THREE.ShaderChunk[c].replace(/v(Map|NormalMap|RoughnessMap|EmissiveMap)Uv/g, 'pUv');
+  const own = int ? { uCells: { value: new THREE.Vector2(...int.cells) }, uRoomD: { value: int.roomD } } : null;
   m.onBeforeCompile = (sh) => {
-    sh.fragmentShader = sh.fragmentShader
-      .replace('#include <map_fragment>', `vec2 pUv = vMapUv;
+    if (int) Object.assign(sh.uniforms, FAC_INT, own);
+    sh.fragmentShader = (int ? sh.fragmentShader.replace('#include <common>', `#include <common>
+#define FAC_INTERIOR
+#define TILE ${tile.toFixed(3)}
+uniform sampler2D uAtlas; uniform vec2 uCells; uniform float uRoomD, uIntLight, uIntFar; uniform vec3 uRoomAvg;`) : sh.fragmentShader)
+      .replace('#include <map_fragment>', `vec2 pUv = vMapUv; float pWin = 0., pFres = 0.; vec3 pRoom = vec3(0.);
         { vec3 V = normalize(vViewPosition), Nf = normalize(cross(dFdx(vViewPosition), dFdy(vViewPosition))); Nf *= sign(dot(Nf, V));
-          mat3 F = getTangentFrame(-vViewPosition, Nf, vMapUv); vec3 vt = vec3(dot(V, normalize(F[0])), dot(V, normalize(F[1])), dot(V, Nf));
-          float h = 1. - dot(texture2D(map, vMapUv).rgb, vec3(.3, .59, .11)), fade = 1. - smoothstep(40., 140., length(vViewPosition));
-          pUv -= vt.xy / max(vt.z, .3) * (h - .35) * ${k} * fade; }
-        ${swap('map_fragment')}`)
+          mat3 F = getTangentFrame(-vViewPosition, Nf, vMapUv); vec3 T = normalize(F[0]), B = normalize(F[1]); vec3 vt = vec3(dot(V, T), dot(V, B), dot(V, Nf));
+          float d = length(vViewPosition), h = 1. - dot(texture2D(map, vMapUv).rgb, vec3(.3, .59, .11)), fade = 1. - smoothstep(40., 140., d);
+          pUv -= vt.xy / max(vt.z, .3) * (h - .35) * ${k} * fade;
+#if defined( FAC_INTERIOR ) && defined( USE_EMISSIVEMAP )
+          vec3 Nw = (vec4(Nf, 0.) * viewMatrix).xyz;
+          pWin = smoothstep(.15, .35, texture2D(emissiveMap, pUv).a) * step(abs(Nw.y), .5);
+          pFres = .08 + .7 * pow(1. - clamp(vt.z, 0., 1.), 4.);
+          float fi = 1. - smoothstep(60., uIntFar, d); pRoom = uRoomAvg;
+          if (pWin * fi > .003) {
+            vec2 cu = pUv * uCells, ci = floor(cu); vec3 p = vec3(fract(cu), 0.);
+            vec3 rd = -vec3(vt.x * uCells.x / TILE, vt.y * uCells.y / TILE, vt.z / uRoomD); rd += sign(rd) * 1e-5 + 1e-6;
+            vec3 tt = (vec3(step(0., rd.xy), -1.) - p) / rd; float t = min(min(tt.x, tt.y), tt.z);
+            vec3 hit = clamp(p + rd * t, vec3(.002, .002, -1.), vec3(.998, .998, 0.)); float z = -hit.z;
+            vec3 wp = cameraPosition + (vec4(-vViewPosition, 0.) * viewMatrix).xyz, Tw = (vec4(T, 0.) * viewMatrix).xyz, Bw = (vec4(B, 0.) * viewMatrix).xyz;
+            vec3 o = floor((wp - (Tw * vMapUv.x + Bw * vMapUv.y) * TILE) * .25 + .37);
+            float hs = fract(sin(dot(vec3(ci, 0.) + o, vec3(12.9898, 78.233, 37.719))) * 43758.5453);
+            vec2 ga = dFdx(cu) * .25, gb = dFdy(cu) * .25, auv;
+            if (t == tt.z) auv = (vec2(floor(hs * 4.), 3.) + hit.xy) * .25;
+            else if (t == tt.y) auv = (vec2(floor(fract(hs * 3.1) * 2.) + (rd.y < 0. ? 0. : 2.), 1.) + vec2(hit.x, clamp(z, .002, .998))) * .25;
+            else auv = (vec2(floor(fract(hs * 5.3) * 4.), 0.) + vec2(clamp(z, .002, .998), hit.y)) * .25;
+            vec3 room = textureGrad(uAtlas, auv, ga, gb).rgb;
+            float tm = .12 / -rd.z;
+            if (tm < t) { vec4 mid = textureGrad(uAtlas, (vec2(floor(fract(hs * 7.7) * 4.), 2.) + clamp(p.xy + rd.xy * tm, .002, .998)) * .25, ga, gb); room = mix(room, mid.rgb, mid.a); }
+            room *= mix(1., .4, z) * (fract(hs * 13.1) < .15 ? .3 : .75 + .25 * fract(hs * 17.3));
+            pRoom = mix(uRoomAvg, room, fi);
+          }
+#endif
+        }
+        ${swap('map_fragment')}
+#if defined( FAC_INTERIOR ) && defined( USE_EMISSIVEMAP )
+        diffuseColor.rgb *= 1. - pWin * .65 * (1. - pFres);
+#endif`)
       .replace('#include <roughnessmap_fragment>', swap('roughnessmap_fragment'))
       .replace('#include <normal_fragment_maps>', swap('normal_fragment_maps'))
-      .replace('#include <emissivemap_fragment>', swap('emissivemap_fragment'));
+      .replace('#include <emissivemap_fragment>', swap('emissivemap_fragment') + `
+#if defined( FAC_INTERIOR ) && defined( USE_EMISSIVEMAP )
+        totalEmissiveRadiance += pRoom * uIntLight * pWin * (1. - pFres);
+#endif`);
   };
-  m.customProgramCacheKey = () => 'parallaxFacade' + k;
+  m.customProgramCacheKey = () => 'parallaxFacade' + k + (int ? 'I' + tile : '');
   return m;
 }
 export function normalFrom(tex, strength = 2) {

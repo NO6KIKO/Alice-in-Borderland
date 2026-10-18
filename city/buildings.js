@@ -38,7 +38,9 @@ function brokenPane(g, x, y, w, h, r) {   // shattered pane: spider-web cracks f
 function grime(g, W, H, r, n = 30) {
   for (let i = 0; i < n; i++) { const x = r() * W, y = r() * H, gr = g.createLinearGradient(0, y, 0, y + 30 + r() * 80); gr.addColorStop(0, `rgba(${40 + r() * 20},${42 + r() * 20},${32},${.18 + r() * .2})`); gr.addColorStop(1, 'rgba(40,40,30,0)'); g.fillStyle = gr; g.fillRect(x, y, 2 + r() * 6, 110); }
 }
+let _panes = [];   // panes drawn by the facade being built (glassGrad records them)
 function glassGrad(g, x, y, w, h, r, base) {
+  _panes.push([x, y, w, h]);
   const gr = g.createLinearGradient(x, y, x + w * .6, y + h); const [R, G, B] = base;
   gr.addColorStop(0, `rgb(${R + 40},${G + 45},${B + 45})`); gr.addColorStop(.5, `rgb(${R},${G},${B})`); gr.addColorStop(1, `rgb(${R - 15},${G - 10},${B - 8})`);
   g.fillStyle = gr; g.fillRect(x, y, w, h);
@@ -46,7 +48,7 @@ function glassGrad(g, x, y, w, h, r, base) {
 }
 // each facade returns [day, glow]; S = 512 px per 14.4 m → module 128 px
 function texOffice(seed, wall) {
-  const r = K.rng(seed), S = 512, M = 128, lit = [];
+  const r = K.rng(seed), S = 512, M = 128, lit = []; _panes = [];
   const day = canvasTex(S, S, (g) => {
     g.fillStyle = wall; g.fillRect(0, 0, S, S); noise(g, S, S, 22);
     for (let f = 0; f < 4; f++) for (let m = 0; m < 4; m++) {
@@ -65,7 +67,7 @@ function texOffice(seed, wall) {
   return [day, glowFrom(lit, S)];
 }
 function texCurtain(seed) {
-  const r = K.rng(seed), S = 512, cw = S / 12, rh = S / 8, lit = [];
+  const r = K.rng(seed), S = 512, cw = S / 12, rh = S / 8, lit = []; _panes = [];
   const day = canvasTex(S, S, (g) => {
     g.fillStyle = '#1e2c2e'; g.fillRect(0, 0, S, S);
     for (let j = 0; j < 8; j++) for (let i = 0; i < 12; i++) {
@@ -79,7 +81,7 @@ function texCurtain(seed) {
   return [day, glowFrom(lit, S)];
 }
 function texTiles(seed, col) {
-  const r = K.rng(seed), S = 512, lit = [];
+  const r = K.rng(seed), S = 512, lit = []; _panes = [];
   const day = canvasTex(S, S, (g) => {
     g.fillStyle = col; g.fillRect(0, 0, S, S); noise(g, S, S, 18);
     g.strokeStyle = 'rgba(90,88,80,.35)'; g.lineWidth = 1;
@@ -94,7 +96,7 @@ function texTiles(seed, col) {
   return [day, glowFrom(lit, S)];
 }
 function texPodium(seed) {
-  const r = K.rng(seed), S = 512, lit = [];
+  const r = K.rng(seed), S = 512, lit = []; _panes = [];
   const day = canvasTex(S, S, (g) => {
     g.fillStyle = '#8c8d88'; g.fillRect(0, 0, S, S); noise(g, S, S, 26);
     for (let f = 0; f < 3; f++) for (let m = 0; m < 6; m++) {
@@ -107,8 +109,9 @@ function texPodium(seed) {
   }, { repeat: true });
   return [day, glowFrom(lit, S)];
 }
-function glowFrom(rects, S) {
-  return canvasTex(S, S, (g) => { g.fillStyle = '#000'; g.fillRect(0, 0, S, S); for (const [x, y, w, h] of rects) { g.fillStyle = Math.random() < .7 ? 'rgb(255,200,130)' : 'rgb(190,225,255)'; g.fillRect(x, y, w, h); } }, { repeat: true });
+function glowFrom(rects, S) {   // rgb = lit windows; alpha = every window (interior-mapping mask), walls transparent
+  const panes = _panes;
+  return canvasTex(S, S, (g) => { g.clearRect(0, 0, S, S); g.fillStyle = '#000'; for (const [x, y, w, h] of panes) g.fillRect(x, y, w, h); for (const [x, y, w, h] of rects) { g.fillStyle = Math.random() < .7 ? 'rgb(255,200,130)' : 'rgb(190,225,255)'; g.fillRect(x, y, w, h); } }, { repeat: true });
 }
 const SIGN_TEXT = ['居酒屋', 'カラオケ', 'ラーメン', '質', '薬', 'BAR', '歯科', '不動産', '麻雀', 'HOTEL'];
 function texSign(i) {
@@ -147,7 +150,8 @@ let defined = false;
 export function buildingMats() { defineMats(); }
 function defineMats() {
   if (defined) return; defined = true;
-  const facade = (key, [day, glow], { glow: ng = 1, tile = TILE, ...o } = {}) => { const m = std({ map: day, normalMap: K.normalFrom(day, 3), roughnessMap: day, emissiveMap: glow, emissive: 0xffffff, emissiveIntensity: 0, roughness: 1, metalness: .15, ...o }); m.userData.nightGlow = ng; K.parallaxFacade(m, .35, tile); def(key, m, tile); };   // roughness from the facade: dark glass glossy, concrete matte
+  const facade = (key, [day, glow], { glow: ng = 1, tile = TILE, ...o } = {}) => { const m = std({ map: day, normalMap: K.normalFrom(day, 3), roughnessMap: day, emissiveMap: glow, emissive: 0xffffff, emissiveIntensity: 0, roughness: 1, metalness: .15, ...o }); m.userData.nightGlow = ng; K.parallaxFacade(m, .35, tile, ROOMS[key.replace(/\d$/, '')]); def(key, m, tile); };   // roughness from the facade: dark glass glossy, concrete matte
+  const ROOMS = { bOff: { cells: [4, 4], roomD: 5 }, bCur: { cells: [6, 4], roomD: 6 }, bTile: { cells: [4, 4], roomD: 4 }, bPod: { cells: [6, 3], roomD: 6 } };   // rooms per texture tile
   facade('bOff0', texOffice(11, '#a4a39c')); facade('bOff1', texOffice(12, '#b9b1a0')); facade('bOff2', texOffice(13, '#77797a'));
   facade('bCur0', texCurtain(21), { roughness: .3, metalness: .5, glow: .8 }); facade('bCur1', texCurtain(22), { roughness: .3, metalness: .5, glow: .8, color: 0xc8d8d0 });
   facade('bTile0', texTiles(31, '#d9d6cc')); facade('bTile1', texTiles(32, '#c7bba3')); facade('bTile2', texTiles(33, '#b4b8b6'));

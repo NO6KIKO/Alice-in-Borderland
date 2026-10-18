@@ -49,8 +49,9 @@ function facade(kind, seed) {
       g.fillStyle = gr; g.fillRect(x, y0, 2 + r() * 10, ch * 1.2);
     }
   }, { repeat: true });
-  const glow = canvasTex(W, H, (g) => {
-    g.fillStyle = '#000'; g.fillRect(0, 0, W, H);
+  const glow = canvasTex(W, H, (g) => {   // rgb = lit windows; alpha = all windows (interior-mapping mask)
+    g.clearRect(0, 0, W, H); g.fillStyle = '#000';
+    for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { const x = i * cw, y = j * ch; if (kind === 'conc') g.fillRect(x, y + ch * .3, cw, ch * .42); else if (kind === 'glass') g.fillRect(x + 2, y + 2, cw - 4, ch - 8); else g.fillRect(x + cw * .22, y + ch * .22, cw * .56, ch * .55); }
     for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) {
       if (r() > .36) continue;
       const warm = r() < .7; g.fillStyle = warm ? `rgb(255,${190 + r() * 40},${120 + r() * 40})` : 'rgb(190,225,255)';
@@ -60,7 +61,7 @@ function facade(kind, seed) {
   }, { repeat: true });
   const m = std({ map: day, normalMap: K.normalFrom(day, kind === 'glass' ? 1.2 : 2.5), roughnessMap: day, emissiveMap: glow, emissive: 0xffffff, emissiveIntensity: 0, roughness: kind === 'glass' ? .6 : 1, metalness: kind === 'glass' ? .6 : .12 });
   m.userData.nightGlow = kind === 'glass' ? .9 : 1.1;
-  K.parallaxFacade(m, .35, FAC_TILE);   // recessed windows
+  K.parallaxFacade(m, .35, FAC_TILE, { cells: [4, 4], roomD: 5 });   // recessed windows with rooms behind them
   return m;
 }
 const FACADES = ['conc', 'glass', 'tile', 'dark', 'white', 'conc'];

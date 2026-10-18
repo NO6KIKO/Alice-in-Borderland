@@ -20,6 +20,7 @@ import { DISTRICTS } from './city/map.js';
 import { createGrade } from './city/grade.js';
 import { createGodRays } from './city/godrays.js';
 import { paintedMap, setCardLite } from './city/cards.js';
+import { FAC_INT } from './kit.js';
 import { createAudio } from './city/audio.js';
 import { huntState } from './city/hunt.js';
 
@@ -608,6 +609,7 @@ const dayNight = createDayNight({ scene, renderer, hemi, moon, bloom, spots, nig
   },
   (day) => { for (const k of ['poolC', 'poolY', 'beam', 'beamY']) mats[k].visible = !day; },   // fake light pools / cones are night-only
   (day) => grade.setDay(day, dayNight?.isDusk),
+  (day, dusk) => { FAC_INT.uIntLight.value = dusk ? .45 : day ? .7 : .05; },   // rooms behind the windows: daylit, dim at dusk, dark at night
   (day, dusk) => rays.setDay(day, dusk),
   (day) => audio.setDay(day),
   (day) => { dayBtn.textContent = !day ? '☀ 切换白天' : dayNight?.isDusk ? '☾ 切换夜晚' : '◐ 切换黄昏'; },
