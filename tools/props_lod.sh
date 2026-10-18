@@ -10,6 +10,7 @@ for f in models/props/*.glb; do
     city_bus|burnt_bus) t=4000;;
     jp_*|kcar|kei_truck|wreck_car|box_truck|motorcycle|tiger|panther|deer) t=3000;;
     bicycle|bicycle_fallen|scooter|koban|rubble_pile|slab_rebar|charred_tree) t=2000;;
+    street_light|bus_stop) t=1400;;   # seen up close on every street: 700 melted the lamp heads
     konbini_shelf|drink_fridge|magazine_rack|bento_case|izakaya_table|office_desk|ramen_counter|ticket_machine|station_gate|atm|coffee_machine|konbini_counter|karaoke_sofa|tatami_room_set|shutter_shop|torii|phone_booth|vending|traffic_signal|utility_pole) t=1500;;
     *) t=700;;   # lamps, bins, signs, bags, small clutter
   esac

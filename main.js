@@ -656,7 +656,9 @@ let cullT = 0;
 let lastT = 0;
 const BG_LOOP = new URLSearchParams(location.search).has('bg');   // dev: keep ticking in a hidden / background tab (timer loop)
 window.__shot = async (name = 'shot') => {   // dev: save the current frame at full canvas resolution to .tmp/shots (local server only)
-  composer.render(); const url = renderer.domElement.toDataURL('image/png');
+  composer.render(); const src = renderer.domElement, k = Math.min(1, 1000 / src.width), c = document.createElement('canvas');   // ~1000 px JPEG keeps review copies small
+  c.width = Math.round(src.width * k); c.height = Math.round(src.height * k); c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
+  const url = c.toDataURL('image/jpeg', .8);
   return (await fetch('/__shot?name=' + name, { method: 'POST', body: await (await fetch(url)).blob() })).status;
 };
 const prof = window.__prof = { js: 0, render: 0 };

@@ -1,5 +1,5 @@
 # Dev server: like `python -m http.server`, but with no-cache headers so edited modules always reload.
-# POST /__shot?name=x with a PNG body saves it to .tmp/shots/x.png (full-res canvas captures for review).
+# POST /__shot?name=x with an image body saves it to .tmp/shots/x.jpg (full-res canvas captures for review).
 import http.server, sys, re
 
 class NoCache(http.server.SimpleHTTPRequestHandler):
@@ -15,7 +15,7 @@ class NoCache(http.server.SimpleHTTPRequestHandler):
         if n <= 0 or n > 40_000_000:
             self.send_error(413); return
         d = os.path.join(root, '.tmp', 'shots'); os.makedirs(d, exist_ok=True)
-        with open(os.path.join(d, m.group(1) + '.png'), 'wb') as f: f.write(self.rfile.read(n))
+        with open(os.path.join(d, m.group(1) + '.jpg'), 'wb') as f: f.write(self.rfile.read(n))
         self.send_response(204); self.end_headers()
 
 import functools, os

@@ -113,7 +113,7 @@ function defineMaterials() {
   def('crownP', std({ map: texCrown[1], color: 0x8fae80, roughness: .9, alphaTest: .45, side: THREE.DoubleSide }), 1);   // dark pine needles
   def('leaf', std({ map: texIvy, color: 0xc4dca8, roughness: .95 }), 1.5);
   def('trunk', std({ color: 0x4a3a2c, roughness: 1 }));
-  def('road', std({ map: texRoad, normalMap: K.normalFrom(texRoad, 3), color: 0xb8bcc0, roughness: .9 }), 12);
+  def('road', std({ map: texRoad, normalMap: K.normalFrom(texRoad, 1.2), color: 0xb8bcc0, roughness: .9 }), 12);   // gentle: strong noise normals read as orange peel up close
   def('lot', std({ map: canvasTex(512, 512, (g, w, h) => {   // 16 m tile, 32 px/m: two 5 m stall rows back to back + a 6 m aisle
     g.fillStyle = '#383a3d'; g.fillRect(0, 0, w, h); noise(g, w, h, 28);
     for (let i = 0; i < 18; i++) { g.fillStyle = `rgba(12,12,14,${.15 + Math.random() * .25})`; g.beginPath(); g.ellipse(Math.random() * w, Math.random() * 320, 10 + Math.random() * 26, 6 + Math.random() * 14, Math.random() * 3, 0, 7); g.fill(); }   // oil stains in the bays

@@ -13,7 +13,7 @@ function defineMats() {
   def('stPole', std({ map: K.texConcrete, color: 0xb8b8b2, roughness: .9 }), 3);
   def('stWire', std({ color: 0x141518, roughness: .7 }));
   def('stInsul', std({ color: 0xd8d2c6, roughness: .35 }));
-  def('stTrans', std({ color: 0x9aa0a2, roughness: .5, metalness: .5 }));
+  def('stTrans', std({ map: K.texConcrete, color: 0x80878a, roughness: .68, metalness: .25 }), 1.5);   // weathered grey can (glossy metal mirrored the sky into a white slab)
   def('stTactile', std({ map: canvasTex(64, 64, (g, w, h) => { g.fillStyle = '#d7b02a'; g.fillRect(0, 0, w, h); noise(g, w, h, 30); g.fillStyle = 'rgba(0,0,0,.25)'; for (let y = 6; y < h; y += 13) for (let x = 6; x < w; x += 13) { g.beginPath(); g.arc(x, y, 3.4, 0, 7); g.fill(); } }, { repeat: true }), roughness: .7 }), .3);
   def('stZebra', std({ map: canvasTex(128, 128, (g, w, h) => { g.fillStyle = '#e6e4dc'; g.fillRect(0, 0, w, h); noise(g, w, h, 40); for (let i = 0; i < 18; i++) { g.fillStyle = `rgba(40,42,44,${.2 + Math.random() * .4})`; g.beginPath(); g.ellipse(Math.random() * w, Math.random() * h, 3 + Math.random() * 16, 2 + Math.random() * 8, Math.random() * 3, 0, 7); g.fill(); } }, { repeat: true }), roughness: .6, polygonOffset: true, polygonOffsetFactor: -1 }), 2);
   def('stGuard', std({ map: canvasTex(128, 64, (g, w, h) => { g.clearRect(0, 0, w, h); g.fillStyle = '#e8e8e2'; g.fillRect(0, 4, w, 7); g.fillRect(0, 30, w, 5); g.fillRect(0, h - 8, w, 4); for (const x of [2, w / 2, w - 9]) g.fillRect(x, 0, 7, h); for (let i = 0; i < 6; i++) { g.fillStyle = 'rgba(120,70,30,.5)'; g.fillRect(Math.random() * w, Math.random() * h, 3 + Math.random() * 8, 2); g.fillStyle = '#e8e8e2'; } }, { repeat: true }), roughness: .5, metalness: .3, alphaTest: .5, side: THREE.DoubleSide }), 2);
