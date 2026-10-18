@@ -152,7 +152,7 @@ export function createPlayer({ scene, camera, renderer, controls, spawn = new TH
   }
 
   /* ── per-frame ── */
-  let faceYaw = spawnYaw, idleTime = 0;
+  let faceYaw = spawnYaw + Math.PI, idleTime = 0;   // the model faces away from the camera (walking faces yaw + π)
   function update(dt) {
     if (!state.active) return;
     const f = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0), s = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0);
@@ -179,6 +179,6 @@ export function createPlayer({ scene, camera, renderer, controls, spawn = new TH
     updateCamera(dt);
   }
 
-  function teleport(p, yaw = 0) { pos.copy(p); vel.set(0, 0, 0); state.yaw = yaw; faceYaw = yaw; }
+  function teleport(p, yaw = 0) { pos.copy(p); vel.set(0, 0, 0); state.yaw = yaw; state.pitch = .1; faceYaw = yaw + Math.PI; if (model) model.rotation.y = faceYaw; }
   return { enter, exit, update, setCollider, teleport, state, get pos() { return pos; }, get active() { return state.active; } };
 }
