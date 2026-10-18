@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { HeightFog, installHeightFog } from './city/hfog.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
@@ -34,7 +35,8 @@ document.body.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x04070c);
-scene.fog = new THREE.FogExp2(0x0b1424, 0.0034);
+installHeightFog();
+scene.fog = new HeightFog(0x0b1424, 0.0034, .0018);
 scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), .04).texture;
 scene.environmentIntensity = .22;   // dim env so metals read at night
 
@@ -603,6 +605,11 @@ const gtao = new GTAOPass(scene, camera, Math.floor(innerWidth / 2), Math.floor(
 gtao.updateGtaoMaterial({ radius: 2.2, distanceExponent: 1.2, thickness: 2, scale: 1.1, samples: 12, distanceFallOff: .6 });
 gtao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, rings: 2, samples: 12 });
 gtao.blendIntensity = .85; composer.addPass(gtao);
+// keep see-through effects out of the AO depth/normal pass (the cloud sheet, clipped by the far plane, drew a hard line across the sky)
+gtao.overrideVisibility = function () {
+  const cache = this._visibilityCache;
+  this.scene.traverse((o) => { cache.set(o, o.visible); const m = o.material; if (o.isPoints || o.isLine || o.isSprite || (m && !Array.isArray(m) && m.transparent && !m.depthWrite)) o.visible = false; });
+};
 let hiQ = true; try { hiQ = localStorage.getItem('quality') !== 'std'; } catch (e) {}
 gtao.enabled = hiQ;
 // cinema-mode depth of field (off otherwise): focus on what the camera looks at
@@ -648,6 +655,10 @@ const foliageMeshes = [...zoneMeshes.values()].flat().filter((m) => /^det_|\|(cr
 let cullT = 0;
 let lastT = 0;
 const BG_LOOP = new URLSearchParams(location.search).has('bg');   // dev: keep ticking in a hidden / background tab (timer loop)
+window.__shot = async (name = 'shot') => {   // dev: save the current frame at full canvas resolution to .tmp/shots (local server only)
+  composer.render(); const url = renderer.domElement.toDataURL('image/png');
+  return (await fetch('/__shot?name=' + name, { method: 'POST', body: await (await fetch(url)).blob() })).status;
+};
 const prof = window.__prof = { js: 0, render: 0 };
 function tick() {
   const t0 = performance.now();

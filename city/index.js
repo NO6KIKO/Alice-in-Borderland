@@ -76,14 +76,16 @@ const texWaterN = canvasTex(512, 512, (g, w, h) => {   // tileable ripple normal
 }, { srgb: false, repeat: true });
 
 // leaf-card textures (RGBA cut-outs): a ragged round leaf cluster for tree crowns, a tileable mat for ivy
-function leafCluster(seed, tile) {
+function leafCluster(seed, tile, clumps = 0) {   // clumps > 0: tiled but patchy (ivy with gaps that show the wall)
   const r = K.rng(seed);
   return canvasTex(512, 512, (g, w, h) => {
     g.clearRect(0, 0, w, h);
-    const N = tile ? 1400 : 1100;
+    const N = clumps ? 1500 : tile ? 1400 : 1100;
+    const C = Array.from({ length: clumps }, () => [r() * w, r() * h, 18 + r() * 46]);
     for (let i = 0; i < N; i++) {
       let x, y;
-      if (tile) { x = r() * w; y = r() * h; }
+      if (clumps) { const [cx, cy, cr] = C[i % clumps], a = r() * 6.283, d = Math.pow(r(), .7) * cr; x = (cx + Math.cos(a) * d + w) % w; y = (cy + Math.sin(a) * d * 1.4 + h) % h; }
+      else if (tile) { x = r() * w; y = r() * h; }
       else { const a = r() * 6.283, d = Math.sqrt(r()) * (w * .46) * (.75 + r() * .25); x = w / 2 + Math.cos(a) * d; y = h / 2 + Math.sin(a) * d; }
       const L = (tile ? 9 : 12) + r() * 10, rot = r() * 6.283, light = r(), shade = tile ? 0 : (y / h) * .35;   // lower leaves darker
       const R_ = 40 + light * 50 - shade * 40, G = 75 + light * 80 - shade * 60, B = 22 + light * 25;
@@ -97,7 +99,7 @@ function leafCluster(seed, tile) {
   }, { repeat: !!tile });
 }
 const texCrown = [leafCluster(11), leafCluster(23), leafCluster(37)];
-const texIvy = leafCluster(51, true);
+const texIvy = leafCluster(51, true), texIvyP = leafCluster(52, true, 70);
 
 let defined = false;
 function defineMaterials() {
@@ -105,7 +107,7 @@ function defineMaterials() {
   FACADES.forEach((k, i) => def('fac' + i, facade(k, 101 + i * 17), FAC_TILE));
   def('roof', std({ map: K.texConcrete, color: 0x6c6d6a, roughness: .95 }), 6);
   def('roofG', std({ map: texLeaf, color: 0xa8c08a, roughness: 1 }), 3);
-  def('ivy', std({ map: texIvy, color: 0xd8ecc0, roughness: .95, alphaTest: .5, side: THREE.DoubleSide }), 2.5);
+  def('ivy', std({ map: texIvyP, color: 0xc8dcb0, roughness: .95, alphaTest: .5, side: THREE.DoubleSide }), 2.5);
   texCrown.forEach((t, i) => def('crown' + i, std({ map: t, color: [0xe0f0c8, 0xd2e8b0, 0xe8ecc0][i], roughness: .9, alphaTest: .45, side: THREE.DoubleSide }), 1));
   def('crownCore', std({ color: 0x1c2e12, roughness: 1 }));
   def('crownP', std({ map: texCrown[1], color: 0x8fae80, roughness: .9, alphaTest: .45, side: THREE.DoubleSide }), 1);   // dark pine needles

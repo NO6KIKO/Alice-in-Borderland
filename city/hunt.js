@@ -116,7 +116,10 @@ export function hunt(ctx) {
       const g = c.getContext('2d'); g.filter = 'brightness(1.45) contrast(2.2)'; g.drawImage(src, 0, 0);
       puddleMask = new THREE.CanvasTexture(c); puddleMask.wrapS = puddleMask.wrapT = THREE.RepeatWrapping; puddleMask.repeat.copy(m.roughnessMap.repeat);
     }
-    m.alphaMap = wetLook ? puddleMask : null; m.transparent = wetLook; m.needsUpdate = true;
+    m.alphaMap = wetLook ? puddleMask : null; m.transparent = wetLook;
+    // by day the rain has dried: matte asphalt (glossy puddles under a bright sky read as white blotches)
+    if (!m.userData.wetRough) m.userData.wetRough = m.roughnessMap; m.roughnessMap = wetLook ? m.userData.wetRough : null; m.roughness = wetLook ? 1 : .9; m.needsUpdate = true;
+    const pud = K.mats.shib_pud; if (pud) { pud.opacity = wetLook ? .7 : .28; pud.roughness = wetLook ? .12 : .7; }
   });
 
   /* ── what people dropped when they ran: umbrellas, bags, phones, shopping, toppled bikes ── */

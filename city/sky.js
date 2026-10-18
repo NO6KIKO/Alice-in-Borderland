@@ -10,7 +10,11 @@ export function createDayNight({ scene, renderer, hemi, moon, bloom, spots, nigh
 
   const sky = new Sky(); sky.scale.setScalar(450000); sky.visible = false; scene.add(sky);
   // the Preetham sky is far brighter than our scene exposure wants — scale it so it reads blue, not white
-  sky.material.fragmentShader = sky.material.fragmentShader.replace('#include <tonemapping_fragment>', 'gl_FragColor.rgb *= 0.38;\n#include <tonemapping_fragment>');
+  // …and melt its horizon into the fog colour, so distant buildings fading into haze meet a matching sky
+  // (uBlue deepens the zenith toward a clear blue; small at dusk)
+  sky.material.uniforms.uHaze = { value: new THREE.Color() }; sky.material.uniforms.uBlue = { value: 1 };
+  sky.material.fragmentShader = sky.material.fragmentShader.replace('void main() {', 'uniform vec3 uHaze;\nuniform float uBlue;\nvoid main() {')
+    .replace('#include <tonemapping_fragment>', 'gl_FragColor.rgb *= 0.38;\ngl_FragColor.rgb *= mix( vec3( 1.0 ), vec3( .72, .88, 1.18 ), smoothstep( .04, .55, direction.y ) * uBlue );\ngl_FragColor.rgb = mix( gl_FragColor.rgb, uHaze, pow( 1.0 - clamp( direction.y, 0.0, 1.0 ), 10.0 ) * 0.85 );\n#include <tonemapping_fragment>');
   const u = sky.material.uniforms;
   u.turbidity.value = 3.2; u.rayleigh.value = 2.4; u.mieCoefficient.value = .003; u.mieDirectionalG.value = .8;   // clear, slightly hazy Tokyo blue
   const sunDay = new THREE.Vector3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(52), THREE.MathUtils.degToRad(215));
@@ -70,11 +74,13 @@ export function createDayNight({ scene, renderer, hemi, moon, bloom, spots, nigh
     sunDir.copy(isDusk ? sunDusk : sunDay); u.sunPosition.value.copy(sunDir); u.turbidity.value = isDusk ? 6 : 3.2;
     sky.visible = day; if (nightBackdrop) nightBackdrop.visible = !day;
     scene.background = day ? null : night.bg;
-    scene.environment = day ? (isDusk ? duskEnv : dayEnv) : nightEnv; scene.environmentIntensity = day ? .55 : .22;
+    scene.environment = day ? (isDusk ? duskEnv : dayEnv) : nightEnv; scene.environmentIntensity = day ? .5 : .22;
     scene.fog.color.set(isDusk ? 0xc9a48a : day ? 0x9fb6cc : night.fogC); scene.fog.density = isDusk ? .00017 : day ? .00011 : night.fogD;
-    hemi.color.set(isDusk ? 0x9aa6c8 : day ? 0xc4d8f0 : night.hemiS); hemi.groundColor.set(day ? 0x6b6252 : night.hemiG); hemi.intensity = isDusk ? .8 : day ? 1.25 : night.hemiI;
+    scene.fog.height = isDusk ? .0011 : day ? .0006 : .0016;   // ground haze layer (see hfog.js)
+    u.uHaze.value.copy(scene.fog.color); u.uBlue.value = isDusk ? .25 : 1;
+    hemi.color.set(isDusk ? 0x9aa6c8 : day ? 0xc4d8f0 : night.hemiS); hemi.groundColor.set(day ? 0x6b6252 : night.hemiG); hemi.intensity = isDusk ? .8 : day ? 1.0 : night.hemiI;
     moon.intensity = day ? 0 : night.moonI;
-    sun.color.set(isDusk ? 0xffa45c : 0xfff1dc); sun.intensity = isDusk ? 4.2 : day ? 5.2 : 0; sun.visible = day;
+    sun.color.set(isDusk ? 0xffa45c : 0xfff1dc); sun.intensity = isDusk ? 4.2 : day ? 5.9 : 0; sun.visible = day;
     renderer.toneMappingExposure = isDusk ? .82 : day ? .74 : night.exp;
     bloom.strength = day ? .18 : night.bloom; bloom.threshold = day ? 1.6 : 1.0;
     for (const s of spots) s.visible = !day;
@@ -84,7 +90,7 @@ export function createDayNight({ scene, renderer, hemi, moon, bloom, spots, nigh
   }
   // enclosed halls: by day, fade sky light out while the camera is inside one of these boxes
   const interiors = []; let inside = 0;
-  function base() { return isDusk ? { h: .8, s: 4.2, e: .55 } : isDay ? { h: 1.25, s: 5.2, e: .55 } : { h: night.hemiI, s: 0, e: .22 }; }
+  function base() { return isDusk ? { h: .8, s: 4.2, e: .55 } : isDay ? { h: 1.0, s: 5.9, e: .5 } : { h: night.hemiI, s: 0, e: .22 }; }
   function update(focus, cam) {
     cloudTex.offset.x += .000012; cloudTex.offset.y += .000006;
     if (cam) { stars.position.copy(cam); moonDisc.position.copy(cam).addScaledVector(_moonDir, 5500); }

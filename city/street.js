@@ -25,7 +25,7 @@ function defineMats() {
     g.clearRect(0, 0, w, h);
     for (let i = 0; i < 70; i++) { const x = w / 2 + (Math.random() - .5) * w * .8, lean = (Math.random() - .5) * 40, hh = h * (.35 + Math.random() * .6), k = Math.random();
       g.strokeStyle = `rgb(${60 + k * 60 | 0},${95 + k * 70 | 0},${35 + k * 25 | 0})`; g.lineWidth = 1.5 + Math.random() * 2; g.beginPath(); g.moveTo(x, h); g.quadraticCurveTo(x + lean * .3, h - hh * .6, x + lean, h - hh); g.stroke(); }
-  }), alphaTest: .5, side: THREE.DoubleSide, roughness: 1 }), 1);
+  }), color: 0xa3aa8c, alphaTest: .5, side: THREE.DoubleSide, roughness: 1 }), 1);
   K.mats.stWeed.userData.noCollide = true;
   def('stLamp', std({ color: 0x1a2a24, roughness: .3, emissive: 0x000000 }));
   for (const k of ['stWire', 'stGuard', 'stZebra', 'stManhole', 'stTactile']) K.mats[k].userData.noCollide = true;

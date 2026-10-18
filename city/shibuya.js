@@ -60,7 +60,7 @@ function materials() {
     for (let i = 0; i < 34; i++) { g.fillStyle = `rgba(60,62,64,${.15 + r() * .3})`; g.beginPath(); g.ellipse(r() * w, r() * h, 3 + r() * 26, 2 + r() * 12, r() * 3, 0, 7); g.fill(); }
     for (let i = 0; i < 12; i++) { g.strokeStyle = 'rgba(20,20,20,.5)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(r() * w, r() * h); g.lineTo(r() * w, r() * h); g.stroke(); }
   }, { repeat: true });
-  def('shib_zebra', std({ map: zT, roughness: .32, metalness: .05 }), 3);
+  def('shib_zebra', std({ map: zT, color: 0xc9c7bf, roughness: .58, metalness: .02 }), 3);   // worn road paint: off-white, not glossy
   const pT = canvasTex(512, 512, (g, w, h) => {
     for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) { const v = 128 + (r() - .5) * 34; g.fillStyle = `rgb(${v},${v},${v - 6})`; g.fillRect(i * 64, j * 64, 64, 64); if (r() < .06) { g.fillStyle = 'rgba(30,26,20,.55)'; g.fillRect(i * 64, j * 64, 64, 64); } }
     noise(g, w, h, 24);
@@ -73,7 +73,7 @@ function materials() {
     g.clearRect(0, 0, 128, 128);
     for (let i = 0; i < 28; i++) { const x = 34 + r() * 60, tx = x + (r() - .5) * 70, ty = 8 + r() * 70; g.strokeStyle = r() < .2 ? '#9a9a48' : `rgb(${50 + r() * 40},${100 + r() * 60},${30 + r() * 25})`; g.lineWidth = 2 + r() * 3; g.beginPath(); g.moveTo(x, 128); g.quadraticCurveTo(x + (tx - x) * .2, (128 + ty) / 2, tx, ty); g.stroke(); }
   });
-  const weed = std({ map: wT, alphaTest: .45, side: THREE.DoubleSide, roughness: 1 }); weed.userData.noCollide = true; def('shib_weed', weed, 1);
+  const weed = std({ map: wT, color: 0xa3aa8c, alphaTest: .45, side: THREE.DoubleSide, roughness: 1 }); weed.userData.noCollide = true; def('shib_weed', weed, 1);   // muted, sun-bleached green
   const mT = canvasTex(256, 256, (g) => {
     g.clearRect(0, 0, 256, 256);
     for (let i = 0; i < 90; i++) { const a = r() * 7, d = Math.sqrt(r()) * 95, x = 128 + Math.cos(a) * d, y = 128 + Math.sin(a) * d; g.fillStyle = `rgba(${55 + r() * 40},${85 + r() * 55},${28 + r() * 20},.9)`; g.beginPath(); g.ellipse(x, y, 6 + r() * 22, 5 + r() * 16, r() * 3, 0, 7); g.fill(); }
@@ -153,7 +153,7 @@ function materials() {
   def('shib_grn', K.bas({ color: new THREE.Color(.2, 2.2, 1) }));
   // standalone screens / murals
   const scr = (map, I = .6) => std({ map, emissiveMap: map, emissive: 0xffffff, emissiveIntensity: I, roughness: .3, metalness: .1, side: THREE.DoubleSide });
-  M.static = scr(canvasTex(256, 128, (g, w, h) => { g.fillStyle = '#7f8590'; g.fillRect(0, 0, w, h); noise(g, w, h, 300); for (let i = 0; i < 12; i++) { g.fillStyle = `rgba(${r() < .5 ? 255 : 0},${r() < .5 ? 255 : 0},255,${r() * .25})`; g.fillRect(0, r() * h, w, 2 + r() * 8); } }, { repeat: true }));
+  M.static = scr(canvasTex(256, 128, (g, w, h) => { g.fillStyle = '#7f8590'; g.fillRect(0, 0, w, h); noise(g, w, h, 300); for (let i = 0; i < 12; i++) { g.fillStyle = `rgba(${r() < .5 ? 255 : 0},${r() < .5 ? 255 : 0},255,${r() * .25})`; g.fillRect(0, r() * h, w, 2 + r() * 8); } }, { repeat: true }), .3);   // dead channel: dimmer than live screens
   M.broken = scr(canvasTex(512, 256, (g, w, h) => {
     const gr = g.createLinearGradient(0, 0, w, h); gr.addColorStop(0, '#eef3ff'); gr.addColorStop(1, '#7fa2f0'); g.fillStyle = gr; g.fillRect(0, 0, w, h);
     g.fillStyle = '#050607'; for (let i = 0; i < 46; i++) { const x = r() * w, y = r() * h, s = 8 + r() * 46; g.beginPath(); for (let k = 0; k < 9; k++) { const a = k / 9 * 6.283, d = s * (.5 + r() * .7); g.lineTo(x + Math.cos(a) * d, y + Math.sin(a) * d * .8); } g.fill(); }
