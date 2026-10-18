@@ -65,7 +65,7 @@ export function createDayNight({ scene, renderer, hemi, moon, bloom, spots, nigh
     bloom.strength = day ? .18 : night.bloom; bloom.threshold = day ? 1.6 : 1.0;
     for (const s of spots) s.visible = !day;
     clouds.material.color.set(day ? 0xffffff : 0x1a2230); clouds.material.opacity = day ? .85 : .7;
-    for (const f of onChange) f(day);
+    for (const f of onChange) f(day, isDusk);
   }
   // enclosed halls: by day, fade sky light out while the camera is inside one of these boxes
   const interiors = []; let inside = 0;

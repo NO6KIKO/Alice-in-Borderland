@@ -628,11 +628,12 @@ export function build(ctx, d) {
     M.broken.emissiveIntensity = base * (Math.random() < .04 ? .25 : 1);
     M.ad.emissiveIntensity = base * (Math.random() < .015 ? 0 : 1);
   });
-  ctx.dayNight.push((day) => {
-    // Shibuya is the live game venue: the only part of the city with power at night (screens, neon, shops)
-    base = day ? .35 : 1.1; M.static.emissiveIntensity = base;
-    M.shop.emissiveIntensity = day ? .15 : .9; M.twin.emissiveIntensity = day ? .3 : 1.1; M.sign.emissiveIntensity = day ? .2 : 1.2;
-    M.mural.emissiveIntensity = day ? 0 : .25; M.subSign.emissiveIntensity = day ? .2 : 1.4;
+  ctx.dayNight.push((day, dusk) => {
+    // Shibuya is the live game venue: the only part of the city with power at night (screens, neon, shops); coming on at dusk
+    const k = !day ? 1 : dusk ? .7 : 0, mix = (a, b) => a + (b - a) * k;
+    base = mix(.35, 1.1); M.static.emissiveIntensity = base;
+    M.shop.emissiveIntensity = mix(.15, .9); M.twin.emissiveIntensity = mix(.3, 1.1); M.sign.emissiveIntensity = mix(.2, 1.2);
+    M.mural.emissiveIntensity = mix(0, .25); M.subSign.emissiveIntensity = mix(.2, 1.4);
   });
   ctx.pois.push({ id: d.id, cam: [d.x + 25, 50, d.z + 112], tgt: [d.x - 18, 10, d.z], spawn: [d.x - 27, PV + .1, d.z + 47], yaw: Math.atan2(-17, 37) });
 }

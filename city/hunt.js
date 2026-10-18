@@ -109,14 +109,14 @@ export function hunt(ctx) {
   const flood = new THREE.SpotLight(0xdfe9ff, 0, 140, .6, .9, 1.2); flood.position.set(C.x + 18, 48, C.z - 12); flood.target.position.copy(C);
   flood.castShadow = true; flood.shadow.mapSize.set(1024, 1024); flood.shadow.bias = -.0005; scene.add(flood, flood.target);
   ctx.dayNight.push((day) => { flood.intensity = day ? 0 : 260; });   // soft key light, not a stadium
-  ctx.dayNight.push((day) => {
-    night = !day; const m = K.mats.shib_road; if (!m) return;
+  ctx.dayNight.push((day, dusk) => {
+    const wetLook = !day || dusk; night = wetLook; const m = K.mats.shib_road; if (!m) return;   // wet after rain: dusk + night
     if (!puddleMask && m.roughnessMap?.image) {   // high-contrast copy of the puddle map: dry asphalt opaque, puddles see-through
       const src = m.roughnessMap.image, c = document.createElement('canvas'); c.width = src.width; c.height = src.height;
       const g = c.getContext('2d'); g.filter = 'brightness(1.45) contrast(2.2)'; g.drawImage(src, 0, 0);
       puddleMask = new THREE.CanvasTexture(c); puddleMask.wrapS = puddleMask.wrapT = THREE.RepeatWrapping; puddleMask.repeat.copy(m.roughnessMap.repeat);
     }
-    m.alphaMap = day ? null : puddleMask; m.transparent = !day; m.needsUpdate = true;
+    m.alphaMap = wetLook ? puddleMask : null; m.transparent = wetLook; m.needsUpdate = true;
   });
 
   /* ── what people dropped when they ran: umbrellas, bags, phones, shopping, toppled bikes ── */

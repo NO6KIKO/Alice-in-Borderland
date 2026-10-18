@@ -65,5 +65,5 @@ export function konbini(ctx, x, y, z, ry = 0) {
   // one warm-white interior light (night) so the store reads as the brightest point on the corner
   const L = new THREE.PointLight(0xf2f6ff, 0, 18, 1.6);
   withFrame(x, y, z, ry, () => L.position.copy(K.fpos(W / 2, CEIL - .3, D / 2)));
-  ctx.scene.add(L); ctx.dayNight.push((day) => { L.intensity = day ? 0 : 32; K.mats.kb_light.color.setScalar(day ? 1.1 : 1.25); });
+  ctx.scene.add(L); ctx.dayNight.push((day, dusk) => { L.intensity = day && !dusk ? 0 : dusk ? 20 : 32; K.mats.kb_light.color.setScalar(day && !dusk ? 1.1 : 1.25); });
 }
