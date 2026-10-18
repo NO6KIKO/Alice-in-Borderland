@@ -28,7 +28,25 @@ const SX = 60, SZ = 42.5, WH = 6, L1 = 10, L2 = 15;
 
 /* ───────────── renderer / scene ───────────── */
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+// integrated GPUs share system memory with everything else: render at 1× and decode model textures at ≤512 px there.
+// ?lite (or a previous context loss this session) forces the same budget on any GPU.
+const igpu = (() => { try { const gl = renderer.getContext(), d = gl.getExtension('WEBGL_debug_renderer_info'); return /Intel|UHD|Iris|Radeon\(TM\) Graphics|Microsoft Basic/i.test(d ? gl.getParameter(d.UNMASKED_RENDERER_WEBGL) : ''); } catch (e) { return false; } })();
+const LITE = igpu || new URLSearchParams(location.search).has('lite') || (() => { try { return sessionStorage.getItem('lite') === '1'; } catch (e) { return false; } })();
+const DPR_MAX = LITE ? 1 : 2;
+if (LITE && window.createImageBitmap) {   // GLTF images decode through createImageBitmap(blob): shrink big ones before they reach the GPU
+  const cib = window.createImageBitmap.bind(window), CAP = 512;
+  window.createImageBitmap = async (src, ...rest) => {
+    if (!(src instanceof Blob) || rest.length > 1) return cib(src, ...rest);
+    const bmp = await cib(src, ...rest), m = Math.max(bmp.width, bmp.height);
+    if (m <= CAP) return bmp;
+    const out = await cib(bmp, { resizeWidth: Math.round(bmp.width * CAP / m), resizeHeight: Math.round(bmp.height * CAP / m), resizeQuality: 'high' });
+    bmp.close(); return out;
+  };
+}
+renderer.domElement.addEventListener('webglcontextlost', () => {   // out of GPU memory: retry once in lite mode
+  try { if (sessionStorage.getItem('lite') !== '1') { sessionStorage.setItem('lite', '1'); setTimeout(() => location.reload(), 300); } } catch (e) {}
+});
+renderer.setPixelRatio(Math.min(devicePixelRatio, DPR_MAX));
 renderer.setSize(innerWidth, innerHeight);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
@@ -612,8 +630,7 @@ gtao.overrideVisibility = function () {
   this.scene.traverse((o) => { cache.set(o, o.visible); const m = o.material; if (o.isPoints || o.isLine || o.isSprite || (m && !Array.isArray(m) && m.transparent && !m.depthWrite)) o.visible = false; });
 };
 // integrated GPUs share system memory: default them to standard quality unless the viewer chose otherwise
-const igpu = (() => { try { const gl = renderer.getContext(), d = gl.getExtension('WEBGL_debug_renderer_info'); return /Intel|UHD|Iris|Radeon\(TM\) Graphics|Microsoft Basic/i.test(d ? gl.getParameter(d.UNMASKED_RENDERER_WEBGL) : ''); } catch (e) { return false; } })();
-let hiQ = !igpu; try { const q = localStorage.getItem('quality'); if (q) hiQ = q !== 'std'; } catch (e) {}
+let hiQ = !LITE; try { const q = localStorage.getItem('qualityChoice'); if (q) hiQ = q !== 'std'; } catch (e) {}   // only an explicit click is remembered
 gtao.enabled = hiQ;
 // cinema-mode depth of field (off otherwise): focus on what the camera looks at
 const dof = new BokehPass(scene, camera, { focus: 60, aperture: .00012, maxblur: .006 }); dof.enabled = false; composer.addPass(dof);
@@ -624,8 +641,8 @@ const grade = createGrade(composer);   // the show's teal / amber film look
 const audio = createAudio();
 const smaa = new SMAAPass(innerWidth * renderer.getPixelRatio(), innerHeight * renderer.getPixelRatio()); composer.addPass(smaa);
 const qBtn = document.createElement('button'); vb.insertBefore(qBtn, playBtn);
-const setQ = (q) => { hiQ = q; gtao.enabled = q; qBtn.textContent = q ? '画质: 高' : '画质: 标准'; try { localStorage.setItem('quality', q ? 'hi' : 'std'); } catch (e) {} };
-setQ(hiQ); qBtn.onclick = () => setQ(!hiQ);
+const setQ = (q, save) => { hiQ = q; gtao.enabled = q; qBtn.textContent = q ? '画质: 高' : '画质: 标准'; if (save) try { localStorage.setItem('qualityChoice', q ? 'hi' : 'std'); } catch (e) {} };
+setQ(hiQ); qBtn.onclick = () => setQ(!hiQ, true);
 const facadeMats = Object.values(mats).filter((m) => m.userData.nightGlow);   // lit windows / signs / shopfronts at night
 const CITY_NIGHT_LIGHTS = .15;
 city.visible = false;   // the real city fills the horizon now; the painted skyline ring looked fake
@@ -651,7 +668,7 @@ window.__day = dayNight; window.__renderer = renderer; window.__scene = scene; w
 dayNight.interiors.push([402, 618, 40, -224, -76]);   // black warehouse hall (x0,x1,yTop,z0,z1)
 dayNight.interiors.push([-1058, -1023, -.5, 230, 249]);   // Shibuya subway concourse + stair shaft
 dayNight.interiors.push([-348, -312, 136, -418, -382, 122]);    // King of Diamonds courtroom (top of the tower)
-addEventListener('resize', () => { const pr = Math.min(devicePixelRatio, 2); renderer.setPixelRatio(pr); composer.setPixelRatio(pr); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight); gtao.setSize(Math.floor(innerWidth / 2), Math.floor(innerHeight / 2)); refl.getRenderTarget().setSize(Math.max(512, Math.floor(innerWidth * .6)), Math.max(512, Math.floor(innerHeight * .6))); });
+addEventListener('resize', () => { const pr = Math.min(devicePixelRatio, DPR_MAX); renderer.setPixelRatio(pr); composer.setPixelRatio(pr); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight); gtao.setSize(Math.floor(innerWidth / 2), Math.floor(innerHeight / 2)); refl.getRenderTarget().setSize(Math.max(512, Math.floor(innerWidth * .6)), Math.max(512, Math.floor(innerHeight * .6))); });
 
 // moving the window to a screen with another pixel ratio doesn't fire 'resize' — watch the ratio directly
 (function watchDPR() { matchMedia(`(resolution: ${devicePixelRatio}dppx)`).addEventListener('change', () => { dispatchEvent(new Event('resize')); watchDPR(); }, { once: true }); })();
@@ -691,7 +708,7 @@ function tick() {
   }
   dayNight.update(player.active ? player.pos : controls.target, camera.position);
   updateMarkers();
-  if (renderer.getPixelRatio() !== Math.min(devicePixelRatio, 2)) dispatchEvent(new Event('resize'));   // pane / monitor DPR changed
+  if (renderer.getPixelRatio() !== Math.min(devicePixelRatio, DPR_MAX)) dispatchEvent(new Event('resize'));   // pane / monitor DPR changed
   const tr = performance.now();
   grade.update(t, innerWidth, innerHeight); rays.update(camera, dayNight.sunDir, innerWidth, innerHeight);
   if (dof.enabled) dof.uniforms.focus.value = player.active ? 6 : camera.position.distanceTo(controls.target);
