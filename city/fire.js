@@ -17,7 +17,7 @@ function mats() {
       g.fillStyle = gr; g.fillRect(wx - 6, wy - ch * .8, ww + 12, ch * .8);           // soot plume above the opening
       g.fillStyle = '#090807'; g.fillRect(wx, wy, ww, wh);
       g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(x, y + ch - 4, cw, 4);
-      if (r() < .42) lit.push([wx, wy, ww, wh]);
+      if (r() < .14) lit.push([wx, wy, ww, wh]);   // most openings are charred black, a few still burning
     }
     for (let i = 0; i < 30; i++) { g.fillStyle = `rgba(0,0,0,${r() * .3})`; g.fillRect(r() * W, r() * H, 2 + r() * 8, 20 + r() * 80); }
   }, { repeat: true });
@@ -57,8 +57,10 @@ uniform float uT, uI; varying vec2 vUv; varying float vSeed;${NOISE}
 void main(){
   vec2 uv = vUv; float t = uT * 1.7 + vSeed * 10.;
   float q = fbm(vec2(uv.x * 3. + vSeed * 7., uv.y * 2.3 - t));
-  float w = (1. - uv.y) * .5 + .06, dx = abs(uv.x - .5 + (q - .5) * .4 * uv.y);
-  float body = smoothstep(w, w * .3, dx) * smoothstep(1., .1, uv.y + (q - .5) * .55) * smoothstep(0., .07, uv.y);
+  float q2 = fbm(vec2(uv.x * 8. + vSeed * 3., uv.y * 6. - t * 2.2));   // fine tongues
+  float dx = abs(uv.x - .5 + (q - .5) * .45 * uv.y), w = pow(1. - uv.y, .7) * .42 + .03;
+  float f = smoothstep(w, w * .15, dx) * (q * .95 + q2 * .55) * 1.7 - uv.y * 1.15;   // ragged, tips break off
+  float body = smoothstep(0., .32, f) * smoothstep(0., .06, uv.y);
   if (body < .01) discard;
   float heat = body * (1.25 - uv.y);
   vec3 c = mix(vec3(.9, .1, .02), vec3(1., .5, .07), smoothstep(.15, .6, heat));
@@ -195,6 +197,11 @@ export function build(ctx, d) {
     // burnt cars + toppled poles with sagging wires
     for (const [x, z, ry, fp] of [[-60, 6, .1, 0], [-20, 14, 1.2, 0], [20, 5, -.2, 1], [55, 13, 3.0, 0], [120, 6, .3, 0], [-120, 14, 2.9, 1], [-34, -60, 1.6, 0], [-26, 70, 1.4, 0], [-33, 95, 1.75, 1], [87, -60, 1.5, 0], [93, 70, -1.4, 0], [-95, 4, .05, 0]]) car(x, z, ry, !!fp, r, F);
     for (const [x, z, ry] of [[-45, 22, .3], [70, -4, 2.6], [96, 40, 1.2]]) { cyl('concD', .2, 11, x, .3, z, 0, ry, Math.PI / 2, 6); strut('steel', [x, .5, z], [x + 8 * Math.cos(ry), 6, z - 8 * Math.sin(ry)], .02, 3); }
+    // Tripo debris: rubble piles, fallen slabs with rebar, burnt buses on the avenues, charred trees, hydrants
+    for (let i = 0; i < 26; i++) { const [x, z] = [(r() - .5) * (d.w - 20), (r() - .5) * (d.d - 20)]; prop(i % 3 ? 'rubble_pile' : 'slab_rebar', x, .04, z, r() * 6.28, .8 + r() * .7); }
+    for (const [x, z, ry] of [[-5, 9, .06], [-31, 40, 1.62], [92, -60, 1.5]]) prop('burnt_bus', x, .08, z, ry);
+    for (let i = 0; i < 12; i++) prop('charred_tree', (r() - .5) * (d.w - 20), .04, (r() - .5) * (d.d - 20), r() * 6.28, .7 + r() * .5);
+    for (const [x, z] of [[-40, 1.5], [60, 18.5], [-22, -50], [82, 30]]) prop('hydrant', x, .08, z, 0);
     // wall-sized fires on the burning core
     F.push([[-115, 14, -26], 14, 26], [[0, 13, -83], 13, 24], [[128, 12, 63], 12, 22]);
     for (const [p] of F) if (p[1] < 1.5) pool(p[0], p[2], 4.5);

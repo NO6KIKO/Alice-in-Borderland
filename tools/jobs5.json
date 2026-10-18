@@ -1,0 +1,37 @@
+[
+ {
+  "kind": "model",
+  "out": "models/props/rubble_pile.glb",
+  "prompt": "pile of broken concrete rubble chunks with twisted rusty rebar sticking out, dust, realistic PBR",
+  "neg": "text, logo, letters, watermark, people, ground plane, base platform",
+  "faces": 14000
+ },
+ {
+  "kind": "model",
+  "out": "models/props/burnt_bus.glb",
+  "prompt": "burnt out city bus shell, charred black and rusted metal, melted windows, flat tyres, realistic PBR",
+  "neg": "text, logo, letters, watermark, people, ground plane, base platform",
+  "faces": 20000
+ },
+ {
+  "kind": "model",
+  "out": "models/props/slab_rebar.glb",
+  "prompt": "collapsed broken concrete floor slab section with exposed bent rebar, cracked edges, realistic PBR",
+  "neg": "text, logo, letters, watermark, people, ground plane, base platform",
+  "faces": 12000
+ },
+ {
+  "kind": "model",
+  "out": "models/props/charred_tree.glb",
+  "prompt": "burnt dead tree trunk with charred black branches, realistic PBR",
+  "neg": "text, logo, letters, watermark, people, ground plane, base platform",
+  "faces": 10000
+ },
+ {
+  "kind": "model",
+  "out": "models/props/hydrant.glb",
+  "prompt": "Japanese red fire hydrant standpipe on sidewalk, weathered paint, realistic PBR",
+  "neg": "text, logo, letters, watermark, people, ground plane, base platform",
+  "faces": 4000
+ }
+]
