@@ -103,25 +103,49 @@ function materials() {
   const pudA = canvasTex(64, 64, (g, w, h) => { const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, '#fff'); gr.addColorStop(.5, '#fff'); gr.addColorStop(1, '#000'); g.fillStyle = gr; g.fillRect(0, 0, w, h); }, { srgb: false });   // feathered rim
   const pud = std({ color: 0x0b0e12, alphaMap: pudA, roughness: .12, metalness: 0, envMapIntensity: .35, transparent: true, opacity: .7, polygonOffset: true, polygonOffsetFactor: -2 }); pud.userData.noCollide = true; def('shib_pud', pud, 1);
   const vine = std({ map: K.mats.ivy.map, color: 0x86a866, roughness: 1 }); vine.userData.noCollide = true; def('shib_vine', vine, 1);
-  // storefronts (2 × 2 bays of 4 m; shown 4 m tall) — day map + lit-window glow map
-  const SH = Array.from({ length: 4 }, () => [r() < .35, Math.floor(r() * 360)]);
+  // storefronts: 8 kinds of 4 m bay in one strip — shuttered / dark broken glass / lit drugstore / graffiti shutter /
+  // lit izakaya / dark empty / lit game centre / half-raised shutter — day map 2048×256 + glow map at half size
+  const BAYS = ['shut', 'broken', 'drug', 'graffiti', 'izakaya', 'empty', 'game', 'half'];
   const shopDraw = (glow) => (g, w, h) => {
-    g.fillStyle = glow ? '#000' : '#2a2c2e'; g.fillRect(0, 0, w, h);
-    SH.forEach(([shut, hue], k) => {
-      const x = (k % 2) * 256, y = Math.floor(k / 2) * 256;
-      g.fillStyle = glow ? `hsl(${hue},80%,55%)` : `hsl(${hue},55%,40%)`; g.fillRect(x + 8, y + 12, 240, 44);
-      g.fillStyle = glow ? 'rgba(255,255,255,.9)' : '#eee'; for (let i = 0; i < 6; i++) g.fillRect(x + 30 + i * 34, y + 22, 22, 24);
-      if (shut) { if (!glow) { g.fillStyle = '#74777a'; g.fillRect(x + 10, y + 66, 236, 186); g.fillStyle = 'rgba(0,0,0,.3)'; for (let i = 0; i < 186; i += 7) g.fillRect(x + 10, y + 66 + i, 236, 2); g.fillStyle = 'rgba(60,40,25,.3)'; g.fillRect(x + 10, y + 200, 236, 52); } }
-      else {
-        const gr = g.createLinearGradient(0, y + 66, 0, y + 252); gr.addColorStop(0, glow ? '#ffd9a0' : '#c99a5c'); gr.addColorStop(1, glow ? '#a86a30' : '#4a3424'); g.fillStyle = gr; g.fillRect(x + 10, y + 66, 236, 186);
-        g.fillStyle = glow ? 'rgba(0,0,0,.6)' : 'rgba(20,14,10,.75)'; for (let i = 0; i < 3; i++) g.fillRect(x + 20, y + 110 + i * 44, 216, 6);
-        for (let i = 0; i < 9; i++) g.fillRect(x + 22 + r() * 200, y + 120 + r() * 100, 10 + r() * 20, 14 + r() * 20);
-        g.fillStyle = glow ? '#000' : '#1a1c1e'; g.fillRect(x + 126, y + 66, 5, 186);
+    const S = w / 2048; g.save(); g.scale(S, S);
+    g.fillStyle = glow ? '#000' : '#26282a'; g.fillRect(0, 0, 2048, 256);
+    BAYS.forEach((kind, k) => {
+      const x = k * 256, lit = kind === 'drug' || kind === 'izakaya' || kind === 'game';
+      // fascia board (top 52 px)
+      const fascia = { drug: ['#f2d23a', '#1c3f9a', '薬 ドラッグ'], izakaya: ['#3a2216', '#f4ead6', '居酒屋'], game: ['#2a0e3a', '#ff6ad8', 'ゲーム'] }[kind];
+      if (fascia) { g.fillStyle = glow ? fascia[0] : fascia[0]; g.fillRect(x + 6, 10, 244, 44); g.fillStyle = fascia[1]; g.font = 'bold 34px "Yu Gothic","Meiryo",sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(fascia[2], x + 128, 33); }
+      else if (!glow) { g.fillStyle = '#1c1d1e'; g.fillRect(x + 6, 10, 244, 44); g.fillStyle = 'rgba(255,255,255,.08)'; g.fillRect(x + 14, 20, 120, 8); }   // dead fascia
+      if (glow && !lit && kind !== 'half') return;
+      const y0 = 62, H = 190;
+      if (kind === 'shut' || kind === 'graffiti' || kind === 'half') {
+        const top = kind === 'half' ? y0 : y0, bot = kind === 'half' ? y0 + H - 30 : y0 + H;
+        if (!glow) { g.fillStyle = '#76797c'; g.fillRect(x + 8, top, 240, bot - top); g.fillStyle = 'rgba(0,0,0,.3)'; for (let i = 0; i < bot - top; i += 7) g.fillRect(x + 8, top + i, 240, 2); g.fillStyle = 'rgba(70,45,25,.35)'; g.fillRect(x + 8, bot - 50, 240, 50); }
+        if (kind === 'graffiti' && !glow) { for (let i = 0; i < 5; i++) { g.strokeStyle = ['#e0306a', '#30c0e0', '#f0e040', '#222', '#fff'][i]; g.lineWidth = 5; g.beginPath(); g.moveTo(x + 30 + r() * 60, y0 + 40 + r() * 120); for (let k2 = 0; k2 < 6; k2++) g.lineTo(x + 30 + r() * 190, y0 + 40 + r() * 120); g.stroke(); } }
+        if (kind === 'half') { g.fillStyle = glow ? '#ffd9a0' : '#c9a06a'; g.fillRect(x + 8, y0 + H - 30, 240, 30); }   // lit strip under the shutter
+        return;
       }
+      // glazed bays: interior then mullions
+      const gr = g.createLinearGradient(0, y0, 0, y0 + H);
+      if (lit) { const c = { drug: ['#f4f6f0', '#b8c0c0'], izakaya: ['#ffcf8a', '#8a4a20'], game: ['#ff8ae0', '#3a2a8a'] }[kind]; gr.addColorStop(0, c[0]); gr.addColorStop(1, c[1]); }
+      else { gr.addColorStop(0, '#2a2c2e'); gr.addColorStop(1, '#0e0f10'); }
+      g.fillStyle = gr; g.fillRect(x + 8, y0, 240, H);
+      if (lit) {   // shelves / tables / machines as silhouettes
+        g.fillStyle = glow ? 'rgba(0,0,0,.55)' : 'rgba(20,14,10,.6)';
+        if (kind === 'drug') for (let i = 0; i < 4; i++) g.fillRect(x + 20, y0 + 30 + i * 38, 216, 5);
+        if (kind === 'izakaya') { for (let i = 0; i < 3; i++) g.fillRect(x + 24 + i * 76, y0 + 120, 54, 8); for (let i = 0; i < 4; i++) { g.fillStyle = glow ? '#ff5a3a' : '#c8402a'; g.beginPath(); g.ellipse(x + 40 + i * 58, y0 + 18, 12, 16, 0, 0, 7); g.fill(); g.fillStyle = 'rgba(20,14,10,.6)'; } }
+        if (kind === 'game') for (let i = 0; i < 5; i++) g.fillRect(x + 18 + i * 46, y0 + 70, 34, 120);
+      } else if (kind === 'broken' && !glow) {
+        g.strokeStyle = 'rgba(210,225,230,.5)'; g.lineWidth = 1; const cx = x + 80 + r() * 100, cy = y0 + 50 + r() * 80;
+        for (let i = 0; i < 9; i++) { g.beginPath(); g.moveTo(cx, cy); let px = cx, py = cy, a = i / 9 * 6.283; for (let k2 = 0; k2 < 3; k2++) { a += (r() - .5) * .6; px += Math.cos(a) * 30; py += Math.sin(a) * 30; g.lineTo(px, py); } g.stroke(); }
+        g.fillStyle = '#060707'; g.beginPath(); for (let i = 0; i < 9; i++) { const a = i / 9 * 6.283, dd = 14 + r() * 30; g.lineTo(cx + Math.cos(a) * dd, cy + Math.sin(a) * dd); } g.fill();
+      }
+      if (!glow) { g.fillStyle = 'rgba(255,255,255,.07)'; g.beginPath(); g.moveTo(x + 8, y0 + 60); g.lineTo(x + 120, y0); g.lineTo(x + 160, y0); g.lineTo(x + 8, y0 + 100); g.fill(); }   // glass sheen
+      g.fillStyle = glow ? '#000' : '#18191a'; g.fillRect(x + 126, y0, 5, H); g.fillRect(x + 8, y0 + H - 4, 240, 4);   // mullion + sill
     });
+    g.restore();
   };
-  M.shop = std({ map: canvasTex(512, 512, shopDraw(false), { repeat: true }), emissiveMap: canvasTex(512, 512, shopDraw(true), { repeat: true }), emissive: 0xffdcb0, emissiveIntensity: .2, roughness: .35, metalness: .2 });
-  def('shib_shop', M.shop, 8);
+  M.shop = std({ map: canvasTex(2048, 256, shopDraw(false), { repeat: true }), emissiveMap: canvasTex(1024, 128, shopDraw(true), { repeat: true }), emissive: 0xffdcb0, emissiveIntensity: .2, roughness: .35, metalness: .2 });
+  def('shib_shop', M.shop, 4);
   // tower glass: one 6 m × 3.5 m floor tile with warm-lit offices
   const TW = Array.from({ length: 8 }, () => [r() < .68, r()]);
   const twDraw = (glow) => (g, w, h) => {
@@ -190,6 +214,7 @@ function materials() {
     g.fillStyle = 'rgba(0,0,0,.85)'; g.fillRect(0, 200, 200, 56); g.fillRect(430, 0, 82, 70);
     g.strokeStyle = 'rgba(255,255,255,.7)'; for (let i = 0; i < 8; i++) { g.beginPath(); g.moveTo(120, 210); g.lineTo(120 + (r() - .5) * 300, 210 + (r() - .5) * 200); g.stroke(); }
   }));
+  M.live = scr(canvasTex(512, 256, (g, w, h) => { g.fillStyle = '#05070b'; g.fillRect(0, 0, w, h); }), .6); M.liveG = M.live.map.image.getContext('2d');
   M.mural = std({ map: canvasTex(512, 768, (g, w, h) => {
     g.fillStyle = '#e4dccb'; g.fillRect(0, 0, w, h); noise(g, w, h, 30);
     g.strokeStyle = '#2a2622'; g.lineWidth = 6; for (let x = 0; x <= w; x += 128) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); } for (let y = 0; y <= h; y += 128) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); }
@@ -222,7 +247,28 @@ function tuft(x, z, s = 1, y = groundY(x, z)) {
   const w = (.6 + R() * .7) * s, h = (.35 + R() * .6) * s, a = R() * 3;
   for (const o of [0, Math.PI / 2]) put('shib_weed', new THREE.PlaneGeometry(w, h), M4(x, y + h / 2 - .02, z, 0, a + o, 0));
 }
-// framed billboard screen on a wall (x,z on the wall face, facing ry); type card|static|broken|ad
+// storefront band: one 4 m bay per 4 m of frontage, starting at a bay picked by a position hash (layout RNG untouched)
+function shopBand(w, h, dd, x, y, z) {
+  const g = K.boxGeo('shib_shop', w, h, dd), uv = g.attributes.uv, o = (((Math.round(x * 3 + z * 7) % 8) + 8) % 8) / 8;
+  for (let i = 0; i < uv.count; i++) uv.setX(i, uv.getX(i) / 8 + o);
+  put('shib_shop', g, M4(x, y, z));
+}
+// the venue's live screen: ticker + rotating scenes (suit / GAME / countdown / card), scanlines, rare glitches
+function drawLive(g, t) {
+  const W = 512, H = 256, scene = Math.floor(t / 4) % 4;
+  g.globalCompositeOperation = 'source-over'; g.fillStyle = '#0a1024'; g.fillRect(0, 0, W, H);
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  if (scene === 0) { g.save(); g.translate(W / 2, H / 2 - 14); g.scale(Math.abs(Math.cos(t * 1.6)) + .05, 1); g.fillStyle = '#e8263a'; g.font = '150px serif'; g.fillText('♦', 0, 0); g.restore(); }
+  else if (scene === 1) { g.fillStyle = '#f2f4ff'; g.font = 'bold 120px Georgia,serif'; g.fillText('GAME', W / 2, H / 2 - 40); g.font = 'bold 60px "Yu Gothic",sans-serif'; g.fillStyle = '#ff5a78'; g.fillText('ゲーム', W / 2, H / 2 + 50); }
+  else if (scene === 2) { const left = Math.max(0, 600 - (t % 600)), mm = String(Math.floor(left / 60)).padStart(2, '0'), ss = String(Math.floor(left % 60)).padStart(2, '0'); g.fillStyle = '#ff2b2b'; g.font = 'bold 42px sans-serif'; g.fillText('TIME LIMIT', W / 2, 60); g.font = 'bold 110px monospace'; g.fillText(`${mm}:${ss}`, W / 2, 140); }
+  else { g.fillStyle = '#f0ece0'; g.fillRect(W / 2 - 60, 30, 120, 170); g.fillStyle = '#16181c'; g.font = 'bold 70px Georgia,serif'; g.fillText('7', W / 2, 90); g.font = '70px serif'; g.fillText('♠', W / 2, 160); }
+  g.fillStyle = '#d8203a'; g.fillRect(0, H - 40, W, 40); g.fillStyle = '#fff'; g.font = 'bold 26px "Yu Gothic",sans-serif'; g.textAlign = 'left';
+  const tick = 'ゲーム開始 · GAME START · 難易度 ♠7 · ', tw = g.measureText(tick).width, x0 = -((t * 90) % tw);
+  for (let x = x0; x < W; x += tw) g.fillText(tick, x, H - 20);
+  g.fillStyle = 'rgba(0,0,0,.22)'; for (let y = 0; y < H; y += 4) g.fillRect(0, y, W, 1);
+  if (Math.random() < .07) { g.globalCompositeOperation = 'lighter'; for (let i = 0; i < 2 + Math.random() * 2; i++) { const y = Math.random() * H, hh = 6 + Math.random() * 20; g.drawImage(g.canvas, 0, y, W, hh, (Math.random() - .5) * 40, y, W, hh); } g.globalCompositeOperation = 'source-over'; }
+}
+// framed billboard screen on a wall (x,z on the wall face, facing ry); type card|static|broken|ad|live
 function screen(x, y, z, ry, w, h, type, card) {
   if (type === 'card') h = w * 1.5;
   withFrame(x, 0, z, ry, () => {
@@ -250,7 +296,7 @@ function bld(x0, z0, x1, z1, h, fk, o = {}) {
   SOLID.push([x0 - .3, z0 - .3, x1 + .3, z1 + .3]);
   box(fk, w, h, dd, cx, y0 + h / 2, cz);
   box('roof', w + .5, .6, dd + .5, cx, top + .3, cz);
-  box('shib_shop', w + .3, 4, dd + .3, cx, y0 + 2, cz);
+  shopBand(w + .3, 4, dd + .3, cx, y0 + 2, cz);
   box('concD', w + 2.6, .3, dd + 2.6, cx, y0 + 4.3, cz);
   for (let i = 0; i < 2 + R() * 3; i++) K.acUnit(cx + (R() - .5) * (w - 5), top + .6, cz + (R() - .5) * (dd - 5), R() * 3);
   if (R() < .6) { const tx = cx + (R() - .5) * (w - 8), tz = cz + (R() - .5) * (dd - 8); cyl('pipeR', 1.6, 2.6, tx, top + 3.3, tz, 0, 0, 0, 12); for (const [a, b] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) box('steel', .15, 2, .15, tx + a, top + 1.6, tz + b); }
@@ -443,10 +489,10 @@ function tower() {   // round glass corner tower: banded floors, mullions, crown
 function podium() {   // two-storey shopping podium filling the west wedge; walkable deck reached by stairs
   prism('concD', POD, PV - .1, DECK - .2 - PV + .1); prism('shib_pave', POD, DECK - .2, .2);
   const [A, B, Cc] = POD;
-  box('shib_shop', A[0] - B[0] + .4, 4, .3, (A[0] + B[0]) / 2, PV + 2, A[1] + .15);
+  shopBand(A[0] - B[0] + .4, 4, .3, (A[0] + B[0]) / 2, PV + 2, A[1] + .15);
   box('concD', -67 - B[0], .3, 2.4, (B[0] - 67) / 2, PV + 4.3, A[1] + 1.2);   // canopy stops short of the stairs
   const hx = Cc[0] - A[0], hz = Cc[1] - A[1], hl = Math.hypot(hx, hz);
-  withFrame((A[0] + Cc[0]) / 2, 0, (A[1] + Cc[1]) / 2, K.ang(hx, hz), () => { box('shib_shop', hl, 4, .3, 0, PV + 2, .15); box('concD', hl - 2, .3, 2.4, 0, PV + 4.3, 1.2); for (let i = 0; i < hl / 2; i++) if (R() < .5) hang(-hl / 2 + R() * hl, DECK, .2, .8 + R() * 4); });
+  withFrame((A[0] + Cc[0]) / 2, 0, (A[1] + Cc[1]) / 2, K.ang(hx, hz), () => { shopBand(hl, 4, .3, 0, PV + 2, .15); box('concD', hl - 2, .3, 2.4, 0, PV + 4.3, 1.2); for (let i = 0; i < hl / 2; i++) if (R() < .5) hang(-hl / 2 + R() * hl, DECK, .2, .8 + R() * 4); });
   for (let i = 0; i < (A[0] - B[0]) / 2; i++) if (R() < .5) hang(B[0] + R() * (A[0] - B[0]), DECK, A[1] + .2, .8 + R() * 4);
   // stairs up from the pavement + landing onto the deck
   K.stairs(-52, 15.6, -1, 0, PV, DECK, 2.4);
@@ -568,7 +614,7 @@ export function build(ctx, d) {
     bld(-128, 50, -82, 112, 38.5, 'fac2', { st: 'ne' });                        // SW2
     // murals, screens, card billboards
     pic(X.cards.cardMaterial('J', 'D'), 20, 30, 9.85, PV + 31.5, -15, -Math.PI / 2);   // red-diamond mural
-    screen(10, PV + 10.8, -15, -Math.PI / 2, 18, 9, 'static');
+    screen(10, PV + 10.8, -15, -Math.PI / 2, 18, 9, 'live');   // the venue screen over the crossing
     screen(29, PV + 27, 10, 0, 8, 0, 'card', ['J', 'H']);
     screen(-92, DECK + 21, -7, Math.PI / 2, 28, 15, 'broken');
     screen(-92, DECK + 8, -7, Math.PI / 2, 12, 5, 'ad');
@@ -580,7 +626,7 @@ export function build(ctx, d) {
     screen(10, PV + 18, 72, -Math.PI / 2, 8, 0, 'card', ['K', 'D']);
     roofBoard(78, PV + 21.6, 66, Math.PI, 16, 8, 'ad');
     screen(-32, PV + 13, 76, Math.PI / 2, 12, 7, 'static');
-    screen(-53.5, PV + 15, 58, Math.PI, 14, 8, 'ad');
+    screen(-53.5, PV + 15, 58, Math.PI, 14, 8, 'live');   // synced, like the real crossing
     screen(-105, PV + 26, 50, Math.PI, 8, 0, 'card', ['Q', 'S']);
     screen(114, PV + 30, 50, Math.PI, 10, 6, 'static');
     viaduct();
@@ -644,16 +690,18 @@ export function build(ctx, d) {
   K.lamp(d.x - 24.5, d.z + 62, 9, { dir: Math.PI * .75, warm: true, intensity: 315, y0: PV, angle: .62, pen: .9, dist: 30, decay: 2, decal: false, col: 0xffd6a8 });
 
   // screens flicker; static noise scrolls
-  let base = .6, acc = 0;
-  ctx.updates.push((dt) => {
+  let base = .6, acc = 0, lacc = 0, liveBase = .35; const SCR = new THREE.Vector3(d.x + 10, 11, d.z - 15);
+  ctx.updates.push((dt, t) => {
     acc += dt; if (acc > .07) { acc = 0; M.static.map.offset.set(Math.random(), Math.random()); }
+    if ((lacc += dt) > .09 && X.camera.position.distanceToSquared(SCR) < 350 * 350) { lacc = 0; drawLive(M.liveG, t); M.live.map.needsUpdate = true; }
+    M.live.emissiveIntensity = liveBase * (Math.random() < .01 ? .3 : 1);
     M.broken.emissiveIntensity = base * (Math.random() < .04 ? .25 : 1);
     M.ad.emissiveIntensity = base * (Math.random() < .015 ? 0 : 1);
   });
   ctx.dayNight.push((day, dusk) => {
     // Shibuya is the live game venue: the only part of the city with power at night (screens, neon, shops); coming on at dusk
     const k = !day ? 1 : dusk ? .7 : 0, mix = (a, b) => a + (b - a) * k;
-    base = mix(.35, 1.1); M.static.emissiveIntensity = base;
+    base = mix(.35, 1.1); M.static.emissiveIntensity = mix(.1, .45); liveBase = mix(.35, .9);   // dead channels stay dim
     M.shop.emissiveIntensity = mix(.15, .9); M.twin.emissiveIntensity = mix(.3, 1.1); M.sign.emissiveIntensity = mix(.2, 1.2);
     M.mural.emissiveIntensity = mix(0, .25); M.subSign.emissiveIntensity = mix(.2, 1.4);
   });
