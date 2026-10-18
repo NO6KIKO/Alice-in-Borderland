@@ -5,6 +5,7 @@
 // Local frame: district centre; tower at (−10, 0). Roads: N–S x=−80/50/115, E–W z=−45/48.
 import * as THREE from 'three';
 import * as K from '../kit.js';
+import { cityBuilding } from './buildings.js';
 const { box, cyl, strut, put, M4, withFrame, def, std } = K;
 
 /* ───────── tower profile ───────── */
@@ -309,28 +310,7 @@ function expressway(r) {   // decorative, collidable; same section as the city e
 
 /* ───────── overgrown filler buildings ───────── */
 const FLOOR = 3.5;
-function bld(ctx, x, z, w, d, h, r, fk) {
-  fk = fk || 'fac' + [0, 2, 3, 4, 5, 0, 3][Math.floor(r() * 7)];
-  const floors = Math.max(2, Math.round(h / FLOOR)); h = floors * FLOOR;
-  box(fk, w, h, d, x, h / 2 + .12, z);
-  const green = r() < .4;
-  box(green ? 'roofG' : 'roof', w + .4, .5, d + .4, x, h + .37, z);
-  if (h > 30 && r() < .5) { const w2 = w * (.5 + r() * .3), d2 = d * (.5 + r() * .3), h2 = FLOOR * (2 + Math.floor(r() * 4)); box(fk, w2, h2, d2, x, h + .62 + h2 / 2, z); box('roof', w2 + .3, .4, d2 + .3, x, h + .62 + h2 + .2, z); }
-  if (green) for (let i = 0; i < Math.min(5, w * d / 120); i++) ctx.tree(x + (r() - .5) * (w - 4), z + (r() - .5) * (d - 4), .6 + r() * .4, h + .6);
-  else {
-    if (r() < .7) { const tx = x + (r() - .5) * (w - 5), tz = z + (r() - .5) * (d - 5); cyl('steelL', 1.2, 2.4, tx, h + 2.6, tz, 0, 0, 0, 10); box('steel', 2.2, 1.4, 2.2, tx, h + 1.3, tz); }
-    for (let i = 0; i < 1 + r() * 3; i++) box('steelL', 2 + r() * 2, 1.4, 1.6 + r(), x + (r() - .5) * (w - 4), h + 1.3, z + (r() - .5) * (d - 4));
-  }
-  const nIvy = r() < .7 ? 1 + Math.floor(r() * 4) : 0;
-  for (let i = 0; i < nIvy; i++) {
-    const side = Math.floor(r() * 4), ih = h * (.25 + r() * .75), iw = 2 + r() * Math.min(10, (side % 2 ? d : w) * .5), along = (r() - .5) * ((side % 2 ? d : w) - iw);
-    if (side === 0) box('ivy', iw, ih, .5, x + along, ih / 2 + .1, z + d / 2 + .2);
-    else if (side === 1) box('ivy', .5, ih, iw, x + w / 2 + .2, ih / 2 + .1, z + along);
-    else if (side === 2) box('ivy', iw, ih, .5, x + along, ih / 2 + .1, z - d / 2 - .2);
-    else box('ivy', .5, ih, iw, x - w / 2 - .2, ih / 2 + .1, z + along);
-  }
-  return h;
-}
+function bld(ctx, x, z, w, d, h, r, rot) { return cityBuilding(x, z, w, d, h, r, rot === undefined ? {} : { rot }); }   // modular detailed building (buildings.js)
 // a city block between roads: sidewalk slab, street trees, lots of buildings (skipping `avoid` rects)
 function block(ctx, x0, z0, x1, z1, hlo, hhi, r, avoid = []) {
   box('walk', x1 - x0, .12, z1 - z0, (x0 + x1) / 2, .06, (z0 + z1) / 2);
@@ -371,9 +351,9 @@ export function build(ctx, d) {
     block(ctx, 58, -150, 105, -53, 16, 45, r, [kd]); block(ctx, 58, -37, 105, 40, 14, 38, r); block(ctx, 58, 56, 105, 150, 12, 30, r, [qh, kc]);
     block(ctx, 125, -150, 140, 150, 10, 22, r);
     // card-mural towers
-    const qH = bld(ctx, 77, 76, 26, 22, 45, r, 'fac0'); card(ctx, 'Q', 'H', 21, 63.8, qH * .52, 76, -Math.PI / 2);
-    const cH = bld(ctx, 85, 132, 24, 22, 34, r, 'fac3'); card(ctx, 'K', 'C', 15, 72.8, cH * .5, 132, -Math.PI / 2);
-    const dH = bld(ctx, 80, -123, 24, 24, 92, r, 'fac1'); card(ctx, 'K', 'D', 21, 67.8, dH * .62, -123, -Math.PI / 2);
+    const qH = bld(ctx, 77, 76, 26, 22, 45, r, Math.PI / 2); card(ctx, 'Q', 'H', 21, 63.8, qH * .52, 76, -Math.PI / 2);
+    const cH = bld(ctx, 85, 132, 24, 22, 34, r, Math.PI / 2); card(ctx, 'K', 'C', 15, 72.8, cH * .5, 132, -Math.PI / 2);
+    const dH = bld(ctx, 80, -123, 24, 24, 92, r, Math.PI / 2); card(ctx, 'K', 'D', 21, 67.8, dH * .62, -123, -Math.PI / 2);
   });
   ctx.updates.push((dt) => { waterN.offset.x += dt * .006; waterN.offset.y += dt * .004; });
   ctx.dayNight.push((day) => { K.mats.tt_or.emissiveIntensity = day ? 0 : .85; K.mats.tt_wh.emissiveIntensity = day ? 0 : .35; });

@@ -314,10 +314,13 @@ function body(k, w, h, d, x = 0, z = 0, y0 = 0) { const o = K.zone; setZone(base
 function det(fn) { const o = K.zone; setZone(detZone); withFrame(0, .12, 0, 0, fn); setZone(o); }
 
 // public: one building on a lot (world centre x,z, footprint w×d, target height h). Faces a random street side.
-export function cityBuilding(x, z, w, d, h, r) {
+// x,z are in the current frame (works inside a district's withFrame). opts.rot fixes the facing: the plain back
+// wall (local −z) then faces rot + π, e.g. rot = π/2 puts a clean wall on −x for a mural.
+export function cityBuilding(x, z, w, d, h, r, opts = {}) {
   defineMats();
-  baseZone = K.zone; detZone = `det_${Math.floor((x + 2000) / 165)}_${Math.floor((z + 2000) / 165)}`;
-  const rot = Math.floor(r() * 4) * Math.PI / 2, sw = rot % Math.PI ? d : w, sd = rot % Math.PI ? w : d;
+  const wp = K.fpos(x, 0, z);
+  baseZone = K.zone; detZone = `det_${Math.floor((wp.x + 2000) / 165)}_${Math.floor((wp.z + 2000) / 165)}`;
+  const rot = opts.rot ?? Math.floor(r() * 4) * Math.PI / 2, sw = Math.round(rot / (Math.PI / 2)) % 2 ? d : w, sd = Math.round(rot / (Math.PI / 2)) % 2 ? w : d;
   let H;
   withFrame(x, 0, z, rot, () => {
     if (h > 40 && sw >= 24 && sd >= 24) H = typeB(sw, sd, Math.max(10, Math.round((h - 10) / 3.6)), r);
