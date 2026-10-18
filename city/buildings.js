@@ -13,12 +13,27 @@ const { box, cyl, plane, put, strut, M4, withFrame, setZone, canvasTex, noise, d
 const TILE = 14.4;   // facade textures: 4 modules × 4 floors of 3.6 m
 
 /* ───────────── textures ───────────── */
-function brokenPane(g, x, y, w, h, r) {   // jagged hole with a few hanging shards
-  g.fillStyle = 'rgb(14,16,18)'; g.beginPath();
-  const cx = x + w * (.3 + r() * .4), cy = y + h * (.3 + r() * .4), n = 9 + Math.floor(r() * 5);
-  for (let i = 0; i < n; i++) { const a = i / n * 6.283, d = (.25 + r() * .3) * Math.min(w, h) * (i % 2 ? .5 : 1); const px = Math.max(x, Math.min(x + w, cx + Math.cos(a) * d * 1.3)), py = Math.max(y, Math.min(y + h, cy + Math.sin(a) * d)); i ? g.lineTo(px, py) : g.moveTo(px, py); }
-  g.closePath(); g.fill();
-  g.strokeStyle = 'rgba(200,220,225,.35)'; g.lineWidth = 1; g.stroke();
+function brokenPane(g, x, y, w, h, r) {   // shattered pane: spider-web cracks from an impact, most with an irregular hole onto a dark room
+  const cx = x + w * (.25 + r() * .5), cy = y + h * (.25 + r() * .5), R0 = Math.min(w, h), nc = 7 + Math.floor(r() * 6);
+  g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip();
+  g.strokeStyle = 'rgba(215,228,232,.5)'; g.lineWidth = .8;
+  for (let i = 0; i < nc; i++) {   // radial cracks, wandering a little
+    let a = (i + r() * .5) / nc * 6.283, px = cx, py = cy; const L = R0 * (.5 + r() * 1.2);
+    g.beginPath(); g.moveTo(px, py); for (let s = 0; s < 4; s++) { a += (r() - .5) * .5; px += Math.cos(a) * L / 4; py += Math.sin(a) * L / 4; g.lineTo(px, py); } g.stroke();
+  }
+  for (let k = 1; k <= 3; k++) {   // concentric rings near the impact
+    const rr = R0 * .12 * k * (1 + r() * .3); g.globalAlpha = .55 - k * .12; g.beginPath();
+    for (let i = 0; i <= nc; i++) { const a = i / nc * 6.283, q = rr * (.8 + r() * .4); i ? g.lineTo(cx + Math.cos(a) * q, cy + Math.sin(a) * q * .9) : g.moveTo(cx + Math.cos(a) * q, cy + Math.sin(a) * q * .9); }
+    g.stroke(); g.globalAlpha = 1;
+  }
+  if (r() < .75) {   // the hole: uneven rim with a few long spikes, a dim room behind (ceiling a touch lighter)
+    const n = 8 + Math.floor(r() * 6), gr = g.createLinearGradient(0, y, 0, y + h);
+    gr.addColorStop(0, 'rgb(36,34,31)'); gr.addColorStop(.3, 'rgb(20,19,18)'); gr.addColorStop(1, 'rgb(9,9,10)');
+    g.fillStyle = gr; g.beginPath();
+    for (let i = 0; i < n; i++) { const a = (i + r() * .6) / n * 6.283, d = R0 * (.18 + r() * .32) * (r() < .25 ? 1.6 : 1); i ? g.lineTo(cx + Math.cos(a) * d * 1.2, cy + Math.sin(a) * d) : g.moveTo(cx + Math.cos(a) * d * 1.2, cy + Math.sin(a) * d); }
+    g.closePath(); g.fill(); g.strokeStyle = 'rgba(225,235,238,.7)'; g.lineWidth = 1.2; g.stroke();   // cut glass edge catching the light
+  }
+  g.restore();
 }
 function grime(g, W, H, r, n = 30) {
   for (let i = 0; i < n; i++) { const x = r() * W, y = r() * H, gr = g.createLinearGradient(0, y, 0, y + 30 + r() * 80); gr.addColorStop(0, `rgba(${40 + r() * 20},${42 + r() * 20},${32},${.18 + r() * .2})`); gr.addColorStop(1, 'rgba(40,40,30,0)'); g.fillStyle = gr; g.fillRect(x, y, 2 + r() * 6, 110); }
