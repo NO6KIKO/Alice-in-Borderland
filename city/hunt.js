@@ -6,7 +6,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
-import { placementsNear } from './props.js';
+import { placementsNear, prop } from './props.js';
 import { Reflector } from 'three/addons/objects/Reflector.js';
 import * as K from '../kit.js';
 
@@ -19,7 +19,7 @@ function cast(cars) {
   const toward = (p) => Math.atan2(C.x - p.x, C.z - p.z);
   const A = [];
   // foreground / mid: crouched behind the nearest stranded cars, on the side away from the gunman
-  const hide = ['salaryman', 'office_lady', 'worker', 'mom', 'tourist', 'clerk', 'streetwear', 'elder'];
+  const hide = ['salaryman', 'office_lady', 'worker', 'mom', 'tourist', 'young_suit', 'streetwear'];   // every actor is a different person
   const clips = ['frightened', 'scared_01', 'afraid', 'frightened', 'scared_02', 'look_around'];
   cars.sort((a, b) => a.p.distanceTo(C) - b.p.distanceTo(C)).slice(0, 7).forEach((c, i) => {
     const d = new THREE.Vector3().subVectors(c.p, C).setY(0).normalize();
@@ -36,13 +36,15 @@ function cast(cars) {
   run('teen_girl', 'flee_02', [[-1010, 206], [-972, 240]], 4.2, .55);
   // sheltering: store doorway (behind glass), subway entrance, billboard pillars
   A.push({ id: 'clerk', clip: 'frightened', x: -966.5, z: 243.2, y: PV, target: C });
-  A.push({ id: 'office_lady', clip: 'scared_01', x: -968.2, z: 245.8, y: PV, target: C });
+  A.push({ id: 'student', clip: 'scared_01', x: -968.2, z: 245.8, y: PV, target: C });
   A.push({ id: 'elder', clip: 'afraid', x: -1027.5, z: 242.5, y: PV, target: C });
-  A.push({ id: 'salaryman', clip: 'look_around', x: -1025.8, z: 241.2, y: PV, target: C });
-  A.push({ id: 'streetwear', clip: 'frightened', x: -969, z: 202, y: PV, target: C });
+  A.push({ id: 'tracksuit', clip: 'look_around', x: -1025.8, z: 241.2, y: PV, target: C });
+  A.push({ id: 'nurse', clip: 'frightened', x: -969, z: 202, y: PV, target: C });
+  A.push({ id: 'grandma', clip: 'afraid', x: -967.6, z: 203.4, y: PV, target: C });   // the nurse shelters an old woman
   // far: watchers on the podium deck and the store roof
-  A.push({ id: 'worker', clip: 'look_around', x: -1040, z: 204, y: 7.2, target: C });
-  A.push({ id: 'tourist', clip: 'scared_02', x: -962, z: 246, y: 3.9, target: C });
+  A.push({ id: 'punk', clip: 'look_around', x: -1040, z: 204, y: 7.2, target: C });
+  A.push({ id: 'courier', clip: 'scared_01', x: -962, z: 246, y: 3.9, target: C });
+  A.push({ id: 'cook', clip: 'frightened', x: -1016, z: 196, y: PV, target: C });   // ramen cook ducking out of a side street
   // the gunman
   A.push({ id: 'gunman', clip: 'fire', x: C.x - 1.5, z: C.z + 1, y: .06, yaw: Math.atan2(.9, .6), gunman: true });
   return A;
@@ -99,6 +101,10 @@ export function hunt(ctx) {
   const wet = new Reflector(new THREE.PlaneGeometry(260, 230), { textureWidth: 512, textureHeight: 512, color: 0x8a96a6, clipBias: .003 });
   wet.rotation.x = -Math.PI / 2; wet.position.set(-980, .035, 190); wet.visible = false; scene.add(wet);
   let night = false, puddleMask = null;
+  // the venue's cold white floodlight from high above the scramble (night only) — the people read as silhouettes against it
+  const flood = new THREE.SpotLight(0xdfe9ff, 0, 140, .55, .7, 1.2); flood.position.set(C.x + 18, 48, C.z - 12); flood.target.position.copy(C);
+  flood.castShadow = true; flood.shadow.mapSize.set(1024, 1024); flood.shadow.bias = -.0005; scene.add(flood, flood.target);
+  ctx.dayNight.push((day) => { flood.intensity = day ? 0 : 5200; });
   ctx.dayNight.push((day) => {
     night = !day; const m = K.mats.shib_road; if (!m) return;
     if (!puddleMask && m.roughnessMap?.image) {   // high-contrast copy of the puddle map: dry asphalt opaque, puddles see-through
@@ -108,6 +114,13 @@ export function hunt(ctx) {
     }
     m.alphaMap = day ? null : puddleMask; m.transparent = !day; m.needsUpdate = true;
   });
+
+  /* ── what people dropped when they ran: umbrellas, bags, phones, shopping, toppled bikes ── */
+  const drop = [['umbrella_open', 6], ['umbrella_clear', 5], ['handbag', 4], ['school_bag', 3], ['smartphone', 6], ['shopping_bag', 4], ['bicycle_fallen', 3]];
+  for (const [name, n] of drop) for (let i = 0; i < n; i++) {
+    const a = Math.random() * 6.283, r = 4 + Math.pow(Math.random(), .7) * 34;
+    prop(name, C.x + Math.cos(a) * r, .07, C.z + Math.sin(a) * r, Math.random() * 6.283);
+  }
 
   /* ── people ── */
   const actors = cast(cars);

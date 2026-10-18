@@ -4,6 +4,8 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
+import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js';
 import { Reflector } from 'three/addons/objects/Reflector.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
@@ -594,9 +596,20 @@ function updateWalkers(dt) {
 /* ───────────── post ───────────── */
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
+// ground-truth ambient occlusion: contact shadows under cars, in corners, along wall bases (half resolution)
+const gtao = new GTAOPass(scene, camera, Math.floor(innerWidth / 2), Math.floor(innerHeight / 2));
+gtao.updateGtaoMaterial({ radius: 2.2, distanceExponent: 1.2, thickness: 2, scale: 1.1, samples: 12, distanceFallOff: .6 });
+gtao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, rings: 2, samples: 12 });
+gtao.blendIntensity = .85; composer.addPass(gtao);
+let hiQ = true; try { hiQ = localStorage.getItem('quality') !== 'std'; } catch (e) {}
+gtao.enabled = hiQ;
 const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.55, 0.6, 1.0); composer.addPass(bloom);
 composer.addPass(new OutputPass());
 const grade = createGrade(composer);   // the show's teal / amber film look
+const smaa = new SMAAPass(innerWidth * renderer.getPixelRatio(), innerHeight * renderer.getPixelRatio()); composer.addPass(smaa);
+const qBtn = document.createElement('button'); vb.insertBefore(qBtn, playBtn);
+const setQ = (q) => { hiQ = q; gtao.enabled = q; qBtn.textContent = q ? '画质: 高' : '画质: 标准'; try { localStorage.setItem('quality', q ? 'hi' : 'std'); } catch (e) {} };
+setQ(hiQ); qBtn.onclick = () => setQ(!hiQ);
 const facadeMats = Object.values(mats).filter((m) => m.userData.nightGlow);   // lit windows / signs / shopfronts at night
 const CITY_NIGHT_LIGHTS = .15;
 const dayNight = createDayNight({ scene, renderer, hemi, moon, bloom, spots, nightBackdrop: city, onChange: [
@@ -615,7 +628,7 @@ dayBtn.onclick = () => dayNight.set(!dayNight.isDay);
 dayNight.set(true);
 window.__day = dayNight; window.__renderer = renderer; window.__scene = scene; window.__camera = camera;
 dayNight.interiors.push([402, 618, 40, -224, -76]);   // black warehouse hall (x0,x1,yTop,z0,z1)
-addEventListener('resize', () => { const pr = Math.min(devicePixelRatio, 2); renderer.setPixelRatio(pr); composer.setPixelRatio(pr); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight); refl.getRenderTarget().setSize(Math.max(512, Math.floor(innerWidth * .6)), Math.max(512, Math.floor(innerHeight * .6))); });
+addEventListener('resize', () => { const pr = Math.min(devicePixelRatio, 2); renderer.setPixelRatio(pr); composer.setPixelRatio(pr); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight); gtao.setSize(Math.floor(innerWidth / 2), Math.floor(innerHeight / 2)); refl.getRenderTarget().setSize(Math.max(512, Math.floor(innerWidth * .6)), Math.max(512, Math.floor(innerHeight * .6))); });
 
 // moving the window to a screen with another pixel ratio doesn't fire 'resize' — watch the ratio directly
 (function watchDPR() { matchMedia(`(resolution: ${devicePixelRatio}dppx)`).addEventListener('change', () => { dispatchEvent(new Event('resize')); watchDPR(); }, { once: true }); })();

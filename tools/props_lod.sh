@@ -7,5 +7,6 @@ for f in models/props/*.glb; do
   n=$(basename "$f" .glb); o="models/props/lod/$n.glb"; [ -f "$o" ] && continue
   case $n in city_bus) t=6000;; jp_*|kcar|kei_truck|wreck_car|box_truck|motorcycle) t=5000;;
     airship) t=9000;; rifle) t=2500;; koban|phone_booth|bento_case|konbini_counter) t=4000;; bicycle|scooter|ramen_counter|konbini_shelf|deer|tiger|panther) t=4500;; *) t=2500;; esac
-  "$B" -b -P blender/prop_lod.py -- "$f" "$o" $t 1024 2>&1 | grep "^LOD"
+  case $n in city_bus|jp_*|kcar|kei_truck|wreck_car|box_truck|motorcycle|airship|koban|tiger|panther|deer) px=1024;; *) px=512;; esac   # texture budget
+  "$B" -b -P blender/prop_lod.py -- "$f" "$o" $t $px 2>&1 | grep "^LOD"
 done

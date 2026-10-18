@@ -1,0 +1,114 @@
+[
+ {
+  "kind": "person",
+  "out": "models/people/grandma.glb",
+  "prompt": "elderly Japanese woman in her 70s, floral blouse, grey cardigan, dark slacks, comfortable flat shoes, short grey permed hair, full body realistic 3D character, standing in T-pose, arms straight out horizontally, feet slightly apart, facing front, realistic human proportions, detailed face, natural cloth folds, five fingers, shoes, photoreal PBR",
+  "neg": "weapon in hands, holding objects, bag in hands, cartoon, chibi, low poly, text, logo, base, platform",
+  "faces": 40000,
+  "anims": [
+   "afraid",
+   "scared_01",
+   "look_around",
+   "frightened",
+   "walk"
+  ]
+ },
+ {
+  "kind": "person",
+  "out": "models/people/young_suit.glb",
+  "prompt": "young Japanese businessman, light grey suit, glasses, brown shoes, neat short hair, full body realistic 3D character, standing in T-pose, arms straight out horizontally, feet slightly apart, facing front, realistic human proportions, detailed face, natural cloth folds, five fingers, shoes, photoreal PBR",
+  "neg": "weapon in hands, holding objects, bag in hands, cartoon, chibi, low poly, text, logo, base, platform",
+  "faces": 40000,
+  "anims": [
+   "run",
+   "flee_01",
+   "scared_01",
+   "look_around",
+   "frightened"
+  ]
+ },
+ {
+  "kind": "person",
+  "out": "models/people/nurse.glb",
+  "prompt": "Japanese nurse in pale blue scrubs, white sneakers, hair tied back, full body realistic 3D character, standing in T-pose, arms straight out horizontally, feet slightly apart, facing front, realistic human proportions, detailed face, natural cloth folds, five fingers, shoes, photoreal PBR",
+  "neg": "weapon in hands, holding objects, bag in hands, cartoon, chibi, low poly, text, logo, base, platform",
+  "faces": 40000,
+  "anims": [
+   "run",
+   "flee_02",
+   "frightened",
+   "look_around",
+   "afraid"
+  ]
+ },
+ {
+  "kind": "person",
+  "out": "models/people/punk.glb",
+  "prompt": "young Japanese woman, black leather jacket, red tartan mini skirt, black tights, combat boots, short dyed red hair, full body realistic 3D character, standing in T-pose, arms straight out horizontally, feet slightly apart, facing front, realistic human proportions, detailed face, natural cloth folds, five fingers, shoes, photoreal PBR",
+  "neg": "weapon in hands, holding objects, bag in hands, cartoon, chibi, low poly, text, logo, base, platform",
+  "faces": 40000,
+  "anims": [
+   "run",
+   "flee_01",
+   "look_around",
+   "scared_02",
+   "frightened"
+  ]
+ },
+ {
+  "kind": "person",
+  "out": "models/people/tracksuit.glb",
+  "prompt": "middle-aged Japanese man in navy tracksuit, white sneakers, stubble, receding hair, full body realistic 3D character, standing in T-pose, arms straight out horizontally, feet slightly apart, facing front, realistic human proportions, detailed face, natural cloth folds, five fingers, shoes, photoreal PBR",
+  "neg": "weapon in hands, holding objects, bag in hands, cartoon, chibi, low poly, text, logo, base, platform",
+  "faces": 40000,
+  "anims": [
+   "flee_02",
+   "run",
+   "afraid",
+   "look_around",
+   "scared_01"
+  ]
+ },
+ {
+  "kind": "person",
+  "out": "models/people/student.glb",
+  "prompt": "Japanese university student woman, denim overalls over yellow t-shirt, canvas sneakers, bob haircut with bangs, full body realistic 3D character, standing in T-pose, arms straight out horizontally, feet slightly apart, facing front, realistic human proportions, detailed face, natural cloth folds, five fingers, shoes, photoreal PBR",
+  "neg": "weapon in hands, holding objects, bag in hands, cartoon, chibi, low poly, text, logo, base, platform",
+  "faces": 40000,
+  "anims": [
+   "run",
+   "flee_02",
+   "scared_01",
+   "look_around",
+   "frightened"
+  ]
+ },
+ {
+  "kind": "person",
+  "out": "models/people/cook.glb",
+  "prompt": "Japanese ramen cook in white chef jacket and black apron, towel headband, rubber kitchen clogs, full body realistic 3D character, standing in T-pose, arms straight out horizontally, feet slightly apart, facing front, realistic human proportions, detailed face, natural cloth folds, five fingers, shoes, photoreal PBR",
+  "neg": "weapon in hands, holding objects, bag in hands, cartoon, chibi, low poly, text, logo, base, platform",
+  "faces": 40000,
+  "anims": [
+   "frightened",
+   "afraid",
+   "look_around",
+   "run",
+   "scared_02"
+  ]
+ },
+ {
+  "kind": "person",
+  "out": "models/people/courier.glb",
+  "prompt": "young Japanese bicycle courier in tight cycling jersey and black shorts, cycling shoes, cap, full body realistic 3D character, standing in T-pose, arms straight out horizontally, feet slightly apart, facing front, realistic human proportions, detailed face, natural cloth folds, five fingers, shoes, photoreal PBR",
+  "neg": "weapon in hands, holding objects, bag in hands, cartoon, chibi, low poly, text, logo, base, platform",
+  "faces": 40000,
+  "anims": [
+   "run",
+   "flee_01",
+   "look_around",
+   "frightened",
+   "scared_01"
+  ]
+ }
+]
