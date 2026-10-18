@@ -355,6 +355,6 @@ export function build(ctx, d) {
     K.setZone(d.id);
     K.addSpot(0xffc890, 900, 30, .9, .6, K.fpos(0, H0 + 9.4, 0), K.fpos(0, H0, 0));
   });
-  ctx.dayNight.push((day) => { K.mats.diamond_fac.emissiveIntensity = day ? 0 : 1; });
+  ctx.dayNight.push((day) => { K.mats.diamond_fac.emissiveIntensity = day ? 0 : .22; });
   ctx.pois.push({ id: d.id, cam: [d.x + 55, H0 + 40, d.z + 62], tgt: [d.x, H0 + 3, d.z], spawn: [d.x, H0 + .1, d.z + 10], yaw: 0 });
 }

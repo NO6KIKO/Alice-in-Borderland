@@ -4,6 +4,7 @@
 // a subway entrance, signals, guard rails, barricades and moss-covered taxis, cars, vans, trucks and buses.
 import * as THREE from 'three';
 import * as K from '../kit.js';
+import { prop } from './props.js';
 const { box, cyl, sph, put, M4, withFrame, def, std, canvasTex, noise, strut } = K;
 
 const RD = .06, PV = .18, DECK = 7.2;           // asphalt top, pavement top, podium deck top
@@ -50,7 +51,7 @@ function materials() {
     puddles(g, 'rgba(6,8,12,.55)', 'rgba(6,8,12,0)');
   }, { repeat: true });
   const rT = canvasTex(1024, 1024, (g, w, h) => { g.fillStyle = 'rgb(190,190,190)'; g.fillRect(0, 0, w, h); noise(g, w, h, 50); puddles(g, 'rgb(12,12,12)', 'rgba(12,12,12,0)'); }, { srgb: false, repeat: true });
-  def('shib_road', std({ map: aT, roughnessMap: rT, roughness: 1, metalness: .12, color: 0xa8acb0 }), 32);
+  def('shib_road', std({ map: aT, roughnessMap: rT, roughness: 1, metalness: .05, envMapIntensity: .45, color: 0xa8acb0 }), 32);
   const zT = canvasTex(256, 256, (g, w, h) => {
     g.fillStyle = '#ecebe4'; g.fillRect(0, 0, w, h); noise(g, w, h, 22);
     for (let i = 0; i < 34; i++) { g.fillStyle = `rgba(60,62,64,${.15 + r() * .3})`; g.beginPath(); g.ellipse(r() * w, r() * h, 3 + r() * 26, 2 + r() * 12, r() * 3, 0, 7); g.fill(); }
@@ -75,7 +76,7 @@ function materials() {
     for (let i = 0; i < 90; i++) { const a = r() * 7, d = Math.sqrt(r()) * 95, x = 128 + Math.cos(a) * d, y = 128 + Math.sin(a) * d; g.fillStyle = `rgba(${55 + r() * 40},${85 + r() * 55},${28 + r() * 20},.9)`; g.beginPath(); g.ellipse(x, y, 6 + r() * 22, 5 + r() * 16, r() * 3, 0, 7); g.fill(); }
   });
   const moss = std({ map: mT, alphaTest: .4, roughness: 1, polygonOffset: true, polygonOffsetFactor: -1 }); moss.userData.noCollide = true; def('shib_mossP', moss, 1);
-  const pud = std({ color: 0x0b0e12, roughness: .04, metalness: .5, transparent: true, opacity: .82, polygonOffset: true, polygonOffsetFactor: -2 }); pud.userData.noCollide = true; def('shib_pud', pud, 1);
+  const pud = std({ color: 0x0b0e12, roughness: .12, metalness: .1, envMapIntensity: .35, transparent: true, opacity: .7, polygonOffset: true, polygonOffsetFactor: -2 }); pud.userData.noCollide = true; def('shib_pud', pud, 1);
   const vine = std({ map: K.mats.ivy.map, color: 0x86a866, roughness: 1 }); vine.userData.noCollide = true; def('shib_vine', vine, 1);
   // storefronts (2 × 2 bays of 4 m; shown 4 m tall) — day map + lit-window glow map
   const SH = Array.from({ length: 4 }, () => [r() < .35, Math.floor(r() * 360)]);
@@ -331,10 +332,9 @@ function barr(x, z, ry, fallen) {
   });
 }
 function cone(x, z) { const y = groundY(x, z); box('cone', .4, .05, .4, x, y + .025, z); cyl('cone', .16, .65, x, y + .37, z, 0, 0, 0, 10, .03); }
-function vend(x, z, ry) {
+function vend(x, z, ry) {   // Tripo vending machine (front = local +z)
   withFrame(x, PV, z, ry, () => {
-    box('paintW', 1, 1.85, .75, 0, .925, 0); box('glowC', .8, .9, .02, 0, 1.28, .38); box('steel', .8, .22, .03, 0, .32, .38); box('redS', .55, .05, .02, 0, .72, .38);
-    if (R() < .6) box('ivy', .9, 1.2, .3, 0, 1.4, -.4);
+    prop('vending', 0, 0, 0, -Math.PI / 2);
   });
 }
 // abandoned vehicles (local +x = forward)
@@ -343,11 +343,8 @@ function car(kind, x, z, ry) {
     const col = ['shib_carS', 'shib_carW', 'shib_carR', 'shib_carK'][Math.floor(R() * 4)];
     const wheels = (xs, r, half) => { for (const sx of xs) for (const s of [-1, 1]) cyl('tire', r, .24, sx, r, s * half, Math.PI / 2, 0, 0, 10); };
     if (kind === 'bus') {
-      box('shib_bus', 10.5, 1.2, 2.5, 0, .95, 0); box('shib_glass', 10.1, 1.05, 2.52, -.1, 2.08, 0); box('shib_busW', 10.5, .62, 2.5, 0, 2.9, 0);
-      box('shib_glass', .06, 1.4, 2.3, 5.26, 1.95, 0); box('steel', .08, .35, 1.6, 5.25, 2.9, 0); box('steel', 10.6, .25, 2.56, 0, .45, 0);
-      for (let i = -2; i <= 2; i++) box('shib_busW', .15, 1.05, 2.54, i * 2.1, 2.08, 0);
-      wheels([3.4, -3.3], .5, 1.1);
-      box('roofG', 8.5, .25, 2.2, -.4, 3.3, 0); for (let i = 0; i < 6; i++) sph('roofG', .5 + R() * .5, (R() - .5) * 8, 3.4, (R() - .5) * 1.6, 1, .5, 1);
+      prop('city_bus', 0, 0, 0);
+      box('roofG', 8.5, .2, 2.1, -.4, 3.15, 0); for (let i = 0; i < 6; i++) sph('roofG', .5 + R() * .5, (R() - .5) * 8, 3.25, (R() - .5) * 1.6, 1, .5, 1);
       for (let i = 0; i < 10; i++) tuft((R() - .5) * 9, (R() - .5) * 2, 1, 3.4);
       for (let i = 0; i < 6; i++) hang((R() - .5) * 10, 3.2, (R() < .5 ? -1 : 1) * 1.3, .4 + R() * 1.6);
     } else if (kind === 'truck') {
@@ -357,19 +354,11 @@ function car(kind, x, z, ry) {
       box('roofG', 3.6, .2, 1.9, -1, 3.28, 0); box('ivy', 3, 1.4, .3, -1, 2.1, 1.15);
       for (let i = 0; i < 5; i++) tuft(-1 + (R() - .5) * 3.5, (R() - .5) * 1.6, 1, 3.3);
     } else if (kind === 'van') {
-      box(col, 4.7, 1.55, 1.7, 0, 1.12, 0); box('shib_glass', .06, .62, 1.5, 2.36, 1.5, 0); box('shib_glass', 3.2, .5, 1.72, -.5, 1.5, 0);
-      box('steel', .14, .25, 1.72, 2.36, .5, 0); box('steel', .14, .25, 1.72, -2.36, .5, 0);
-      wheels([1.55, -1.55], .34, .78);
-      if (R() < .7) box('roofG', 2.4, .15, 1.4, -.5, 1.95, 0);
+      prop(R() < .5 ? 'kcar' : 'kei_truck', 0, 0, 0);
+      if (R() < .6) box('roofG', 1.8, .1, 1.2, -.3, 1.82, 0);
     } else {
-      const k = kind === 'taxi' ? 'shib_taxi' : col;
-      box(k, 4.5, .62, 1.72, 0, .64, 0); box('shib_glass', 2.3, .55, 1.56, -.25, 1.22, 0); box(k, 2.0, .08, 1.5, -.35, 1.52, 0);
-      box('steel', .15, .22, 1.72, 2.28, .46, 0); box('steel', .15, .22, 1.72, -2.28, .46, 0);
-      for (const s of [-1, 1]) { box('paintW', .05, .12, .36, 2.26, .78, s * .58); box('valve', .05, .12, .36, -2.26, .8, s * .58); }
-      if (kind === 'taxi') { box('paintW', .5, .24, .16, -.35, 1.68, 0); box('shib_carK', 4.52, .08, 1.74, 0, .7, 0); }
-      wheels([1.45, -1.45], .33, .8);
-      if (R() < .6) box('roofG', 1.3 + R() * .6, .12, 1.2, -.4, 1.6, 0);
-      if (R() < .5) box('roofG', 1.2, .08, 1.3, 1.5, .98, 0);
+      prop(kind === 'taxi' ? 'jp_taxi' : 'jp_sedan', 0, 0, 0);
+      if (R() < .4) box('roofG', 1.1 + R() * .5, .06, 1.1, -.4, kind === 'taxi' ? 1.78 : 1.47, 0);
     }
     for (let i = 0; i < 4; i++) tuft((R() - .5) * 5, (R() < .5 ? -1 : 1) * (1 + R() * .5), 1, 0);
   });
@@ -556,9 +545,10 @@ export function build(ctx, d) {
     M.ad.emissiveIntensity = base * (Math.random() < .015 ? 0 : 1);
   });
   ctx.dayNight.push((day) => {
-    base = day ? .6 : 2.1; M.static.emissiveIntensity = base;
-    M.shop.emissiveIntensity = day ? .2 : 1.5; M.twin.emissiveIntensity = day ? .45 : 1.8; M.sign.emissiveIntensity = day ? .25 : 1.7;
-    M.mural.emissiveIntensity = day ? 0 : .12; M.subSign.emissiveIntensity = day ? .3 : 1.8;
+    // "no electricity": screens/shops mostly dead at night, just a faint flicker here and there
+    base = day ? .35 : .3; M.static.emissiveIntensity = base;
+    M.shop.emissiveIntensity = day ? .15 : .12; M.twin.emissiveIntensity = day ? .3 : .25; M.sign.emissiveIntensity = day ? .2 : .1;
+    M.mural.emissiveIntensity = day ? 0 : .06; M.subSign.emissiveIntensity = day ? .2 : .25;
   });
   ctx.pois.push({ id: d.id, cam: [d.x + 25, 50, d.z + 112], tgt: [d.x - 18, 10, d.z], spawn: [d.x - 27, PV + .1, d.z + 47], yaw: Math.atan2(-17, 37) });
 }

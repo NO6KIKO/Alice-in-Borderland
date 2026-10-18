@@ -5,8 +5,9 @@
       "name": "scene",
       "runtimeExecutable": "python",
       "runtimeArgs": [
-        "tools/serve.py",
-        "8765"
+        "D:/AliceInBorderland/tools/serve.py",
+        "8765",
+        "D:/AliceInBorderland"
       ],
       "port": 8765
     }

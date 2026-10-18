@@ -1,0 +1,422 @@
+[
+ {
+  "kind": "model",
+  "out": "models/props/airship.glb",
+  "prompt": "large rigid airship zeppelin, silver grey fabric hull with visible ring frames, four tail fins, underslung control gondola with windows, two engine pods with propellers, mooring cables, realistic PBR",
+  "neg": "text, logo, brand name, letters, watermark, people, ground plane, base platform",
+  "faces": 30000
+ },
+ {
+  "kind": "model",
+  "out": "models/props/rifle.glb",
+  "prompt": "modern black tactical assault rifle with optic sight and foregrip, realistic PBR",
+  "neg": "text, logo, brand name, letters, watermark, people, ground plane, base platform",
+  "faces": 10000
+ },
+ {
+  "kind": "person",
+  "out": "models/people/gunman.glb",
+  "prompt": "tall mysterious figure in all black tactical clothing, black armored vest, black balaclava mask with dark visor, black gloves, black combat boots, full body realistic 3D character, standing in T-pose, arms straight out horizontally, feet slightly apart, facing front, realistic human proportions, detailed face, natural cloth folds, five fingers, shoes, photoreal PBR",
+  "neg": "weapon in hands, holding objects, bag in hands, cartoon, chibi, low poly, text, logo, base, platform",
+  "faces": 40000,
+  "anims": [
+   "fire",
+   "shoot",
+   "look_around",
+   "walk",
+   "idle"
+  ]
+ },
+ {
+  "kind": "person",
+  "out": "models/people/salaryman.glb",
+  "prompt": "Japanese salaryman in his 40s, dark navy business suit, white shirt, loosened tie, black leather shoes, short black hair, full body realistic 3D character, standing in T-pose, arms straight out horizontally, feet slightly apart, facing front, realistic human proportions, detailed face, natural cloth folds, five fingers, shoes, photoreal PBR",
+  "neg": "weapon in hands, holding objects, bag in hands, cartoon, chibi, low poly, text, logo, base, platform",
+  "faces": 40000,
+  "anims": [
+   "run",
+   "flee_01",
+   "scared_01",
+   "look_around",
+   "frightened"
+  ]
+ },
+ {
+  "kind": "person",
+  "out": "models/people/office_lady.glb",
+  "prompt": "Japanese office woman in her late 20s, beige trench coat over grey blouse and black pencil skirt, low heels, shoulder-length brown hair, full body realistic 3D character, standing in T-pose, arms straight out horizontally, feet slightly apart, facing front, realistic human proportions, detailed face, natural cloth folds, five fingers, shoes, photoreal PBR",
+  "neg": "weapon in hands, holding objects, bag in hands, cartoon, chibi, low poly, text, logo, base, platform",
+  "faces": 40000,
+  "anims": [
+   "run",
+   "flee_01",
+   "scared_01",
+   "look_around",
+   "frightened"
+  ]
+ },
+ {
+  "kind": "person",
+  "out": "models/people/schoolgirl.glb",
+  "prompt": "Japanese high school girl, navy sailor school uniform with red scarf, pleated navy skirt, white socks, brown loafers, black ponytail, full body realistic 3D character, standing in T-pose, arms straight out horizontally, feet slightly apart, facing front, realistic human proportions, detailed face, natural cloth folds, five fingers, shoes, photoreal PBR",
+  "neg": "weapon in hands, holding objects, bag in hands, cartoon, chibi, low poly, text, logo, base, platform",
+  "faces": 40000,
+  "anims": [
+   "run",
+   "flee_01",
+   "scared_01",
+   "look_around",
+   "frightened"
+  ]
+ },
+ {
+  "kind": "person",
+  "out": "models/people/schoolboy.glb",
+  "prompt": "Japanese high school boy, black gakuran school uniform with gold buttons, white sneakers, messy black hair, full body realistic 3D character, standing in T-pose, arms straight out horizontally, feet slightly apart, facing front, realistic human proportions, detailed face, natural cloth folds, five fingers, shoes, photoreal PBR",
+  "neg": "weapon in hands, holding objects, bag in hands, cartoon, chibi, low poly, text, logo, base, platform",
+  "faces": 40000,
+  "anims": [
+   "run",
+   "flee_01",
+   "scared_01",
+   "look_around",
+   "frightened"
+  ]
+ },
+ {
+  "kind": "person",
+  "out": "models/people/couple_m.glb",
+  "prompt": "young Japanese man in his 20s, light denim jacket, white t-shirt, black slim jeans, white sneakers, dyed brown hair, full body realistic 3D character, standing in T-pose, arms straight out horizontally, feet slightly apart, facing front, realistic human proportions, detailed face, natural cloth folds, five fingers, shoes, photoreal PBR",
+  "neg": "weapon in hands, holding objects, bag in hands, cartoon, chibi, low poly, text, logo, base, platform",
+  "faces": 40000,
+  "anims": [
+   "flee_02",
+   "run",
+   "afraid",
+   "look_around",
+   "scared_02"
+  ]
+ },
+ {
+  "kind": "person",
+  "out": "models/people/couple_f.glb",
+  "prompt": "young Japanese woman in her 20s, pastel lavender knit cardigan, long cream pleated skirt, white sneakers, long black hair, full body realistic 3D character, standing in T-pose, arms straight out horizontally, feet slightly apart, facing front, realistic human proportions, detailed face, natural cloth folds, five fingers, shoes, photoreal PBR",
+  "neg": "weapon in hands, holding objects, bag in hands, cartoon, chibi, low poly, text, logo, base, platform",
+  "faces": 40000,
+  "anims": [
+   "flee_02",
+   "run",
+   "afraid",
+   "look_around",
+   "scared_02"
+  ]
+ },
+ {
+  "kind": "person",
+  "out": "models/people/delivery.glb",
+  "prompt": "food delivery rider, green windbreaker jacket, black cargo pants, grey sneakers, open-face helmet, square insulated backpack, full body realistic 3D character, standing in T-pose, arms straight out horizontally, feet slightly apart, facing front, realistic human proportions, detailed face, natural cloth folds, five fingers, shoes, photoreal PBR",
+  "neg": "weapon in hands, holding objects, bag in hands, cartoon, chibi, low poly, text, logo, base, platform",
+  "faces": 40000,
+  "anims": [
+   "run",
+   "flee_01",
+   "look_around",
+   "frightened",
+   "idle"
+  ]
+ },
+ {
+  "kind": "person",
+  "out": "models/people/tourist.glb",
+  "prompt": "western tourist woman in her 30s, khaki shorts, striped t-shirt, hiking sandals, sunburnt, blonde hair in bun, small backpack, full body realistic 3D character, standing in T-pose, arms straight out horizontally, feet slightly apart, facing front, realistic human proportions, detailed face, natural cloth folds, five fingers, shoes, photoreal PBR",
+  "neg": "weapon in hands, holding objects, bag in hands, cartoon, chibi, low poly, text, logo, base, platform",
+  "faces": 40000,
+  "anims": [
+   "run",
+   "flee_01",
+   "scared_01",
+   "look_around",
+   "frightened"
+  ]
+ },
+ {
+  "kind": "person",
+  "out": "models/people/elder.glb",
+  "prompt": "elderly Japanese man in his 70s, brown cardigan, grey slacks, flat cap, glasses, slightly stooped, full body realistic 3D character, standing in T-pose, arms straight out horizontally, feet slightly apart, facing front, realistic human proportions, detailed face, natural cloth folds, five fingers, shoes, photoreal PBR",
+  "neg": "weapon in hands, holding objects, bag in hands, cartoon, chibi, low poly, text, logo, base, platform",
+  "faces": 40000,
+  "anims": [
+   "scared_01",
+   "afraid",
+   "look_around",
+   "frightened",
+   "walk"
+  ]
+ },
+ {
+  "kind": "person",
+  "out": "models/people/clerk.glb",
+  "prompt": "Japanese convenience store clerk, striped short sleeve uniform shirt over white tee, dark trousers, name badge, short hair, full body realistic 3D character, standing in T-pose, arms straight out horizontally, feet slightly apart, facing front, realistic human proportions, detailed face, natural cloth folds, five fingers, shoes, photoreal PBR",
+  "neg": "weapon in hands, holding objects, bag in hands, cartoon, chibi, low poly, text, logo, base, platform",
+  "faces": 40000,
+  "anims": [
+   "run",
+   "flee_01",
+   "scared_01",
+   "look_around",
+   "frightened"
+  ]
+ },
+ {
+  "kind": "person",
+  "out": "models/people/mom.glb",
+  "prompt": "Japanese woman in her 40s, olive long cardigan, black wide trousers, flat shoes, bob haircut, full body realistic 3D character, standing in T-pose, arms straight out horizontally, feet slightly apart, facing front, realistic human proportions, detailed face, natural cloth folds, five fingers, shoes, photoreal PBR",
+  "neg": "weapon in hands, holding objects, bag in hands, cartoon, chibi, low poly, text, logo, base, platform",
+  "faces": 40000,
+  "anims": [
+   "run",
+   "flee_01",
+   "scared_01",
+   "look_around",
+   "frightened"
+  ]
+ },
+ {
+  "kind": "person",
+  "out": "models/people/streetwear.glb",
+  "prompt": "young Japanese man, oversized black hoodie, khaki cargo pants, chunky sneakers, bleached hair, earrings, full body realistic 3D character, standing in T-pose, arms straight out horizontally, feet slightly apart, facing front, realistic human proportions, detailed face, natural cloth folds, five fingers, shoes, photoreal PBR",
+  "neg": "weapon in hands, holding objects, bag in hands, cartoon, chibi, low poly, text, logo, base, platform",
+  "faces": 40000,
+  "anims": [
+   "run",
+   "flee_01",
+   "frightened",
+   "look_around",
+   "scared_02"
+  ]
+ },
+ {
+  "kind": "person",
+  "out": "models/people/teen_girl.glb",
+  "prompt": "Japanese teenage girl, oversized pink bomber jacket, black shorts over leggings, platform sneakers, twin buns hairstyle, full body realistic 3D character, standing in T-pose, arms straight out horizontally, feet slightly apart, facing front, realistic human proportions, detailed face, natural cloth folds, five fingers, shoes, photoreal PBR",
+  "neg": "weapon in hands, holding objects, bag in hands, cartoon, chibi, low poly, text, logo, base, platform",
+  "faces": 40000,
+  "anims": [
+   "flee_02",
+   "run",
+   "scared_01",
+   "look_around",
+   "afraid"
+  ]
+ },
+ {
+  "kind": "person",
+  "out": "models/people/worker.glb",
+  "prompt": "Japanese construction worker, baggy tobi work pants, navy long sleeve shirt, white hard hat, split-toe tabi boots, towel around neck, full body realistic 3D character, standing in T-pose, arms straight out horizontally, feet slightly apart, facing front, realistic human proportions, detailed face, natural cloth folds, five fingers, shoes, photoreal PBR",
+  "neg": "weapon in hands, holding objects, bag in hands, cartoon, chibi, low poly, text, logo, base, platform",
+  "faces": 40000,
+  "anims": [
+   "run",
+   "flee_01",
+   "scared_01",
+   "look_around",
+   "frightened"
+  ]
+ },
+ {
+  "kind": "model",
+  "out": "models/props/box_truck.glb",
+  "prompt": "abandoned Japanese medium cab-over box truck, white aluminium cargo box, dusty windows, faded paint, realistic PBR",
+  "neg": "text, logo, brand name, letters, watermark, people, ground plane, base platform",
+  "faces": 20000
+ },
+ {
+  "kind": "model",
+  "out": "models/props/utility_pole.glb",
+  "prompt": "Japanese concrete utility pole 12 m tall, crossarms with porcelain insulators, grey cylindrical pole transformer, step bolts, yellow and black striped base sleeve, weathered, realistic PBR",
+  "neg": "text, logo, brand name, letters, watermark, people, ground plane, base platform",
+  "faces": 12000
+ },
+ {
+  "kind": "model",
+  "out": "models/props/ticket_machine.glb",
+  "prompt": "Japanese ramen restaurant meal ticket vending machine, grid of push buttons, coin slot, beige and silver, realistic PBR",
+  "neg": "text, logo, brand name, letters, watermark, people, ground plane, base platform",
+  "faces": 8000
+ },
+ {
+  "kind": "model",
+  "out": "models/props/koban.glb",
+  "prompt": "small Japanese police box kiosk building, two storeys, white and grey walls, red lamp over the entrance, glass door, realistic PBR",
+  "neg": "text, logo, brand name, letters, watermark, people, ground plane, base platform",
+  "faces": 14000
+ },
+ {
+  "kind": "model",
+  "out": "models/props/chochin.glb",
+  "prompt": "red Japanese paper lantern chochin hanging from small bracket, weathered, realistic PBR",
+  "neg": "text, logo, brand name, letters, watermark, people, ground plane, base platform",
+  "faces": 4000
+ },
+ {
+  "kind": "model",
+  "out": "models/props/aframe_sign.glb",
+  "prompt": "wooden A-frame chalkboard sidewalk sign, weathered, realistic PBR",
+  "neg": "text, logo, brand name, letters, watermark, people, ground plane, base platform",
+  "faces": 4000
+ },
+ {
+  "kind": "model",
+  "out": "models/props/bus_stop.glb",
+  "prompt": "Japanese bus stop pole with round sign on top and timetable panel, on heavy concrete base, weathered, realistic PBR",
+  "neg": "text, logo, brand name, letters, watermark, people, ground plane, base platform",
+  "faces": 6000
+ },
+ {
+  "kind": "model",
+  "out": "models/props/phone_booth.glb",
+  "prompt": "Japanese public phone booth, glass and grey aluminium frame, green payphone inside, dusty, realistic PBR",
+  "neg": "text, logo, brand name, letters, watermark, people, ground plane, base platform",
+  "faces": 10000
+ },
+ {
+  "kind": "model",
+  "out": "models/props/recycle_bin.glb",
+  "prompt": "plastic recycling bin for cans and bottles beside a vending machine, round holes on lid, realistic PBR",
+  "neg": "text, logo, brand name, letters, watermark, people, ground plane, base platform",
+  "faces": 4000
+ },
+ {
+  "kind": "model",
+  "out": "models/props/potted_plants.glb",
+  "prompt": "cluster of potted plants and styrofoam planter boxes with overgrown leafy plants, outside a Japanese house, realistic PBR",
+  "neg": "text, logo, brand name, letters, watermark, people, ground plane, base platform",
+  "faces": 12000
+ },
+ {
+  "kind": "model",
+  "out": "models/props/tiger.glb",
+  "prompt": "bengal tiger standing alert, realistic fur, realistic PBR",
+  "neg": "text, logo, brand name, letters, watermark, people, ground plane, base platform",
+  "faces": 16000
+ },
+ {
+  "kind": "model",
+  "out": "models/props/panther.glb",
+  "prompt": "black panther walking, realistic, realistic PBR",
+  "neg": "text, logo, brand name, letters, watermark, people, ground plane, base platform",
+  "faces": 16000
+ },
+ {
+  "kind": "model",
+  "out": "models/props/torii.glb",
+  "prompt": "small vermilion Japanese torii gate about 3 m tall with a tiny wooden hokora shrine behind it, weathered, moss, realistic PBR",
+  "neg": "text, logo, brand name, letters, watermark, people, ground plane, base platform",
+  "faces": 10000
+ },
+ {
+  "kind": "model",
+  "out": "models/props/shutter_shop.glb",
+  "prompt": "small Japanese shop front, corrugated grey roller shutter half down, navy noren curtain, red paper lantern, weathered, realistic PBR",
+  "neg": "text, logo, brand name, letters, watermark, people, ground plane, base platform",
+  "faces": 16000
+ },
+ {
+  "kind": "model",
+  "out": "models/props/beer_crates.glb",
+  "prompt": "stack of plastic beer crates and empty bottles, realistic PBR",
+  "neg": "text, logo, brand name, letters, watermark, people, ground plane, base platform",
+  "faces": 6000
+ },
+ {
+  "kind": "model",
+  "out": "models/props/ac_outdoor.glb",
+  "prompt": "Japanese air conditioner outdoor unit, beige, fan grille, insulated copper pipes, realistic PBR",
+  "neg": "text, logo, brand name, letters, watermark, people, ground plane, base platform",
+  "faces": 4000
+ },
+ {
+  "kind": "model",
+  "out": "models/props/karaoke_sofa.glb",
+  "prompt": "karaoke room L-shaped vinyl sofa with low table, microphones and drink glasses, realistic PBR",
+  "neg": "text, logo, brand name, letters, watermark, people, ground plane, base platform",
+  "faces": 12000
+ },
+ {
+  "kind": "model",
+  "out": "models/props/station_gate.glb",
+  "prompt": "row of Japanese train station automatic ticket gates, grey and blue, realistic PBR",
+  "neg": "text, logo, brand name, letters, watermark, people, ground plane, base platform",
+  "faces": 14000
+ },
+ {
+  "kind": "model",
+  "out": "models/props/tatami_room_set.glb",
+  "prompt": "low Japanese kotatsu table with floor cushions on tatami, realistic PBR",
+  "neg": "text, logo, brand name, letters, watermark, people, ground plane, base platform",
+  "faces": 8000
+ },
+ {
+  "kind": "model",
+  "out": "models/props/hanging_wires.glb",
+  "prompt": "tangled bundle of black overhead electrical cables hanging, realistic PBR",
+  "neg": "text, logo, brand name, letters, watermark, people, ground plane, base platform",
+  "faces": 6000
+ },
+ {
+  "kind": "model",
+  "out": "models/props/konbini_counter.glb",
+  "prompt": "convenience store checkout counter with cash register, hot snack warmer display case, small items, realistic PBR",
+  "neg": "text, logo, brand name, letters, watermark, people, ground plane, base platform",
+  "faces": 14000
+ },
+ {
+  "kind": "model",
+  "out": "models/props/bento_case.glb",
+  "prompt": "convenience store open front refrigerated display case with bento boxes, onigiri and sandwiches on shelves, realistic PBR",
+  "neg": "text, logo, brand name, letters, watermark, people, ground plane, base platform",
+  "faces": 16000
+ },
+ {
+  "kind": "model",
+  "out": "models/props/magazine_rack.glb",
+  "prompt": "convenience store magazine rack along a window, rows of magazines and manga, realistic PBR",
+  "neg": "text, logo, brand name, letters, watermark, people, ground plane, base platform",
+  "faces": 10000
+ },
+ {
+  "kind": "model",
+  "out": "models/props/atm.glb",
+  "prompt": "bank ATM machine standalone kiosk, grey, realistic PBR",
+  "neg": "text, logo, brand name, letters, watermark, people, ground plane, base platform",
+  "faces": 6000
+ },
+ {
+  "kind": "model",
+  "out": "models/props/coffee_machine.glb",
+  "prompt": "self service coffee machine on small counter with cups, realistic PBR",
+  "neg": "text, logo, brand name, letters, watermark, people, ground plane, base platform",
+  "faces": 6000
+ },
+ {
+  "kind": "model",
+  "out": "models/props/motorcycle.glb",
+  "prompt": "abandoned black sport motorcycle on kickstand, dusty, realistic PBR",
+  "neg": "text, logo, brand name, letters, watermark, people, ground plane, base platform",
+  "faces": 16000
+ },
+ {
+  "kind": "model",
+  "out": "models/props/trash_bin.glb",
+  "prompt": "Japanese public trash bin station, three slots for cans bottles and burnable, grey metal, realistic PBR",
+  "neg": "text, logo, brand name, letters, watermark, people, ground plane, base platform",
+  "faces": 5000
+ },
+ {
+  "kind": "model",
+  "out": "models/props/street_light.glb",
+  "prompt": "modern Japanese street light pole 7 m tall with curved arm and flat LED head, grey, realistic PBR",
+  "neg": "text, logo, brand name, letters, watermark, people, ground plane, base platform",
+  "faces": 5000
+ }
+]

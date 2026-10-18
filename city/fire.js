@@ -4,6 +4,7 @@
 // columns (150–250 m, fogged soft puffs drifting with the wind), rising embers, one flickering PointLight.
 import * as THREE from 'three';
 import * as K from '../kit.js';
+import { prop } from './props.js';
 const { box, cyl, strut, put, M4, withFrame, def, std } = K;
 
 function mats() {
@@ -166,13 +167,8 @@ function pancake(x, z, w, d, r, F) {   // fully collapsed block: tilted slab sta
 }
 function car(x, z, ry, flipped, r, F) {
   withFrame(x, 0, z, ry, () => {
-    if (flipped) { box('fire_burnt', 4.2, .8, 1.7, 0, 1.15, 0); box('fire_burnt', 2.2, .5, 1.45, -.2, .3, 0); for (const sx of [-1.4, 1.4]) for (const sz of [-.8, .8]) cyl('fire_rebar', .28, .2, sx, 1.65, sz, Math.PI / 2, 0, 0, 8); }
-    else {
-      box('fire_burnt', 4.2, .75, 1.7, 0, .5, 0);
-      for (const sx of [-.9, .7]) for (const sz of [-.7, .7]) strut('fire_burnt', [sx, .9, sz], [sx + (sx < 0 ? .25 : -.2), 1.45, sz * .9], .04, 3);
-      box('fire_burnt', 1.6, .06, 1.3, -.1, 1.45, 0, 0, .06);
-      for (const sx of [-1.4, 1.4]) for (const sz of [-.8, .8]) cyl('fire_rebar', .26, .18, sx, .26, sz, Math.PI / 2, 0, 0, 8);
-    }
+    if (flipped) prop('wreck_car', 0, 1.3, 0, 0, 1, Math.PI);   // on its roof
+    else prop('wreck_car', 0, 0, 0);
   });
   if (r() < .45) F.push([[x, .9, z], 2 + r() * 1.5, 2.5 + r() * 2.5]);
 }

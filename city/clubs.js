@@ -3,6 +3,7 @@
 // pavilions, string lights, a central crowned marquee over a painted club. Overgrown plaza with dead cars.
 import * as THREE from 'three';
 import * as K from '../kit.js';
+import { prop } from './props.js';
 const { box, cyl, sph, strut, torus, put, M4, withFrame, def, std, bas, canvasTex, noise } = K;
 
 const HB = 88, RF = HB + .12, TB = 29, PB = 32;   // roof slab top, walkable roof level, shaft / podium half size
@@ -55,10 +56,7 @@ function materials() {
 /* ───────────── pieces ───────────── */
 function car(x, z, ry, k) {
   withFrame(x, .12, z, ry, () => {
-    box(k, 4.2, .8, 1.8, 0, .7, 0); box(k, 2.3, .65, 1.6, -.2, 1.42, 0);
-    box('clubs_cwin', 2.34, .42, 1.63, -.2, 1.43, 0);
-    for (const a of [-1, 1]) for (const b of [-1, 1]) cyl('tire', .36, .26, a * 1.35, .36, b * .82, Math.PI / 2, 0, 0, 10);
-    box('steel', .1, .25, 1.7, 2.12, .55, 0); box('steel', .1, .25, 1.7, -2.12, .55, 0);
+    prop(['jp_sedan', 'kcar', 'jp_taxi', 'kei_truck'][Math.floor(Math.random() * 4)], 0, 0, 0);
   });
 }
 function tent(x, z, ry) {   // white pavilion: posts, pyramid roof, valance, back wall, table, pennant
@@ -212,6 +210,6 @@ export function build(ctx, d) {
     roof(ctx);
     K.addSpot(0xffd09a, 700, 30, .9, .6, K.fpos(0, RF + 6, 0), K.fpos(0, RF, 0));
   });
-  ctx.dayNight.push((day) => { K.mats.clubs_fac.emissiveIntensity = day ? 0 : .9; });
+  ctx.dayNight.push((day) => { K.mats.clubs_fac.emissiveIntensity = day ? 0 : .18; });
   ctx.pois.push({ id: d.id, cam: [d.x + 95, HB + 55, d.z + 110], tgt: [d.x, HB - 15, d.z], spawn: [d.x, RF + .1, d.z + 14], yaw: 0 });
 }

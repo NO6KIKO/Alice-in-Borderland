@@ -6,3 +6,10 @@ models/chars/alice_tpose.glb
 models/chars/alice_rigged.glb
 models/chars/alice_anim.glb
 .env
+# raw Tripo outputs (only the LODs ship)
+models/props/*.glb
+models/props/*.log
+
+models/people/*_tpose*
+models/people/*_rig*
+models/people/*.log

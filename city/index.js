@@ -16,6 +16,8 @@ import * as hearts from './hearts.js';
 import * as shibuya from './shibuya.js';
 import * as fire from './fire.js';
 import { cityBuilding } from './buildings.js';
+import { prop, loadProps, propColliders, propCount } from './props.js';
+import { streetSegment, intersection } from './street.js';
 
 const DISTRICT_MODULES = { port, arena, prison, tokyotower, palace, diamond, clubs, hearts, shibuya, fire };
 const { box, cyl, sph, plane, put, strut, beacon, M4, withFrame, setZone, canvasTex, noise, def, std } = K;
@@ -155,6 +157,18 @@ export { tree };
 // one filler building on a lot (lot centre x,z; footprint w×d; height h) — see buildings.js
 function building(x, z, w, d, h, r) { return cityBuilding(x, z, w, d, h, r); }
 
+// abandoned traffic: a few cars stopped mid-lane (local +x along the road), some askew, doors would be open
+function strandCars(x, z, ry) {
+  const n = Math.random() < .55 ? 1 + Math.floor(Math.random() * 3) : 0;
+  withFrame(x, .06, z, ry, () => {
+    for (let i = 0; i < n; i++) {
+      const lane = (Math.random() < .5 ? -1 : 1) * (2 + Math.random() * 3.5), along = (Math.random() - .5) * 90, dir = lane < 0 ? 0 : Math.PI;
+      const m = ['jp_sedan', 'jp_sedan', 'kcar', 'jp_taxi', 'kei_truck', 'jp_sedan'][Math.floor(Math.random() * 6)];
+      prop(Math.random() < .04 ? 'city_bus' : m, along, 0, lane, dir + (Math.random() - .5) * .5);
+    }
+  });
+}
+
 // height falloff: tallest around the business core west of the palace, low near the docks
 function heightAt(x, z, r) {
   const core = Math.exp(-(((x + 380) / 520) ** 2 + ((z + 380) / 480) ** 2));
@@ -284,6 +298,7 @@ export function buildCity({ scene, camera }) {
   const nx = Math.ceil((330 - GRID_X0) / BLOCK), nz = Math.ceil((420 - GRID_Z0) / BLOCK);
   const nearCompound = (x, z, pad = 0) => Math.abs(x) < 135 + pad && Math.abs(z - 10) < 135 + pad;   // keep the night compound's apron open
   const roadOK = (x, z) => onLand(x, z) && !inDistrict(x, z, -6) && !nearCompound(x, z);
+  const segs = new Set();
   for (let i = 0; i <= nx; i++) for (let j = 0; j <= nz; j++) {
     const x = GRID_X0 + i * BLOCK, z = GRID_Z0 + j * BLOCK;
     setZone(`city_${Math.floor((x - GRID_X0) / 220)}_${Math.floor((z - GRID_Z0) / 220)}`);
@@ -291,11 +306,24 @@ export function buildCity({ scene, camera }) {
     if (roadOK(x + BLOCK / 2, z) && onLand(x, z) && onLand(x + BLOCK, z)) {   // E-W segment
       box('road', BLOCK, .06, ROAD_W, x + BLOCK / 2, .03, z);
       for (let s = 6; s < BLOCK - 4; s += 8) box('lineW', 3, .02, .18, x + s, .07, z);
+      strandCars(x + BLOCK / 2, z, 0);
+      streetSegment(x + BLOCK / 2, z, 0, BLOCK, ROAD_W); segs.add(`h${i},${j}`);
     }
     if (roadOK(x, z + BLOCK / 2) && onLand(x, z) && onLand(x, z + BLOCK)) {   // N-S segment
       box('road', ROAD_W, .06, BLOCK, x, .031, z + BLOCK / 2);
       for (let s = 6; s < BLOCK - 4; s += 8) box('lineW', .18, .02, 3, x, .071, z + s);
+      strandCars(x, z + BLOCK / 2, -Math.PI / 2);
+      streetSegment(x, z + BLOCK / 2, -Math.PI / 2, BLOCK, ROAD_W); segs.add(`v${i},${j}`);
     }
+  }
+
+  for (let i = 0; i <= nx; i++) for (let j = 0; j <= nz; j++) {   // intersections: arms +x, −z, −x, +z
+    const arms = [segs.has(`h${i},${j}`), segs.has(`v${i},${j - 1}`), segs.has(`h${i - 1},${j}`), segs.has(`v${i},${j}`)];
+    if (arms.filter(Boolean).length < 2) continue;
+    const x = GRID_X0 + i * BLOCK, z = GRID_Z0 + j * BLOCK;
+    setZone(`city_${Math.floor((x - GRID_X0) / 220)}_${Math.floor((z - GRID_Z0) / 220)}`);
+    box('road', ROAD_W, .061, ROAD_W, x, .032, z);
+    intersection(x, z, arms, ROAD_W);
   }
 
   // filler blocks: sidewalk slab + 1–9 buildings + street trees
@@ -319,10 +347,17 @@ export function buildCity({ scene, camera }) {
       building(bx, bz, w, d, heightAt(bx, bz, R), R);
     }
     for (let s = -inner / 2 + 4; s < inner / 2; s += 16) { tree(cx + s, cz - inner / 2 + 2, .9, .12); tree(cx + s, cz + inner / 2 - 2, .9, .12); }
+    // corner clutter: vending clusters, parked bikes / scooters, post box
+    for (const [sx, sz] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+      const px = cx + sx * (inner / 2 - 1.4), pz = cz + sz * (inner / 2 - 5);
+      if (R() < .35) for (let k = 0; k < 1 + Math.floor(R() * 3); k++) prop('vending', px, .12, pz - sz * k * 1.2, sx > 0 ? Math.PI : 0);
+      else if (R() < .5) for (let k = 0; k < 2 + Math.floor(R() * 5); k++) prop(R() < .8 ? 'bicycle' : 'scooter', cx + sx * (inner / 2 - 6 - k * .65), .12, cz + sz * (inner / 2 - 1.3), Math.PI / 2 + (R() - .5) * .2, 1, R() < .15 ? Math.PI / 2 * .95 : 0);
+      else if (R() < .2) prop('postbox', px, .12, pz, 0);
+    }
   }
 
   // hero districts
-  const ctx = { THREE, K, cards, map, scene, camera, updates, pois, collidables, dayNight, tree };
+  const ctx = { THREE, K, cards, map, scene, camera, updates, pois, collidables, dayNight, tree, prop };
   for (const d of map.DISTRICTS) {
     const mod = DISTRICT_MODULES[d.id]; if (!mod) continue;
     try { setZone(d.id); mod.build(ctx, d); } catch (e) { console.error('district failed', d.id, e); }
@@ -334,5 +369,7 @@ export function buildCity({ scene, camera }) {
   rainbowBridge();
   setZone('compound');
   airships(scene, updates);
+  const pc = propColliders(); if (pc) { scene.add(pc); collidables.push(pc); }
+  loadProps(scene, camera, updates); console.log('props', propCount());
   return { collidables, updates, pois, dayNight };
 }

@@ -27,23 +27,24 @@ export function createDayNight({ scene, renderer, hemi, moon, bloom, spots, nigh
 
   const night = { bg: scene.background.clone(), fogC: scene.fog.color.clone(), fogD: .0016, hemiS: hemi.color.clone(), hemiG: hemi.groundColor.clone(), hemiI: hemi.intensity, moonI: moon.intensity, exp: renderer.toneMappingExposure, bloom: bloom.strength };
   let isDay = false;
+  night.bloom = .35; night.moonI = moon.intensity * 1.5; moon.color.set(0x8fb0e0);   // softer bloom, clearer moonlight
   function set(day) {
     isDay = day;
     sky.visible = day; if (nightBackdrop) nightBackdrop.visible = !day;
     scene.background = day ? null : night.bg;
-    scene.environment = day ? dayEnv : nightEnv; scene.environmentIntensity = day ? 1.3 : .22;
+    scene.environment = day ? dayEnv : nightEnv; scene.environmentIntensity = day ? .75 : .22;
     scene.fog.color.set(day ? 0xa9bccf : night.fogC); scene.fog.density = day ? .00016 : night.fogD;
-    hemi.color.set(day ? 0xc4d8f0 : night.hemiS); hemi.groundColor.set(day ? 0x6b6252 : night.hemiG); hemi.intensity = day ? 2.2 : night.hemiI;
+    hemi.color.set(day ? 0xc4d8f0 : night.hemiS); hemi.groundColor.set(day ? 0x6b6252 : night.hemiG); hemi.intensity = day ? 1.9 : night.hemiI;
     moon.intensity = day ? 0 : night.moonI;
     sun.intensity = day ? 4 : 0; sun.visible = day;
-    renderer.toneMappingExposure = day ? .95 : night.exp;
+    renderer.toneMappingExposure = day ? .9 : night.exp;
     bloom.strength = day ? .18 : night.bloom; bloom.threshold = day ? 1.6 : 1.0;
     for (const s of spots) s.visible = !day;
     for (const f of onChange) f(day);
   }
   // enclosed halls: by day, fade sky light out while the camera is inside one of these boxes
   const interiors = []; let inside = 0;
-  function base() { return isDay ? { h: 2.2, s: 4, e: 1.3 } : { h: night.hemiI, s: 0, e: .22 }; }
+  function base() { return isDay ? { h: 1.9, s: 4, e: .75 } : { h: night.hemiI, s: 0, e: .22 }; }
   function update(focus, cam) {
     const target = cam && interiors.some((b) => cam.x > b[0] && cam.x < b[1] && cam.y < b[2] && cam.z > b[3] && cam.z < b[4]) ? 1 : 0;
     inside += (target - inside) * .08;

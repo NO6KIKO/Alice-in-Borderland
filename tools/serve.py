@@ -6,5 +6,7 @@ class NoCache(http.server.SimpleHTTPRequestHandler):
         self.send_header('Cache-Control', 'no-store, must-revalidate')
         super().end_headers()
 
+import functools, os
 port = int(sys.argv[1]) if len(sys.argv) > 1 else 8765
-http.server.ThreadingHTTPServer(('', port), NoCache).serve_forever()
+root = sys.argv[2] if len(sys.argv) > 2 else os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')   # default: project root
+http.server.ThreadingHTTPServer(('', port), functools.partial(NoCache, directory=root)).serve_forever()

@@ -5,6 +5,7 @@
 // Local frame: district centre; tower at (−10, 0). Roads: N–S x=−80/50/115, E–W z=−45/48.
 import * as THREE from 'three';
 import * as K from '../kit.js';
+import { prop } from './props.js';
 import { cityBuilding } from './buildings.js';
 const { box, cyl, strut, put, M4, withFrame, def, std } = K;
 
@@ -252,17 +253,11 @@ function park(ctx, r, dx, dz) {
 
 /* ───────── street furniture ───────── */
 function car(x, z, ry, k, y = .06) {
-  withFrame(x, y, z, ry, () => {
-    box(k, 4.4, .85, 1.8, 0, .7, 0); box(k, 2.4, .7, 1.62, -.2, 1.45, 0); box('steel', 2.2, .55, 1.66, -.2, 1.45, 0);
-    for (const sx of [-1.4, 1.4]) for (const sz of [-.85, .85]) cyl('tire', .34, .25, sx, .34, sz, Math.PI / 2, 0, 0, 8);
-    if (k === 'tt_taxi') box('glowY', .5, .2, .3, -.2, 1.9, 0);
-  });
+  const m = k === 'tt_taxi' ? 'jp_taxi' : ['jp_sedan', 'kcar', 'jp_sedan', 'kei_truck'][Math.floor(Math.random() * 4)];
+  withFrame(x, y, z, ry, () => prop(m, 0, 0, 0));
 }
 function bus(x, z, ry, y = .06) {
-  withFrame(x, y, z, ry, () => {
-    box('tt_bus', 11, 2.6, 2.5, 0, 1.75, 0); box('steel', 9.5, .9, 2.54, .3, 2.2, 0); box('contG', 11.02, .5, 2.52, 0, .8, 0);
-    for (const sx of [-3.6, 3.6]) for (const sz of [-1.1, 1.1]) cyl('tire', .5, .3, sx, .5, sz, Math.PI / 2, 0, 0, 8);
-  });
+  withFrame(x, y, z, ry, () => prop('city_bus', 0, 0, 0));
 }
 function tlight(x, z, ry) {
   withFrame(x, 0, z, ry, () => {
@@ -356,6 +351,6 @@ export function build(ctx, d) {
     const dH = bld(ctx, 80, -123, 24, 24, 92, r, Math.PI / 2); card(ctx, 'K', 'D', 21, 67.8, dH * .62, -123, -Math.PI / 2);
   });
   ctx.updates.push((dt) => { waterN.offset.x += dt * .006; waterN.offset.y += dt * .004; });
-  ctx.dayNight.push((day) => { K.mats.tt_or.emissiveIntensity = day ? 0 : .85; K.mats.tt_wh.emissiveIntensity = day ? 0 : .35; });
+  ctx.dayNight.push((day) => { K.mats.tt_or.emissiveIntensity = day ? 0 : .35; K.mats.tt_wh.emissiveIntensity = day ? 0 : .12; });
   ctx.pois.push({ id: d.id, cam: [d.x - 260, 165, d.z + 40], tgt: [d.x + 30, 45, d.z - 5], spawn: [d.x - 10, TB + .06, d.z + 19], yaw: 0 });
 }

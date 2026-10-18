@@ -131,8 +131,8 @@ def('win', bas({ map: texWin, color: new THREE.Color(1.4, 1.4, 1.4) }), 4);
 def('fence', new THREE.MeshStandardMaterial({ map: texFence, transparent: true, alphaTest: .35, side: THREE.DoubleSide, roughness: .6, metalness: .8, color: 0x9aa3ad }), 1.6);
 export const texPool = canvasTex(128, 128, (g) => { const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(.35, 'rgba(255,255,255,.45)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 128, 128); }, { srgb: false });
 export const poolMat = (c) => new THREE.MeshBasicMaterial({ map: texPool, color: c, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 });
-def('poolC', poolMat(new THREE.Color(.34, .4, .48)));
-def('poolY', poolMat(new THREE.Color(.5, .34, .14)));
+def('poolC', poolMat(new THREE.Color(.24, .28, .34)));
+def('poolY', poolMat(new THREE.Color(.36, .25, .1)));
 def('beam', new THREE.MeshBasicMaterial({ color: 0xaecbff, transparent: true, opacity: .018, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, side: THREE.DoubleSide }));
 
 export let frame = new THREE.Matrix4();

@@ -404,6 +404,7 @@ console.log('triangles', built.tris, 'spots', spotCount, 'beacons', beacons.leng
 /* beacons: instanced, two blink phases, with additive halos */
 const bGeo = new THREE.SphereGeometry(.24, 12, 8);
 const bMatA = new THREE.MeshBasicMaterial({ color: new THREE.Color(4, .15, .1) }), bMatB = bMatA.clone();
+{ const keep = beacons.filter((p, i) => p[1] > 12 || i % 3 === 0); beacons.length = 0; beacons.push(...keep); }   // fewer low beacons: calmer night
 const bA = new THREE.InstancedMesh(bGeo, bMatA, beacons.length), bB = new THREE.InstancedMesh(bGeo, bMatB, beacons.length);
 let ia = 0, ib = 0;
 beacons.forEach((p, i) => { _m.makeTranslation(...p); if (i % 2) bA.setMatrixAt(ia++, _m); else bB.setMatrixAt(ib++, _m); });
@@ -413,7 +414,7 @@ const halos = [];
 for (const arr of [beacons.filter((_, i) => i % 2), beacons.filter((_, i) => !(i % 2))]) {
   const pos = new Float32Array(arr.length * 3); arr.forEach((p, i) => pos.set(p, i * 3));
   const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  const pm = new THREE.PointsMaterial({ map: haloTex, size: 3.2, sizeAttenuation: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false });
+  const pm = new THREE.PointsMaterial({ map: haloTex, size: 2.2, sizeAttenuation: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false });
   const pts = new THREE.Points(geo, pm); pts.frustumCulled = false; scene.add(pts); halos.push(pm);
 }
 
@@ -587,8 +588,10 @@ const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
 const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.55, 0.6, 1.0); composer.addPass(bloom);
 const facadeMats = Object.values(mats).filter((m) => m.userData.nightGlow);   // lit windows / signs / shopfronts at night
+const CITY_NIGHT_LIGHTS = .15;
 const dayNight = createDayNight({ scene, renderer, hemi, moon, bloom, spots, nightBackdrop: city, onChange: [
-  (day) => { for (const m of facadeMats) m.emissiveIntensity = day ? 0 : m.userData.nightGlow; },
+  // the show's night has no city electricity: only a few windows (generators) glow; game venues light themselves
+  (day) => { for (const m of facadeMats) m.emissiveIntensity = day ? 0 : m.userData.nightGlow * CITY_NIGHT_LIGHTS; },
   (day) => {   // the wet-asphalt mirror is a night look; by day the apron is plain dry asphalt
     refl.visible = !day; const am = asphalt.material;
     am.alphaMap = day ? null : texPuddle; am.transparent = !day; am.roughness = day ? .95 : 1; am.roughnessMap = day ? null : texPuddle; am.color.set(day ? 0xf0f2f4 : 0xb0b4ba); am.needsUpdate = true;
@@ -620,7 +623,7 @@ function tick() {
   document.body.classList.toggle('playing', player.active);
   const a = .55 + .45 * Math.sin(t * 2.4), b = .55 + .45 * Math.sin(t * 2.4 + 2.2);
   bMatA.color.setRGB(4 * a + .5, .15 * a, .1 * a); bMatB.color.setRGB(4 * b + .5, .15 * b, .1 * b);
-  halos[0].opacity = .25 + .75 * a; halos[1].opacity = .25 + .75 * b;
+  halos[0].opacity = .12 + .45 * a; halos[1].opacity = .12 + .45 * b;
   updateCars(dt);
   for (const f of cityInfo.updates) f(dt, t);
   if (!dayNight.isDay) refl.visible = Math.hypot(camera.position.x, camera.position.z) < 650;   // the wet-ground mirror re-renders the whole scene: only near the compound
