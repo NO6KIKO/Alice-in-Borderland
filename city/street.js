@@ -21,6 +21,12 @@ function defineMats() {
   def('stSignal', std({ color: 0x2e3236, roughness: .5, metalness: .5 }));
   def('stLitter', std({ map: canvasTex(256, 64, (g, w, h) => { g.clearRect(0, 0, w, h); for (let i = 0; i < 260; i++) { const k = Math.random(); g.fillStyle = k < .7 ? `rgba(${90 + Math.random() * 60},${70 + Math.random() * 40},${30},.9)` : k < .85 ? 'rgba(230,228,220,.9)' : 'rgba(60,90,40,.9)'; g.save(); g.translate(Math.random() * w, h * (.2 + Math.pow(Math.random(), 1.6) * .8)); g.rotate(Math.random() * 6); g.fillRect(-3, -1.5, 3 + Math.random() * 6, 2 + Math.random() * 4); g.restore(); } }, { repeat: true }), alphaTest: .4, roughness: .9, polygonOffset: true, polygonOffsetFactor: -2 }), 4);
   K.mats.stLitter.userData.noCollide = true;
+  def('stWeed', std({ map: canvasTex(128, 128, (g, w, h) => {   // a clump of grass blades (alpha cut-out)
+    g.clearRect(0, 0, w, h);
+    for (let i = 0; i < 70; i++) { const x = w / 2 + (Math.random() - .5) * w * .8, lean = (Math.random() - .5) * 40, hh = h * (.35 + Math.random() * .6), k = Math.random();
+      g.strokeStyle = `rgb(${60 + k * 60 | 0},${95 + k * 70 | 0},${35 + k * 25 | 0})`; g.lineWidth = 1.5 + Math.random() * 2; g.beginPath(); g.moveTo(x, h); g.quadraticCurveTo(x + lean * .3, h - hh * .6, x + lean, h - hh); g.stroke(); }
+  }), alphaTest: .5, side: THREE.DoubleSide, roughness: 1 }), 1);
+  K.mats.stWeed.userData.noCollide = true;
   def('stLamp', std({ color: 0x1a2a24, roughness: .3, emissive: 0x000000 }));
   for (const k of ['stWire', 'stGuard', 'stZebra', 'stManhole', 'stTactile']) K.mats[k].userData.noCollide = true;
 }
@@ -72,6 +78,12 @@ export function streetSegment(cx, cz, dir, L, W) {
     // street lights on the side without poles, an occasional bus stop
     for (let s = -L / 2 + 20; s < L / 2 - 10; s += 36) prop('street_light', s, .12, -side * (W / 2 + .9), side > 0 ? 0 : Math.PI);
     if (Math.random() < .18) prop('bus_stop', (Math.random() - .5) * L * .6, .12, side * (W / 2 + 1.6), 0);
+    // weeds pushing up along the kerbs and through cracks in the lanes (two crossed cards per clump)
+    for (let i = 0; i < 46; i++) {
+      const s2 = (Math.random() - .5) * (L - 6), kerb = Math.random() < .75, z2 = kerb ? (Math.random() < .5 ? -1 : 1) * (W / 2 - .25 - Math.random() * .4) : (Math.random() - .5) * W * .8;
+      const sz = .35 + Math.random() * (kerb ? .7 : .4), a = Math.random() * 3;
+      for (const ry of [a, a + Math.PI / 2]) { const g = new THREE.PlaneGeometry(sz * 1.3, sz); g.translate(0, sz / 2, 0); put('stWeed', g, M4(s2, .06, z2, 0, ry, 0)); }
+    }
     // white pipe guardrail along the kerb (both sides, with gaps), manholes in the lane
     for (const sd of [-1, 1]) for (let s = -L / 2 + 10; s < L / 2 - 12; s += 14) if (Math.random() < .55) {
       const len = 6 + Math.random() * 6; plane('stGuard', len, .85, s + len / 2, .55, sd * (W / 2 - .2), sd > 0 ? Math.PI : 0);
