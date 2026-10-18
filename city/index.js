@@ -227,10 +227,10 @@ export function buildCity({ scene, camera }) {
   const land = new THREE.Mesh(landGeo, std({ map: K.texConcrete, color: 0x6f716e, roughness: .95 })); land.position.y = -.08; land.receiveShadow = true; scene.add(land); collidables.push(land);
 
   // bay
-  texWaterN.repeat.set(160, 160);
-  const water = new THREE.Mesh(new THREE.PlaneGeometry(9000, 9000), new THREE.MeshStandardMaterial({ color: 0x24465c, roughness: .07, metalness: .2, normalMap: texWaterN, normalScale: new THREE.Vector2(.35, .35) }));
+  texWaterN.repeat.set(1100, 1100);   // ~8 m ripple tiles
+  const water = new THREE.Mesh(new THREE.PlaneGeometry(9000, 9000), new THREE.MeshStandardMaterial({ color: 0x24465c, roughness: .07, metalness: .2, normalMap: texWaterN, normalScale: new THREE.Vector2(.22, .22) }));
   water.rotation.x = -Math.PI / 2; water.position.set(0, WATER_Y, 0); scene.add(water);
-  updates.push((dt) => { texWaterN.offset.x += dt * .004; texWaterN.offset.y += dt * .0025; });
+  updates.push((dt) => { texWaterN.offset.x += dt * .03; texWaterN.offset.y += dt * .018; });
 
   // quay walls along the coastline
   setZone('quay');

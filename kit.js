@@ -322,7 +322,7 @@ export function cabinet(x, y, z, ry = 0) { withFrame(x, y, z, ry, () => { box('w
 export function generator(x, z, ry = 0) { withFrame(x, 0, z, ry, () => { box('steelL', 4, 2.2, 1.8, 0, 1.25, 0); box('steel', 4.2, .15, 2, 0, .08, 0); plane('grille', 1.4, 1.4, -1.2, 1.3, .91); plane('grille', 1.4, 1.4, 1.2, 1.3, .91); cyl('pipeD', .15, 1, 1.5, 2.8, 0, 0, 0, 0, 10); box('haz', 4, .12, .02, 0, .3, .91); }); }
 export function crateStack(x, z, n = 3) { for (let i = 0; i < n; i++) box(['contG', 'wall', 'contB'][i % 3], 1.4, 1.2, 1.4, x + (i % 2) * 1.5, .6 + Math.floor(i / 2) * 1.2, z); }
 export function gasCylinders(x, z) { for (let i = 0; i < 5; i++) { cyl(i % 2 ? 'valve' : 'pipeG', .18, 1.4, x + i * .42, .75, z, 0, 0, 0, 10); sph('steelL', .17, x + i * .42, 1.48, z); } box('steel', 2.4, .06, .06, x + .84, 1.1, z + .25); }
-export function container(k, x, y, z, ry = 0) { withFrame(x, y, z, ry, () => { box(k, 6.06, 2.59, 2.44, 0, 1.3, 0); for (const s of [-1, 1]) box('steel', .12, 2.6, 2.46, s * 3, 1.3, 0); box('steel', 6.1, .1, 2.46, 0, 2.58, 0); box('steelL', .03, 2.3, 1, 3.04, 1.3, .55); box('steelL', .03, 2.3, 1, 3.04, 1.3, -.55); }); }
+export function container(k, x, y, z, ry = 0) { withFrame(x, y, z, ry, () => { box(k, 6.06, 2.59, 2.44, 0, 1.3, 0); for (const s of [-1, 1]) { for (const t of [-1, 1]) box('steel', .14, 2.6, .14, s * 3, 1.3, t * 1.16); for (const t of [-.6, -.2, .2, .6]) box('steelL', .04, 2.3, .05, s * 3.04, 1.3, t); } box('steel', 6.1, .1, 2.46, 0, 2.58, 0); box('steelL', .03, 2.3, 1, 3.04, 1.3, .55); box('steelL', .03, 2.3, 1, 3.04, 1.3, -.55); }); }
 
 /* ───────────── merge everything into meshes, one per (zone, material) ───────────── */
 export const NO_COLLIDE = new Set(['beam', 'poolC', 'poolY', 'arrow']);
