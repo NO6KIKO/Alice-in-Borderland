@@ -20,6 +20,7 @@ import { cityBuilding } from './buildings.js';
 import { prop, loadProps, propColliders, propCount } from './props.js';
 import { streetSegment, intersection } from './street.js';
 import { hunt } from './hunt.js';
+import { atmosphere } from './atmos.js';
 
 const DISTRICT_MODULES = { port, arena, prison, tokyotower, palace, diamond, clubs, hearts, shibuya, fire };
 const { box, cyl, sph, plane, put, strut, beacon, M4, withFrame, setZone, canvasTex, noise, def, std } = K;
@@ -387,6 +388,7 @@ export function buildCity({ scene, camera }) {
   prop('tiger', -522, .06, 118, .8); prop('panther', -1036, 7.2, 199, 2.4); prop('panther', -1003, .06, 280, -1.2);
   for (const [x, z, a] of [[-742, -262, .4], [-736, -256, 2.2], [-748, -251, -1], [-731, -268, 1.4]]) prop('deer', x, .06, z, a);
   try { hunt(ctx); } catch (e) { console.error('hunt scene failed', e); }
+  atmosphere(ctx);
   setZone('express');
   expressway(-100, -700, -100, -105); expressway(-500, -700, 300, -700); box('hwy', 30, 2.6, 30, -100, 27, -700);
   rainbowBridge();

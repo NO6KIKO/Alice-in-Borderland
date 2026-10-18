@@ -37,6 +37,10 @@ function pole(x, z, transformer) {
     for (let k = -1; k <= 1; k++) cyl('stInsul', .07, .2, x, y + .16, z + k * w * .42, 0, 0, 0, 6);
   }
   if (transformer) { cyl('stTrans', .32, 1.05, x, H - 3.2, z - .55, 0, 0, 0, 10); box('steel', .1, .5, .5, x, H - 3.2, z - .3); }
+  if (Math.random() < .3) {   // kudzu climbing the pole: two crossed vine cards hugging the shaft
+    const vh = 3 + Math.random() * 6;
+    for (const ry of [0, Math.PI / 2]) { const g = new THREE.PlaneGeometry(.9, vh); g.rotateY(ry); put('ivy', g, M4(x, vh / 2 + .1, z)); }
+  }
   const pts = [];
   for (const [y, dz] of [[H - .25, -.9], [H - .25, .9], [H - 1.25, -.65], [6.6, -.25], [6.1, -.25], [5.6, -.25]]) pts.push(K.fpos(x, y, z + dz));
   return pts;

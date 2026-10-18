@@ -17,6 +17,8 @@ def submit(path, body):
     for attempt in range(40):
         try:
             return T.call('POST', path, body)['task_id']
+        except OSError:   # DNS / connection blips
+            time.sleep(15); continue
         except SystemExit as e:
             if '2000' in str(e) or 'limit' in str(e).lower():
                 time.sleep(20 + attempt * 5); continue
@@ -27,7 +29,7 @@ def wait(tid):
     while True:
         try:
             d = T.call('GET', f'/tasks/{tid}')
-        except SystemExit:
+        except (SystemExit, OSError):
             time.sleep(10); continue
         if d.get('status') in ('success', 'failed', 'cancelled', 'banned', 'expired'):
             if d['status'] != 'success':
@@ -36,10 +38,19 @@ def wait(tid):
         time.sleep(6)
 
 
+def dl(url, out):
+    for i in range(8):
+        try:
+            return T.download(url, out)
+        except OSError:
+            time.sleep(10)
+    raise RuntimeError('download failed ' + out)
+
+
 def fetch(d, out):
-    T.download(d['output']['model_url'], out)
+    dl(d['output']['model_url'], out)
     if d['output'].get('rendered_image_url'):
-        T.download(d['output']['rendered_image_url'], os.path.splitext(out)[0] + '_preview.png')
+        dl(d['output']['rendered_image_url'], os.path.splitext(out)[0] + '_preview.png')
 
 
 def run(job):
@@ -55,7 +66,7 @@ def run(job):
     rid = submit('/animations/rig', {'input': gid, 'model': 'v1.0-20240301', 'rig_type': 'biped', 'out_format': 'glb'}); wait(rid)
     names = job['anims'][:5]
     aid = submit('/animations/retarget', {'input': rid, 'animations': [f'preset:biped:{n}' for n in names], 'out_format': 'glb', 'animate_in_place': True})
-    T.download(wait(aid)['output']['model_url'], out)
+    dl(wait(aid)['output']['model_url'], out)
 
 
 def main():

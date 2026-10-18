@@ -59,11 +59,11 @@ export function konbini(ctx, x, y, z, ry = 0) {
     prop('coffee_machine', 1.1, 0, 4.4, -Math.PI / 2); prop('atm', 3.6, 0, 2, 0);
     // outside: bins, vending pair, a dropped basket of shopping, a parked bike
     prop('trash_bin', 3.4, 0, -1.4, Math.PI / 2); prop('recycle_bin', 4.4, 0, -1.4, 0);
-    prop('vending', -1.3, 0, 4.5, -Math.PI); prop('vending', -1.3, 0, 5.7, -Math.PI);
+    prop('vending', -1.3, 0, 4.5, 0); prop('vending', -1.3, 0, 5.7, 0);
     prop('bicycle', 8, 0, -1.6, .15); prop('shopping_cart', 2.4, 0, -2.6, 1.1);
   });
   // one warm-white interior light (night) so the store reads as the brightest point on the corner
   const L = new THREE.PointLight(0xf2f6ff, 0, 18, 1.6);
   withFrame(x, y, z, ry, () => L.position.copy(K.fpos(W / 2, CEIL - .3, D / 2)));
-  ctx.scene.add(L); ctx.dayNight.push((day) => { L.intensity = day ? 0 : 60; K.mats.kb_light.color.setScalar(day ? 1.1 : 1.6); });
+  ctx.scene.add(L); ctx.dayNight.push((day) => { L.intensity = day ? 0 : 32; K.mats.kb_light.color.setScalar(day ? 1.1 : 1.25); });
 }

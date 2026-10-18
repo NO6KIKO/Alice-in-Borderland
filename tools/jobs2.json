@@ -47,5 +47,12 @@
   "prompt": "Japanese city bicycle lying on its side on the ground, front basket, realistic PBR",
   "neg": "text, logo, brand name, letters, watermark, people, hands, ground plane, base platform",
   "faces": 12000
+ },
+ {
+  "kind": "model",
+  "out": "models/props/coffee_machine.glb",
+  "prompt": "self service coffee machine on small counter with cups, realistic PBR",
+  "neg": "text, logo, brand name, letters, watermark, people, ground plane, base platform",
+  "faces": 6000
  }
 ]
