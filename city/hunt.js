@@ -11,6 +11,7 @@ import { Reflector } from 'three/addons/objects/Reflector.js';
 import * as K from '../kit.js';
 
 const C = new THREE.Vector3(-990, .06, 220);      // crossing centre (world)
+export const huntState = { centre: C, firing: false };   // read by the audio each frame
 const PV = .18;                                   // pavement top
 
 // actors: id, clip, position (world x,z, y), facing target or yaw, and an optional run path (world points, loops)
@@ -174,6 +175,7 @@ export function hunt(ctx) {
   let fireT = 0, burst = 0, sweep = 0;
   const _w = new THREE.Vector3(), _d = new THREE.Vector3(), _tq = new THREE.Quaternion(), _ts = new THREE.Vector3(1, 1, 1), _te = new THREE.Euler();
   updates.push((dt, t) => {
+    huntState.firing = false;
     active = camera.position.distanceTo(C) < 420; root.visible = active; wet.visible = active && night && camera.position.distanceTo(C) < 300; if (!active) return;
     for (const mx of mixers) mx.update(dt);
     for (const c of crouchers) crouchPose(c);
@@ -196,6 +198,7 @@ export function hunt(ctx) {
     let shot = false;
     if (fireT < 0) { if (burst <= 0) { burst = 4 + Math.floor(Math.random() * 6); fireT = .9 + Math.random() * .8; } else { burst--; fireT = .085; shot = true; } }
     muzzle.getWorldPosition(_w); if (!gunHand) _w.set(C.x - 1.5, 1.45, C.z + 1);
+    huntState.firing = shot;
     flash.position.copy(_w); flashLight.position.copy(_w);
     flash.visible = shot; flash.material.rotation = Math.random() * 6; flashLight.intensity = shot ? 18 : Math.max(0, flashLight.intensity - dt * 400);
     if (shot) {

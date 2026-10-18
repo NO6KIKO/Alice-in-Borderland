@@ -17,6 +17,8 @@ import { buildCity } from './city/index.js';
 import { createDayNight } from './city/sky.js';
 import { DISTRICTS } from './city/map.js';
 import { createGrade } from './city/grade.js';
+import { createAudio } from './city/audio.js';
+import { huntState } from './city/hunt.js';
 
 /* 场地尺寸（来自参考图）: 120m × 85m，围墙 6m，廊道 10m / 15m，04 牌塔 38m，05 控制塔 28m */
 const SX = 60, SZ = 42.5, WH = 6, L1 = 10, L2 = 15;
@@ -604,6 +606,7 @@ gtao.enabled = hiQ;
 const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.55, 0.6, 1.0); composer.addPass(bloom);
 composer.addPass(new OutputPass());
 const grade = createGrade(composer);   // the show's teal / amber film look
+const audio = createAudio();
 const smaa = new SMAAPass(innerWidth * renderer.getPixelRatio(), innerHeight * renderer.getPixelRatio()); composer.addPass(smaa);
 const qBtn = document.createElement('button'); vb.insertBefore(qBtn, playBtn);
 const setQ = (q) => { hiQ = q; gtao.enabled = q; qBtn.textContent = q ? '画质: 高' : '画质: 标准'; try { localStorage.setItem('quality', q ? 'hi' : 'std'); } catch (e) {} };
@@ -619,6 +622,7 @@ const dayNight = createDayNight({ scene, renderer, hemi, moon, bloom, spots, nig
   },
   (day) => { for (const k of ['poolC', 'poolY', 'beam']) mats[k].visible = !day; },   // fake light pools / cones are night-only
   (day) => grade.setDay(day),
+  (day) => audio.setDay(day),
   (day) => { dayBtn.textContent = day ? '☾ 切换夜晚' : '☀ 切换白天'; },
   ...(cityInfo.dayNight || []),
 ] });
@@ -660,6 +664,7 @@ function tick() {
   updateMarkers();
   const tr = performance.now();
   grade.update(t, innerWidth, innerHeight);
+  audio.update(dt, camera, huntState.centre, huntState.firing);
   if (innerWidth > 0 && innerHeight > 0) composer.render();   // hidden pane → zero-size targets
   prof.render = prof.render * .9 + (performance.now() - tr) * .1; prof.js = prof.js * .9 + (tr - t0) * .1;
   requestAnimationFrame(tick);

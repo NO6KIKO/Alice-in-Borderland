@@ -293,7 +293,7 @@ function typeC(w, d, nf, r) {   // narrow apartment
     }
     cyl('pipeD', .07, H, w / 2 - .25, H / 2, d / 2 + .12, 0, 0, 0, 6); cyl('pipeD', .07, H, -w / 2 + .25, H / 2, -d / 2 - .12, 0, 0, 0, 6);
     box('steelL', .5, .7, .2, -w / 2 + .5, 1.6, d / 2 + .1);   // meters
-    fireStair(0, -d / 2, Math.PI, nf - 1, FH, 3.6 - FH);
+    climbable(() => fireStair(0, -d / 2, Math.PI, nf, FH, 3.6 - FH));   // reaches the roof
     railRect(w - .2, d - .2, H, 1); tank(-w * .2, H, -d * .15, r); ac(w * .25, H, d * .2); ac(w * .25, H, d * .2 - 1);
     strut('steelL', [w * .3, H, -d * .3], [w * .3, H + 4, -d * .3], .04, 4); strut('steelL', [w * .3 - .8, H + 3.5, -d * .3], [w * .3 + .8, H + 3.5, -d * .3], .03, 4);
     if (r() < .6) foliage(w * .2, H + 1.2, d * .3, 1.2, 1, 10, 'crown0', .8);
@@ -321,7 +321,7 @@ function typeA(w, d, nf, r) {   // corner office with curved glass corner (front
     plane('bShutter', d * .4, 3, w / 2 + .02, 1.5, -d * .25, Math.PI / 2);
     for (let i = 0; i < 1 + Math.floor(r() * 3); i++) signFrame(-w / 2 + 1.5 + r() * (w - c - 3), 6 + r() * (H - 12), d / 2 + .1, 0, r);
     if (r() < .7) signFrame(w / 2 + .1, 6 + r() * Math.max(1, H - 14), -d * .1, Math.PI / 2, r);
-    fireStair(-w / 2, -d * .1, -Math.PI / 2, nf - 1, FH);
+    climbable(() => fireStair(-w / 2, -d * .1, -Math.PI / 2, nf, FH));   // reaches the roof
     if (r() < .5) for (let f = 2; f < nf; f += 2) { box('bBand', 3, .9, 1, -w / 2 + 2.5, f * FH + .3, d / 2 + .6); foliage(-w / 2 + 2.5, f * FH + 1.2, d / 2 + .6, 1.1, .6, 8, 'crown2', .6); }   // planter balconies
     // roof: parapet + rail, AC cluster, tank, trees, rooftop sign
     railRect(w, d, H + .12, 1.2);
@@ -380,6 +380,7 @@ function vines(w, d, H, r, n) {   // ivy curtains: climbing from the street or d
 /* ───────────── zone plumbing ───────────── */
 let baseZone = 'city', detZone = 'det';
 function body(k, w, h, d, x = 0, z = 0, y0 = 0) { const o = K.zone; setZone(baseZone); box(k, w, h, d, x, y0 + h / 2 + .12, z); box('roof', w + .1, .3, d + .1, x, y0 + h + .27, z); setZone(o); }   // + roof cap
+function climbable(fn) { const o = K.zone; setZone(baseZone); fn(); setZone(o); }   // walkable (collides), drawn with the massing
 function det(fn) { const o = K.zone; setZone(detZone); withFrame(0, .12, 0, 0, fn); setZone(o); }
 
 // public: one building on a lot (world centre x,z, footprint w×d, target height h). Faces a random street side.
