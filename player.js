@@ -68,7 +68,7 @@ export function createPlayer({ scene, camera, renderer, controls, spawn = new TH
   /* ── collider from scene meshes ── */
   function setCollider(meshes) {
     const group = new THREE.Group();
-    for (const m of meshes) { const c = new THREE.Mesh(m.geometry); m.updateWorldMatrix(true, false); c.matrix.copy(m.matrixWorld); c.matrixAutoUpdate = false; group.add(c); }
+    for (const m of meshes) { const g = m.geometry; if (!g.index) g.setIndex([...Array(g.attributes.position.count).keys()]); const c = new THREE.Mesh(g); m.updateWorldMatrix(true, false); c.matrix.copy(m.matrixWorld); c.matrixAutoUpdate = false; group.add(c); }
     group.updateMatrixWorld(true);
     const gen = new StaticGeometryGenerator(group); gen.attributes = ['position'];
     const geo = gen.generate(); geo.boundsTree = new MeshBVH(geo);
@@ -179,5 +179,6 @@ export function createPlayer({ scene, camera, renderer, controls, spawn = new TH
     updateCamera(dt);
   }
 
-  return { enter, exit, update, setCollider, state, get pos() { return pos; }, get active() { return state.active; } };
+  function teleport(p, yaw = 0) { pos.copy(p); vel.set(0, 0, 0); state.yaw = yaw; faceYaw = yaw; }
+  return { enter, exit, update, setCollider, teleport, state, get pos() { return pos; }, get active() { return state.active; } };
 }
