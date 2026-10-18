@@ -121,7 +121,7 @@ function tower(ctx, R) {
   for (const a of [-1, 1]) for (const b of [-1, 1]) box('clubs_stone', 4.5, HB - 8 + 1.4, 4.5, a * (TB + .5), (HB + 8 + 1.4) / 2, b * (TB + .5));
   // murals: one giant card per face (clubs and others), pasted slightly askew
   const C = TB + .7;
-  [['K', 'C', 0, 0, 0, 30], ['A', 'C', Math.PI / 2, 2, 46, 28], ['K', 'S', Math.PI, -3, 44, 28], ['7', 'D', -Math.PI / 2, 4, 45, 26]].forEach(([rk, st, ry, off, y, w], i) => {
+  [['K', 'C', 0, 0, 0, 30], ['Q', 'C', Math.PI / 2, 2, 46, 28], ['K', 'S', Math.PI, -3, 44, 28], ['J', 'C', -Math.PI / 2, 4, 45, 26]].forEach(([rk, st, ry, off, y, w], i) => {
     const m = new THREE.Mesh(new THREE.PlaneGeometry(w, w * 1.5), cards.cardMaterial(rk, st));
     const dx = Math.sin(ry), dz = Math.cos(ry);   // face normal
     m.position.copy(K.fpos(dx * C + dz * off, y || 46, dz * C - dx * off)); m.rotation.y = ry; m.rotation.z = (i % 2 ? 1 : -1) * .025;

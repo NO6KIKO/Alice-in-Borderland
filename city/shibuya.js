@@ -472,9 +472,9 @@ export function build(ctx, d) {
     bld(-75, 58, -32, 112, 28, 'fac4', { st: 'ne' });                           // SW1
     bld(-128, 50, -82, 112, 38.5, 'fac2', { st: 'ne' });                        // SW2
     // murals, screens, card billboards
-    pic(M.mural, 20, 30, 9.85, PV + 31.5, -15, -Math.PI / 2);
+    pic(X.cards.cardMaterial('J', 'D'), 20, 30, 9.85, PV + 31.5, -15, -Math.PI / 2);   // red-diamond mural
     screen(10, PV + 10.8, -15, -Math.PI / 2, 18, 9, 'static');
-    screen(29, PV + 27, 10, 0, 8, 0, 'card', ['A', 'H']);
+    screen(29, PV + 27, 10, 0, 8, 0, 'card', ['J', 'H']);
     screen(-92, DECK + 21, -7, Math.PI / 2, 28, 15, 'broken');
     screen(-92, DECK + 8, -7, Math.PI / 2, 12, 5, 'ad');
     screen(-30, PV + 17, -86.5, Math.PI / 2, 9, 0, 'card', ['J', 'C']);
@@ -486,7 +486,7 @@ export function build(ctx, d) {
     roofBoard(78, PV + 21.6, 66, Math.PI, 16, 8, 'ad');
     screen(-32, PV + 13, 76, Math.PI / 2, 12, 7, 'static');
     screen(-53.5, PV + 15, 58, Math.PI, 14, 8, 'ad');
-    screen(-105, PV + 26, 50, Math.PI, 8, 0, 'card', ['5', 'H']);
+    screen(-105, PV + 26, 50, Math.PI, 8, 0, 'card', ['Q', 'S']);
     screen(114, PV + 30, 50, Math.PI, 10, 6, 'static');
     viaduct();
     subway(-47, 49.5);
