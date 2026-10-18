@@ -1,0 +1,58 @@
+[
+ {
+  "kind": "person",
+  "out": "models/people/guard.glb",
+  "prompt": "Japanese security guard in dark navy uniform, peaked cap, black boots, radio on belt, reflective armband, full body realistic 3D character, standing in T-pose, arms straight out horizontally, feet slightly apart, facing front, realistic human proportions, detailed face, natural cloth folds, five fingers, shoes, photoreal PBR",
+  "neg": "weapon in hands, holding objects, bag in hands, cartoon, chibi, low poly, text, logo, base, platform",
+  "faces": 40000,
+  "anims": [
+   "walk",
+   "idle",
+   "look_around",
+   "wait",
+   "standing_relax"
+  ]
+ },
+ {
+  "kind": "person",
+  "out": "models/people/hivis.glb",
+  "prompt": "Japanese site worker in bright orange high-visibility vest over grey work clothes, white hard hat, steel-toe boots, full body realistic 3D character, standing in T-pose, arms straight out horizontally, feet slightly apart, facing front, realistic human proportions, detailed face, natural cloth folds, five fingers, shoes, photoreal PBR",
+  "neg": "weapon in hands, holding objects, bag in hands, cartoon, chibi, low poly, text, logo, base, platform",
+  "faces": 40000,
+  "anims": [
+   "walk",
+   "idle",
+   "look_around",
+   "wait",
+   "fold_arms"
+  ]
+ },
+ {
+  "kind": "person",
+  "out": "models/people/player_m.glb",
+  "prompt": "young Japanese man in olive bomber jacket, black t-shirt, grey jeans, white sneakers, messy hair, full body realistic 3D character, standing in T-pose, arms straight out horizontally, feet slightly apart, facing front, realistic human proportions, detailed face, natural cloth folds, five fingers, shoes, photoreal PBR",
+  "neg": "weapon in hands, holding objects, bag in hands, cartoon, chibi, low poly, text, logo, base, platform",
+  "faces": 40000,
+  "anims": [
+   "walk",
+   "idle",
+   "look_around",
+   "scared_01",
+   "standing_relax"
+  ]
+ },
+ {
+  "kind": "person",
+  "out": "models/people/player_f.glb",
+  "prompt": "young Japanese woman in black windbreaker, cargo pants, trail shoes, ponytail, full body realistic 3D character, standing in T-pose, arms straight out horizontally, feet slightly apart, facing front, realistic human proportions, detailed face, natural cloth folds, five fingers, shoes, photoreal PBR",
+  "neg": "weapon in hands, holding objects, bag in hands, cartoon, chibi, low poly, text, logo, base, platform",
+  "faces": 40000,
+  "anims": [
+   "walk",
+   "idle",
+   "look_around",
+   "afraid",
+   "wait"
+  ]
+ }
+]

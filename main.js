@@ -548,31 +548,29 @@ const ROUTES = [
   { m: 'Xbot', pts: [[-49.3, 30], [-49.3, -30]], y: .06, v: 1.15 },                                             // west yard
   { m: 'Xbot', pts: [[51.6, -10], [51.6, 29]], y: .13, v: 1.0 },                                                // truck yard
 ];
-Promise.all([load('./models/chars/Soldier.glb'), load('./models/chars/Xbot.glb')]).then(([sol, xb]) => {
-  // Xbot dressed as hi-vis workers, Soldier kept as security patrol
-  const vest = new THREE.MeshStandardMaterial({ color: 0xe0661c, roughness: .55, metalness: .1 });
-  const dark = new THREE.MeshStandardMaterial({ color: 0x24282d, roughness: .6, metalness: .35 });
-  xb.scene.traverse((o) => { if (o.isMesh) o.material = /joint/i.test(o.material.name) ? dark : vest; });
-  const lib = { Soldier: sol, Xbot: xb };
+// compound staff: Tripo characters (guards patrol, hi-vis workers, two players); old Mixamo robots only as fallback
+const loadOr = (u, fb) => load(u).catch(() => load(fb));
+Promise.all(['guard', 'hivis', 'player_m', 'player_f'].map((n, i) => loadOr(`./models/people/web/${n}.glb`, i % 2 ? './models/chars/Xbot.glb' : './models/chars/Soldier.glb'))).then(([guard, hivis, pm, pf]) => {
+  const lib = { Soldier: guard, Xbot: hivis, pm, pf };
   const spawn = (name, clipName) => {
     const g = lib[name], o = cloneSkinned(g.scene);
-    o.traverse((c) => { if (c.isMesh) c.frustumCulled = false; });
+    o.traverse((c) => { if (c.isMesh) { c.frustumCulled = false; c.castShadow = true; } });
     const root = new THREE.Group(); root.add(o); scene.add(root); charRoots.push(root);
-    if (name === 'Soldier') o.rotation.y = Math.PI;   // Soldier.glb faces −Z, Xbot faces +Z
-    const mx = new THREE.AnimationMixer(o), clip = THREE.AnimationClip.findByName(g.animations, clipName);
-    const act = mx.clipAction(clip); act.play(); act.time = Math.random() * clip.duration; mixers.push(mx);
+    o.rotation.y = g.scene.getObjectByName('mixamorigHips') ? (name === 'Soldier' ? Math.PI : 0) : -Math.PI / 2;   // Tripo faces +X, Soldier −Z, Xbot +Z
+    const clip = g.animations.find((c) => c.name.toLowerCase() === clipName.toLowerCase()) || g.animations.find((c) => /idle/i.test(c.name)) || g.animations[0];
+    const mx = new THREE.AnimationMixer(o), act = mx.clipAction(clip); act.play(); act.time = Math.random() * clip.duration; mixers.push(mx);
     return root;
   };
   for (const r of ROUTES) {
     const pts = r.pts.map(([x, z]) => new THREE.Vector2(x, z)); if (r.loop) pts.push(pts[0].clone());
     const segs = []; let L = 0;
     for (let i = 0; i < pts.length - 1; i++) { const l = pts[i].distanceTo(pts[i + 1]); segs.push({ a: pts[i], b: pts[i + 1], l, s0: L }); L += l; }
-    walkers.push({ ...r, o: spawn(r.m, r.m === 'Soldier' ? 'Walk' : 'walk'), segs, L, s: Math.random() * L * 2 });
+    walkers.push({ ...r, o: spawn(r.m, 'walk'), segs, L, s: Math.random() * L * 2 });
   }
-  const idleClips = { Soldier: ['Idle'], Xbot: ['idle', 'agree', 'headShake', 'idle'] };
+  const idlers = [['Soldier', 'look_around'], ['Xbot', 'idle'], ['pm', 'look_around'], ['pf', 'wait'], ['Xbot', 'fold_arms'], ['pm', 'standing_relax'], ['pf', 'idle']];
   idleSpots.forEach((p, i) => {
-    const m = i % 3 === 0 ? 'Soldier' : 'Xbot', list = idleClips[m];
-    const o = spawn(m, list[i % list.length]); o.position.set(p.x, p.y, p.z); o.rotation.y = R() * Math.PI * 2;
+    const [m, c] = idlers[i % idlers.length];
+    const o = spawn(m, c); o.position.set(p.x, p.y, p.z); o.rotation.y = R() * Math.PI * 2;
   });
   console.log('characters', walkers.length + idleSpots.length);
 }).catch((e) => console.error('character load failed', e));
@@ -626,7 +624,7 @@ const dayNight = createDayNight({ scene, renderer, hemi, moon, bloom, spots, nig
 ] });
 dayBtn.onclick = () => dayNight.set(!dayNight.isDay);
 dayNight.set(true);
-window.__day = dayNight; window.__renderer = renderer; window.__scene = scene; window.__camera = camera;
+window.__day = dayNight; window.__renderer = renderer; window.__scene = scene; window.__camera = camera; window.__composer = composer;
 dayNight.interiors.push([402, 618, 40, -224, -76]);   // black warehouse hall (x0,x1,yTop,z0,z1)
 addEventListener('resize', () => { const pr = Math.min(devicePixelRatio, 2); renderer.setPixelRatio(pr); composer.setPixelRatio(pr); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight); gtao.setSize(Math.floor(innerWidth / 2), Math.floor(innerHeight / 2)); refl.getRenderTarget().setSize(Math.max(512, Math.floor(innerWidth * .6)), Math.max(512, Math.floor(innerHeight * .6))); });
 
