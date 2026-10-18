@@ -21,6 +21,7 @@ import { prop, loadProps, propColliders, propCount } from './props.js';
 import { streetSegment, intersection, scatterDecay } from './street.js';
 import { hunt } from './hunt.js';
 import { atmosphere } from './atmos.js';
+import { birds } from './birds.js';
 
 const DISTRICT_MODULES = { port, arena, prison, tokyotower, palace, diamond, clubs, hearts, shibuya, fire };
 const { box, cyl, sph, plane, put, strut, beacon, M4, withFrame, setZone, canvasTex, noise, def, std } = K;
@@ -114,6 +115,13 @@ function defineMaterials() {
   def('leaf', std({ map: texIvy, color: 0xc4dca8, roughness: .95 }), 1.5);
   def('trunk', std({ color: 0x4a3a2c, roughness: 1 }));
   def('road', std({ map: texRoad, normalMap: K.normalFrom(texRoad, 1.2), color: 0xb8bcc0, roughness: .9 }), 12);   // gentle: strong noise normals read as orange peel up close
+  // yellow tactile guide strips (点字ブロック): raised bars along the walking direction; X / Z variants
+  for (const [k, along] of [['tactX', true], ['tactZ', false]]) {
+    const t = canvasTex(64, 64, (g, w, h) => { g.fillStyle = '#c9a63a'; g.fillRect(0, 0, w, h); noise(g, w, h, 18); g.fillStyle = '#e2c04e';
+      for (let i = 0; i < 4; i++) { const a = 5 + i * 15; along ? g.fillRect(0, a, w, 8) : g.fillRect(a, 0, 8, h); }
+      g.fillStyle = 'rgba(40,36,28,.35)'; for (let i = 0; i < 6; i++) g.fillRect(Math.random() * w, Math.random() * h, 3 + Math.random() * 8, 2 + Math.random() * 5); }, { repeat: true });
+    def(k, std({ map: t, normalMap: K.normalFrom(t, 2), color: 0xd0c8b8, roughness: .7 }), .3); mats[k].userData.noCollide = true;
+  }
   def('lot', std({ map: canvasTex(512, 512, (g, w, h) => {   // 16 m tile, 32 px/m: two 5 m stall rows back to back + a 6 m aisle
     g.fillStyle = '#383a3d'; g.fillRect(0, 0, w, h); noise(g, w, h, 28);
     for (let i = 0; i < 18; i++) { g.fillStyle = `rgba(12,12,14,${.15 + Math.random() * .25})`; g.beginPath(); g.ellipse(Math.random() * w, Math.random() * 320, 10 + Math.random() * 26, 6 + Math.random() * 14, Math.random() * 3, 0, 7); g.fill(); }   // oil stains in the bays
@@ -392,6 +400,7 @@ export function buildCity({ scene, camera }) {
       building(bx, bz, w, d, heightAt(bx, bz, R), R);
     }
     for (let s = -inner / 2 + 4; s < inner / 2; s += 16) { tree(cx + s, cz - inner / 2 + 2, .9, .12); tree(cx + s, cz + inner / 2 - 2, .9, .12); }
+    { const e = inner / 2 - 2.7, L = inner - 5.4; for (const sg of [-1, 1]) { box('tactX', L, .02, .3, cx, .13, cz + sg * e); box('tactZ', .3, .02, L, cx + sg * e, .13, cz); } }   // guide strips along the kerbs
     // corner clutter: vending clusters, parked bikes / scooters, post box
     for (const [sx, sz] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
       const px = cx + sx * (inner / 2 - 1.4), pz = cz + sz * (inner / 2 - 5);
@@ -416,6 +425,7 @@ export function buildCity({ scene, camera }) {
   for (const [x, z, a] of [[-742, -262, .4], [-736, -256, 2.2], [-748, -251, -1], [-731, -268, 1.4]]) prop('deer', x, .06, z, a);
   try { hunt(ctx); } catch (e) { console.error('hunt scene failed', e); }
   atmosphere(ctx);
+  try { birds(ctx); } catch (e) { console.error('birds failed', e); }
   setZone('express');
   expressway(-100, -700, -100, -105); expressway(-500, -700, 300, -700); box('hwy', 30, 2.6, 30, -100, 27, -700);
   rainbowBridge();
