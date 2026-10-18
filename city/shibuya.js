@@ -43,8 +43,8 @@ function materials() {
   const puddles = (g, a, b) => { for (const [x, y, rad, e, an] of PUD) for (const [ox, oy] of OFF) { const px = x + ox * 1024, py = y + oy * 1024; if (px < -rad || px > 1024 + rad || py < -rad || py > 1024 + rad) continue; g.save(); g.translate(px, py); g.rotate(an); g.scale(1, e); const gr = g.createRadialGradient(0, 0, rad * .5, 0, 0, rad); gr.addColorStop(0, a); gr.addColorStop(1, b); g.fillStyle = gr; g.beginPath(); g.arc(0, 0, rad, 0, 7); g.fill(); g.restore(); } };
   // wet asphalt: colour map + a matching puddle roughness map (same UVs)
   const aT = canvasTex(1024, 1024, (g, w, h) => {
-    g.fillStyle = '#2c2f33'; g.fillRect(0, 0, w, h); noise(g, w, h, 30);
-    for (let i = 0; i < 16; i++) { g.save(); g.translate(r() * w, r() * h); g.rotate(r() * 3); g.fillStyle = r() < .5 ? 'rgba(70,72,76,.3)' : 'rgba(10,12,14,.3)'; g.fillRect(-60, -30, 60 + r() * 160, 30 + r() * 80); g.restore(); }
+    g.fillStyle = '#4a4d51'; g.fillRect(0, 0, w, h); noise(g, w, h, 30);
+    for (let i = 0; i < 16; i++) { g.save(); g.translate(r() * w, r() * h); g.rotate(r() * 3); g.fillStyle = r() < .5 ? 'rgba(104,106,110,.22)' : 'rgba(10,12,14,.3)'; g.fillRect(-60, -30, 60 + r() * 160, 30 + r() * 80); g.restore(); }
     for (let i = 0; i < 90; i++) {
       let x = r() * w, y = r() * h; const pts = [[x, y]];
       for (let k = 0; k < 7; k++) { x += (r() - .5) * 110; y += (r() - .5) * 110; pts.push([x, y]); }
@@ -54,13 +54,13 @@ function materials() {
     puddles(g, 'rgba(6,8,12,.55)', 'rgba(6,8,12,0)');
   }, { repeat: true });
   const rT = canvasTex(1024, 1024, (g, w, h) => { g.fillStyle = 'rgb(190,190,190)'; g.fillRect(0, 0, w, h); noise(g, w, h, 50); puddles(g, 'rgb(12,12,12)', 'rgba(12,12,12,0)'); }, { srgb: false, repeat: true });
-  def('shib_road', std({ map: aT, roughnessMap: rT, roughness: 1, metalness: .05, envMapIntensity: .45, color: 0xa8acb0 }), 32);
+  def('shib_road', std({ map: aT, roughnessMap: rT, roughness: 1, metalness: .05, envMapIntensity: .45, color: 0xd0d2d4 }), 32);
   const zT = canvasTex(256, 256, (g, w, h) => {
     g.fillStyle = '#ecebe4'; g.fillRect(0, 0, w, h); noise(g, w, h, 22);
     for (let i = 0; i < 34; i++) { g.fillStyle = `rgba(60,62,64,${.15 + r() * .3})`; g.beginPath(); g.ellipse(r() * w, r() * h, 3 + r() * 26, 2 + r() * 12, r() * 3, 0, 7); g.fill(); }
     for (let i = 0; i < 12; i++) { g.strokeStyle = 'rgba(20,20,20,.5)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(r() * w, r() * h); g.lineTo(r() * w, r() * h); g.stroke(); }
   }, { repeat: true });
-  def('shib_zebra', std({ map: zT, color: 0xc9c7bf, roughness: .58, metalness: .02 }), 3);   // worn road paint: off-white, not glossy
+  def('shib_zebra', std({ map: zT, color: 0xb4b2aa, roughness: .58, metalness: .02 }), 3);   // worn road paint: off-white, not glossy
   const pT = canvasTex(512, 512, (g, w, h) => {
     for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) { const v = 128 + (r() - .5) * 34; g.fillStyle = `rgb(${v},${v},${v - 6})`; g.fillRect(i * 64, j * 64, 64, 64); if (r() < .06) { g.fillStyle = 'rgba(30,26,20,.55)'; g.fillRect(i * 64, j * 64, 64, 64); } }
     noise(g, w, h, 24);
@@ -79,7 +79,8 @@ function materials() {
     for (let i = 0; i < 90; i++) { const a = r() * 7, d = Math.sqrt(r()) * 95, x = 128 + Math.cos(a) * d, y = 128 + Math.sin(a) * d; g.fillStyle = `rgba(${55 + r() * 40},${85 + r() * 55},${28 + r() * 20},.9)`; g.beginPath(); g.ellipse(x, y, 6 + r() * 22, 5 + r() * 16, r() * 3, 0, 7); g.fill(); }
   });
   const moss = std({ map: mT, alphaTest: .4, roughness: 1, polygonOffset: true, polygonOffsetFactor: -1 }); moss.userData.noCollide = true; def('shib_mossP', moss, 1);
-  const pud = std({ color: 0x0b0e12, roughness: .12, metalness: .1, envMapIntensity: .35, transparent: true, opacity: .7, polygonOffset: true, polygonOffsetFactor: -2 }); pud.userData.noCollide = true; def('shib_pud', pud, 1);
+  const pudA = canvasTex(64, 64, (g, w, h) => { const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, '#fff'); gr.addColorStop(.5, '#fff'); gr.addColorStop(1, '#000'); g.fillStyle = gr; g.fillRect(0, 0, w, h); }, { srgb: false });   // feathered rim
+  const pud = std({ color: 0x0b0e12, alphaMap: pudA, roughness: .12, metalness: 0, envMapIntensity: .35, transparent: true, opacity: .7, polygonOffset: true, polygonOffsetFactor: -2 }); pud.userData.noCollide = true; def('shib_pud', pud, 1);
   const vine = std({ map: K.mats.ivy.map, color: 0x86a866, roughness: 1 }); vine.userData.noCollide = true; def('shib_vine', vine, 1);
   // storefronts (2 × 2 bays of 4 m; shown 4 m tall) — day map + lit-window glow map
   const SH = Array.from({ length: 4 }, () => [r() < .35, Math.floor(r() * 360)]);

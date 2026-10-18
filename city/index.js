@@ -65,7 +65,10 @@ function facade(kind, seed) {
 }
 const FACADES = ['conc', 'glass', 'tile', 'dark', 'white', 'conc'];
 const texLeaf = canvasTex(128, 128, (g, w, h) => { g.fillStyle = '#3d5a2a'; g.fillRect(0, 0, w, h); for (let i = 0; i < 500; i++) { g.fillStyle = `rgba(${30 + Math.random() * 60},${70 + Math.random() * 70},${20 + Math.random() * 30},.8)`; g.fillRect(Math.random() * w, Math.random() * h, 3, 3); } }, { repeat: true });
-const texRoad = canvasTex(256, 256, (g, w, h) => { g.fillStyle = '#34373b'; g.fillRect(0, 0, w, h); noise(g, w, h, 30); for (let i = 0; i < 30; i++) { g.strokeStyle = `rgba(0,0,0,${Math.random() * .3})`; g.beginPath(); g.moveTo(Math.random() * w, Math.random() * h); g.lineTo(Math.random() * w, Math.random() * h); g.stroke(); } for (let i = 0; i < 25; i++) { g.fillStyle = 'rgba(70,100,40,.5)'; g.fillRect(Math.random() * w, Math.random() * h, 2 + Math.random() * 10, 1 + Math.random() * 3); } }, { repeat: true });
+const ROAD_CRACKS = Array.from({ length: 30 }, () => [Math.random() * 256, Math.random() * 256, Math.random() * 256, Math.random() * 256, Math.random() * .3]);
+const texRoad = canvasTex(256, 256, (g, w, h) => { g.fillStyle = '#4c4f53'; g.fillRect(0, 0, w, h); noise(g, w, h, 30); for (const [x0, y0, x1, y1, a] of ROAD_CRACKS) { g.strokeStyle = `rgba(0,0,0,${a})`; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke(); } for (let i = 0; i < 25; i++) { g.fillStyle = 'rgba(70,100,40,.5)'; g.fillRect(Math.random() * w, Math.random() * h, 2 + Math.random() * 10, 1 + Math.random() * 3); } }, { repeat: true });
+// road relief from a quiet height field (just the cracks), not the colour noise — no orange peel
+const roadH = canvasTex(256, 256, (g, w, h) => { g.fillStyle = 'rgb(128,128,128)'; g.fillRect(0, 0, w, h); noise(g, w, h, 8); g.lineWidth = 1.5; for (const [x0, y0, x1, y1, a] of ROAD_CRACKS) { g.strokeStyle = `rgba(40,40,40,${.4 + a})`; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke(); } }, { repeat: true });
 const texWaterN = canvasTex(512, 512, (g, w, h) => {   // tileable ripple normal map
   const id = g.createImageData(w, h), d = id.data, P = Math.PI * 2;
   const waves = Array.from({ length: 9 }, () => [Math.ceil(Math.random() * 6) * (Math.random() < .5 ? -1 : 1), Math.ceil(Math.random() * 6), Math.random() * P, .3 + Math.random()]);
@@ -115,7 +118,7 @@ function defineMaterials() {
   def('crownP', std({ map: texCrown[1], color: 0x8fae80, roughness: .9, alphaTest: .45, side: THREE.DoubleSide }), 1);   // dark pine needles
   def('leaf', std({ map: texIvy, color: 0xc4dca8, roughness: .95 }), 1.5);
   def('trunk', std({ color: 0x4a3a2c, roughness: 1 }));
-  def('road', std({ map: texRoad, normalMap: K.normalFrom(texRoad, 1.2), color: 0xb8bcc0, roughness: .9 }), 12);   // gentle: strong noise normals read as orange peel up close
+  def('road', std({ map: texRoad, normalMap: K.normalFrom(roadH, 1.5), color: 0xc8cacc, roughness: .9 }), 12);
   // yellow tactile guide strips (点字ブロック): raised bars along the walking direction; X / Z variants
   for (const [k, along] of [['tactX', true], ['tactZ', false]]) {
     const t = canvasTex(64, 64, (g, w, h) => { g.fillStyle = '#c9a63a'; g.fillRect(0, 0, w, h); noise(g, w, h, 18); g.fillStyle = '#e2c04e';
@@ -124,7 +127,7 @@ function defineMaterials() {
     def(k, std({ map: t, normalMap: K.normalFrom(t, 2), color: 0xd0c8b8, roughness: .7 }), .3); mats[k].userData.noCollide = true;
   }
   def('lot', std({ map: canvasTex(512, 512, (g, w, h) => {   // 16 m tile, 32 px/m: two 5 m stall rows back to back + a 6 m aisle
-    g.fillStyle = '#383a3d'; g.fillRect(0, 0, w, h); noise(g, w, h, 28);
+    g.fillStyle = '#4e5054'; g.fillRect(0, 0, w, h); noise(g, w, h, 28);
     for (let i = 0; i < 18; i++) { g.fillStyle = `rgba(12,12,14,${.15 + Math.random() * .25})`; g.beginPath(); g.ellipse(Math.random() * w, Math.random() * 320, 10 + Math.random() * 26, 6 + Math.random() * 14, Math.random() * 3, 0, 7); g.fill(); }   // oil stains in the bays
     g.fillStyle = 'rgba(205,203,192,.82)';
     for (let k = 0; k <= 6; k++) { const x = Math.round(k * w / 6) - 2; g.fillRect(x, 0, 4, 158); g.fillRect(x, 162, 4, 158); }
@@ -132,11 +135,11 @@ function defineMaterials() {
     g.fillStyle = 'rgba(56,58,61,.6)'; for (let i = 0; i < 60; i++) g.fillRect(Math.random() * w, Math.random() * 320, 3 + Math.random() * 12, 2 + Math.random() * 5);   // worn paint
     for (let i = 0; i < 26; i++) { g.strokeStyle = `rgba(8,8,9,${.35 + Math.random() * .4})`; g.lineWidth = 1 + Math.random() * 2; g.beginPath(); let x = Math.random() * w, y = Math.random() * h; g.moveTo(x, y); for (let k = 0; k < 5; k++) { x += (Math.random() - .5) * 90; y += (Math.random() - .5) * 90; g.lineTo(x, y); } g.stroke(); }
     for (let i = 0; i < 90; i++) { g.fillStyle = `rgba(${60 + Math.random() * 40},${95 + Math.random() * 50},${30},.75)`; g.fillRect(Math.random() * w, Math.random() * h, 2 + Math.random() * 6, 2 + Math.random() * 4); }   // weeds in the cracks
-  }, { repeat: true }), roughness: .92, color: 0xb4b6b8 }), 16);
+  }, { repeat: true }), roughness: .92, color: 0xc0c2c4 }), 16);
   def('walk', std({ map: K.texConcrete, normalMap: K.normalFrom(K.texConcrete, 1.5), color: 0x9a9a94, roughness: .9 }), 4);
   def('quay', std({ map: K.texPanel, color: 0x8e9294, roughness: .9 }), 5);
-  def('lineW', std({ color: 0xd8d8d0, roughness: .6 }));
-  def('lineY', std({ color: 0xd8a820, roughness: .6 }));
+  def('lineW', std({ map: K.texPaintWorn, color: 0xb4b4ac, roughness: .7 }), 1);   // worn paint, not clipping white
+  def('lineY', std({ color: 0xb89028, roughness: .6 }));
   def('grass', std({ map: texLeaf, color: 0x8fb070, roughness: 1 }), 6);
   def('bridgeW', std({ color: 0xe4e6e6, roughness: .5, metalness: .3 }));
   for (const k of ['leaf', 'ivy', 'crown0', 'crown1', 'crown2', 'crownP', 'crownCore']) mats[k].userData.noCollide = true;

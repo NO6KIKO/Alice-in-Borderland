@@ -78,7 +78,7 @@ setZone('compound');
 
 /* ───────────── ground ───────────── */
 const groundGeo = new THREE.PlaneGeometry(640, 640);   // compound apron only: the city has its own land slab
-const asphalt = new THREE.Mesh(groundGeo, new THREE.MeshStandardMaterial({ map: texAsphalt, color: 0xb0b4ba, roughnessMap: texPuddle, roughness: 1, metalness: .05, alphaMap: texPuddle, transparent: true }));
+const asphalt = new THREE.Mesh(groundGeo, new THREE.MeshStandardMaterial({ map: texAsphalt, color: 0x74767a, roughnessMap: texPuddle, roughness: 1, metalness: .05, alphaMap: texPuddle, transparent: true }));
 asphalt.rotation.x = -Math.PI / 2; asphalt.position.set(10, 0, 10); asphalt.receiveShadow = true; scene.add(asphalt);
 const refl = new Reflector(groundGeo, { textureWidth: Math.max(512, Math.floor(innerWidth * .6)), textureHeight: Math.max(512, Math.floor(innerHeight * .6)), color: 0xa4b0c0, clipBias: .003, multisample: 0 });
 const mirrorOnlyInBeauty = (r) => { const f = r.onBeforeRender; r.onBeforeRender = function (rd, sc, cam, ...a) { if (sc.overrideMaterial) return; f.call(this, rd, sc, cam, ...a); }; };   // AO / DOF passes draw with an override material: skip the mirror re-render there
@@ -604,7 +604,7 @@ const dayNight = createDayNight({ scene, renderer, hemi, moon, bloom, spots, nig
   (day) => { for (const m of facadeMats) m.emissiveIntensity = day ? 0 : m.userData.nightGlow * CITY_NIGHT_LIGHTS; },
   (day) => {   // the wet-asphalt mirror is a night look; by day the apron is plain dry asphalt
     refl.visible = !day; const am = asphalt.material;
-    am.alphaMap = day ? null : texPuddle; am.transparent = !day; am.roughness = day ? .95 : 1; am.roughnessMap = day ? null : texPuddle; am.color.set(day ? 0xf0f2f4 : 0xb0b4ba); am.needsUpdate = true;
+    am.alphaMap = day ? null : texPuddle; am.transparent = !day; am.roughness = day ? .95 : 1; am.roughnessMap = day ? null : texPuddle; am.color.set(day ? 0xf0f2f4 : 0x74767a); am.needsUpdate = true;
   },
   (day) => { for (const k of ['poolC', 'poolY', 'beam']) mats[k].visible = !day; },   // fake light pools / cones are night-only
   (day) => grade.setDay(day, dayNight?.isDusk),

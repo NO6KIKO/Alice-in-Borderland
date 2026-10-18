@@ -106,8 +106,10 @@ export const texWin = canvasTex(256, 64, (g, w, h) => {
   for (let i = 0; i < 8; i++) { const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#bff2ff'); gr.addColorStop(1, '#6bb8d2'); g.fillStyle = gr; g.fillRect(i * 32 + 3, 6, 26, h - 12); }
 }, { repeat: true });
 export const texGrille = canvasTex(64, 64, (g, w, h) => { g.fillStyle = '#3a3f45'; g.fillRect(0, 0, w, h); g.fillStyle = '#16191d'; for (let y = 4; y < h; y += 8) g.fillRect(4, y, w - 8, 4); }, { repeat: true });
+// worn road paint (zebras, lane lines): off-white with scuffed-through patches
+export const texPaintWorn = canvasTex(128, 128, (g, w, h) => { g.fillStyle = '#e6e4dc'; g.fillRect(0, 0, w, h); noise(g, w, h, 40); for (let i = 0; i < 18; i++) { g.fillStyle = `rgba(40,42,44,${.2 + Math.random() * .4})`; g.beginPath(); g.ellipse(Math.random() * w, Math.random() * h, 3 + Math.random() * 16, 2 + Math.random() * 8, Math.random() * 3, 0, 7); g.fill(); } }, { repeat: true });
 export const texAsphalt = canvasTex(1024, 1024, (g, w, h) => {
-  g.fillStyle = '#25282c'; g.fillRect(0, 0, w, h); noise(g, w, h, 34);
+  g.fillStyle = '#3e4145'; g.fillRect(0, 0, w, h); noise(g, w, h, 34);
   for (let i = 0; i < 120; i++) { g.strokeStyle = `rgba(0,0,0,${Math.random() * .35})`; g.lineWidth = 1 + Math.random() * 2; g.beginPath(); let x = Math.random() * w, y = Math.random() * h; g.moveTo(x, y); for (let k = 0; k < 6; k++) { x += (Math.random() - .5) * 90; y += (Math.random() - .5) * 90; g.lineTo(x, y); } g.stroke(); }
 }, { repeat: true });
 texAsphalt.repeat.set(50, 50);
