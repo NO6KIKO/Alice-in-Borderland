@@ -13,6 +13,7 @@ const RD = .06, PV = .18, DECK = 7.2;           // asphalt top, pavement top, po
 const C = [-10, 30];                             // crossing centre (local) = grid node (-990, 220)
 const U = (() => { const l = Math.hypot(120, 110); return [-120 / l, -110 / l]; })();   // 5th arm heads NW to grid line z=110
 const N = [-U[1], U[0]];                         // its NE-side normal
+const SUB = [-47, 49.5], HOLE = [SUB[0] - 7.4, SUB[1] - 1.6, SUB[0] + 3.4, SUB[1] + 1.6];   // subway stair opening (local x0,z0,x1,z1)
 const DW = 9;                                    // diagonal arm half-width (straight arms: x −22..2, z 18..42)
 const along = (s, o = 0) => [C[0] + U[0] * s + N[0] * o, C[1] + U[1] * s + N[1] * o];
 const atX = (o, X) => along((X - C[0] - N[0] * o) / U[0], o);
@@ -131,6 +132,12 @@ function materials() {
   const voidM = std({ map: vT, roughness: 1 }); voidM.userData.noCollide = true; def('shib_void', voidM, 1);
   const bT = canvasTex(128, 64, (g, w, h) => { g.fillStyle = '#f2f0ea'; g.fillRect(0, 0, w, h); g.fillStyle = '#e8541a'; for (let i = -h; i < w + h; i += 32) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i + 16, 0); g.lineTo(i + 16 - h, h); g.lineTo(i - h, h); g.fill(); } noise(g, w, h, 20); });
   def('shib_barr', std({ map: bT, roughness: .6 }), 1.5);
+  const tT = canvasTex(256, 256, (g, w, h) => {   // off-white station wall tiles, dark grout, water stains
+    g.fillStyle = '#d9d6cc'; g.fillRect(0, 0, w, h); noise(g, w, h, 14);
+    g.fillStyle = 'rgba(60,58,52,.55)'; for (let i = 0; i <= w; i += 32) { g.fillRect(i, 0, 2, h); g.fillRect(0, i, w, 2); }
+    for (let i = 0; i < 18; i++) { const x = R() * w, gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, 'rgba(90,80,60,.25)'); gr.addColorStop(1, 'rgba(90,80,60,0)'); g.fillStyle = gr; g.fillRect(x, 0, 3 + R() * 8, h * R()); }
+  }, { repeat: true });
+  def('shib_tile', std({ map: tT, normalMap: K.normalFrom(tT, 2), roughness: .35 }), 2);
   def('shib_glass', std({ color: 0x18222b, roughness: .12, metalness: .7 }));
   def('shib_taxi', std({ color: 0xd9a514, roughness: .5, metalness: .3 }));
   def('shib_bus', std({ color: 0x2f7a46, roughness: .5, metalness: .3 }));
@@ -177,8 +184,10 @@ function materials() {
 }
 
 /* ───────────── helpers ───────────── */
-function prism(k, pts, y0, h) {   // extruded footprint polygon (local x,z), UVs in material tiles
-  const g = new THREE.ExtrudeGeometry(new THREE.Shape(pts.map(([x, z]) => new THREE.Vector2(x, -z))), { depth: h, bevelEnabled: false });
+function prism(k, pts, y0, h, holes = []) {   // extruded footprint polygon (local x,z), UVs in material tiles
+  const sh = new THREE.Shape(pts.map(([x, z]) => new THREE.Vector2(x, -z)));
+  for (const [a, b, c, e] of holes) sh.holes.push(new THREE.Path([new THREE.Vector2(a, -b), new THREE.Vector2(a, -e), new THREE.Vector2(c, -e), new THREE.Vector2(c, -b)]));
+  const g = new THREE.ExtrudeGeometry(sh, { depth: h, bevelEnabled: false });
   g.rotateX(-Math.PI / 2); g.translate(0, y0, 0);
   const t = K.mats[k].userData.tile, uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) / t, uv.getY(i) / t);
   g.setIndex(Array.from({ length: g.attributes.position.count }, (_, i) => i));   // batches merge indexed geometry
@@ -262,8 +271,10 @@ function bld(x0, z0, x1, z1, h, fk, o = {}) {
 
 /* ───────────── ground: asphalt, pavements, markings ───────────── */
 function ground() {
-  box('shib_road', 260, .1, 230, 0, .01, 0);
-  for (const p of PAVE) prism('shib_pave', p, 0, PV);
+  { const [a, b, c, e] = HOLE;   // asphalt sheet in four pieces around the stair opening
+    box('shib_road', a + 130, .1, 230, (a - 130) / 2, .01, 0); box('shib_road', 130 - c, .1, 230, (c + 130) / 2, .01, 0);
+    box('shib_road', c - a, .1, b + 115, (a + c) / 2, .01, (b - 115) / 2); box('shib_road', c - a, .1, 115 - e, (a + c) / 2, .01, (e + 115) / 2); }
+  PAVE.forEach((p, i) => prism('shib_pave', p, 0, PV, i === 2 ? [HOLE] : []));
   // lane markings on each arm (centre double line + dashed lanes)
   const marks = (ax, az, bx, bz, lane) => {
     const dx = bx - ax, dz = bz - az, L = Math.hypot(dx, dz);
@@ -424,18 +435,73 @@ function podium() {   // two-storey shopping podium filling the west wedge; walk
   for (const [x, z] of [[-66, 5], [-75, -4], [-82, 6], [-120, -45], [-118, -30]]) { X.tree(x, z, .8, DECK); for (let k = 0; k < 6; k++) tuft(x + (R() - .5) * 4, z + (R() - .5) * 4, 1, DECK); }
   for (const [x, z] of [[-70, 9], [-86, 0]]) { box('concD', 3, .6, 1.2, x, DECK + .3, z); box('ivy', 3, .3, 1.2, x, DECK + .7, z); }
 }
-function subway(x, z) {   // decorative stair head: walls, canopy, dark descent, sign, barricade
+function subway(x, z) {   // walkable stair head → underground concourse (y −6)
+  const L = HOLE[2] - HOLE[0], cx = (HOLE[0] + HOLE[2]) / 2 - x, FL = -6;
   withFrame(x, 0, z, 0, () => {
-    for (const s of [-1, 1]) box('wall', 7, 1.1, .25, 0, PV + .55, s * 1.75);
-    box('wall', .25, 1.1, 3.75, -3.5, PV + .55, 0);
-    flat('shib_void', new THREE.PlaneGeometry(6.6, 3.25), -.1, PV + .012, 0);
-    for (const [a, b] of [[-3.3, -1.6], [-3.3, 1.6], [3.3, -1.6], [3.3, 1.6]]) box('steelL', .15, 2.9, .15, a, PV + 1.45, b);
-    box('steelL', 7.4, .25, 4.2, 0, PV + 3, 0); box('roofG', 6, .15, 3, -.5, PV + 3.2, 0);
+    for (const s of [-1, 1]) box('wall', L + .2, 1.1, .25, cx, PV + .55, s * 1.75);                    // parapets
+    box('wall', .25, 1.1, 3.75, HOLE[0] - x - .1, PV + .55, 0);
+    for (const [a, b] of [[HOLE[0] - x, -1.6], [HOLE[0] - x, 1.6], [3.3, -1.6], [3.3, 1.6]]) box('steelL', .15, 2.9, .15, a, PV + 1.45, b);
+    box('steelL', L + .8, .25, 4.2, cx, PV + 3, 0); box('roofG', L - 1, .15, 3, cx - .5, PV + 3.2, 0);
     pic(M.subSign, 2.8, .7, 3.72, PV + 2.55, 0, Math.PI / 2);
-    for (let i = 0; i < 6; i++) hang(-3.6 + R() * 7.2, PV + 2.9, (R() < .5 ? -1 : 1) * 2.1, .5 + R() * 1.6);
+    for (let i = 0; i < 6; i++) hang(HOLE[0] - x + R() * L, PV + 2.9, (R() < .5 ? -1 : 1) * 2.1, .5 + R() * 1.6);
+    // the stair: shaft walls down to the concourse, 31 steps rising toward the street (+x)
+    for (const s of [-1, 1]) box('shib_tile', L, -FL + .3, .3, cx, (FL + PV) / 2, s * 1.75);
+    for (const s of [-1, 1]) box('shib_tile', 1.95, -FL - .2, .3, HOLE[0] - x - .97, (FL - .2) / 2, s * 1.75);   // shaft continues under the pavement to the hall
+    K.stairs(3.3 - 9.3, 0, 1, 0, FL, PV, 3, .3);
+    box('shib_tile', 3.4, .2, 3.3, 3.3 - 9.3 - 1.6, FL - .1, 0);                                         // bottom landing
   });
-  SOLID.push([x - 3.8, z - 2.2, x + 3.8, z + 2.2]);
-  barr(x + 4.2, z, Math.PI / 2, false);
+  SOLID.push([HOLE[0] + x * 0 - .5, HOLE[1] - .5, HOLE[2] + .5, HOLE[3] + .5]);
+  underground(x - 9.3 - 10, z, FL);
+}
+// concourse: 20 × 16 m hall west of the stair foot, tiled, gates + fare machines, emergency lighting
+function underground(x, z, FL) {
+  const W = 20, D = 16, H = 3.6;
+  K.setZone('shibuya_sub');
+  withFrame(x, 0, z, 0, () => {
+    box('shib_tile', W + 1, .3, D + 1, 0, FL - .15, 0);                                   // floor
+    box('concD', W + 1, .3, D + 1, 0, FL + H + .15, 0);                                    // ceiling slab
+    box('shib_tile', .3, H, D, -W / 2, FL + H / 2, 0);                                      // west wall
+    for (const s of [-1, 1]) box('shib_tile', W, H, .3, 0, FL + H / 2, s * D / 2);          // north / south walls
+    box('shib_tile', .3, H, D / 2 - 1.75, W / 2, FL + H / 2, D / 4 + .88); box('shib_tile', .3, H, D / 2 - 1.75, W / 2, FL + H / 2, -D / 4 - .88);   // east wall with the stair opening
+    for (let i = -1; i <= 1; i++) for (const s of [-1, 1]) box('concD', .8, H, .8, i * 6, FL + H / 2, s * 4);          // columns
+    for (let i = 0; i < 6; i++) box('glowC', 2.4, .05, .3, -7.5 + i * 3, FL + H - .05, 0);   // light strips
+    for (let k = 0; k < 4; k++) prop('station_gate', -4, FL, -6 + k * 4, Math.PI / 2);   // ticket gate line
+    for (let k = 0; k < 4; k++) prop('ticket_machine', -W / 2 + .5, FL, -5 + k * 1.4, Math.PI / 2);
+    box('steel', 3.2, 1, .1, 5, FL + 2.6, -D / 2 + .2); box('glowY', 3, .8, .02, 5, FL + 2.6, -D / 2 + .26);  // departure board
+    for (let i = 0; i < 6; i++) prop(['trash_bags', 'shopping_bag', 'umbrella_clear', 'handbag', 'school_bag', 'smartphone'][i], (R() - .5) * 14, FL, (R() - .5) * 10, R() * 6);
+  });
+  K.setZone('shibuya');
+  const P = K.fpos(x, FL + 3, z), L = new THREE.PointLight(0xcfe0ff, 25, 26, 1.6); L.position.copy(P); X.scene.add(L);
+  for (let i = 0; i < 4; i++) pic(X.cards.cardMaterial(['J', 'Q', 'K', 'J'][i], ['C', 'S', 'H', 'D'][i]), 1, 1.5, x - 6 + i * 4, FL + 1.8, z + D / 2 - .2, Math.PI);   // posters
+  // cut the city land slab over the stair opening and the bay water plane over the whole hall (world rects)
+  const a = K.fpos(HOLE[0], 0, HOLE[1]), b = K.fpos(HOLE[2], 0, HOLE[3]);
+  cutLand(Math.min(a.x, b.x), Math.min(a.z, b.z), Math.max(a.x, b.x), Math.max(a.z, b.z));
+  const c0 = K.fpos(x - W / 2 - 1, 0, z - D / 2 - 1), c1 = K.fpos(HOLE[2], 0, z + D / 2 + 1);
+  waterHole(Math.min(c0.x, c1.x), Math.min(c0.z, c1.z), Math.max(c0.x, c1.x), Math.max(c0.z, c1.z));
+}
+function cutLand(x0, z0, x1, z1) {
+  const land = X.scene.children.find((o) => o.isMesh && o.geometry && o.geometry.type === 'ShapeGeometry' && Math.abs(o.position.y + .08) < 1e-3);
+  if (!land) return;
+  const holes = land.userData.holes || (land.userData.holes = []); holes.push([x0, z0, x1, z1]);
+  const sh = new THREE.Shape(X.map.COAST.map(([x, z]) => new THREE.Vector2(x, -z)));
+  for (const [a, b, c, e] of holes) sh.holes.push(new THREE.Path([new THREE.Vector2(a, -b), new THREE.Vector2(c, -b), new THREE.Vector2(c, -e), new THREE.Vector2(a, -e)]));
+  const g = new THREE.ShapeGeometry(sh); g.rotateX(-Math.PI / 2);
+  const uv = g.attributes.uv, pos = g.attributes.position; for (let i = 0; i < uv.count; i++) uv.setXY(i, pos.getX(i) / 8, pos.getZ(i) / 8);
+  land.geometry.dispose(); land.geometry = g;
+}
+function waterHole(x0, z0, x1, z1) {   // discard the bay water plane inside a world rect (chains other patches)
+  const water = X.scene.children.find((o) => o.isMesh && o.geometry?.parameters?.width === 9000); if (!water) return;
+  const m = water.material, prev = m.onBeforeCompile.bind(m), prevKey = m.customProgramCacheKey.bind(m);
+  const test = `if (vSubW.x > ${x0.toFixed(1)} && vSubW.x < ${x1.toFixed(1)} && vSubW.y > ${z0.toFixed(1)} && vSubW.y < ${z1.toFixed(1)}) discard;`;
+  m.onBeforeCompile = (sh, r) => {
+    prev(sh, r);
+    if (!sh.vertexShader.includes('vSubW')) {
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec2 vSubW;').replace('#include <project_vertex>', '#include <project_vertex>\nvSubW = (modelMatrix * vec4(transformed, 1.0)).xz;');
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec2 vSubW;');
+    }
+    sh.fragmentShader = sh.fragmentShader.replace('void main() {', 'void main() {\n' + test);
+  };
+  m.customProgramCacheKey = () => prevKey() + '|subHole'; m.needsUpdate = true;
 }
 function viaduct() {   // elevated rail line behind the crossing with a stalled train
   const z = -104;
