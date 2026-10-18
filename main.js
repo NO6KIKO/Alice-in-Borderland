@@ -9,7 +9,6 @@ import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js';
 import { BokehPass } from 'three/addons/postprocessing/BokehPass.js';
 import { Reflector } from 'three/addons/objects/Reflector.js';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
@@ -396,10 +395,9 @@ function highway(x1, z1, x2, z2, y = 27, w = 30) {
   withFrame((x1 + x2) / 2, 0, (z1 + z2) / 2, ang(dx, dz), () => {
     box('hwy', L, 2.6, w, 0, y, 0); box('steel', L, .4, w + .6, 0, y - 1.5, 0);
     box('conc', L, 1.1, .5, 0, y + 1.8, w / 2 - .25); box('conc', L, 1.1, .5, 0, y + 1.8, -w / 2 + .25); box('conc', L, .8, .4, 0, y + 1.7, 0);
-    for (const s of [-1, 1]) box('glowY', L, .06, .1, 0, y + 1.2, s * (w / 2 - .6));
     const n = Math.floor(L / 26);
     for (let i = 0; i <= n; i++) { const s = -L / 2 + i * L / n; box('hwy', 4.2, y - 1.4, 4.4, s, (y - 1.4) / 2, 0); box('hwy', 6, 1.4, w - 6, s, y - 2, 0); }
-    for (let i = 0; i < L / 30; i++) { const s = -L / 2 + 15 + i * 30; for (const t of [-1, 1]) { box('steel', .2, 6, .2, s, y + 4.5, t * (w / 2 - .5)); box('glow', .8, .1, 1.6, s, y + 7.6, t * (w / 2 - 1.3)); } }
+    for (let i = 0; i < L / 30; i++) { const s = -L / 2 + 15 + i * 30; for (const t of [-1, 1]) { box('steel', .2, 6, .2, s, y + 4.5, t * (w / 2 - .5)); box('steelL', .8, .12, 1.6, s, y + 7.6, t * (w / 2 - 1.3)); } }   // dead lamp heads: no power in the Borderland
   });
   hw.push({ x1, z1, y, L, ux: dx / L, uz: dz / L });
 }
@@ -420,7 +418,7 @@ const city = new THREE.Mesh(new THREE.CylinderGeometry(3600, 3600, 900, 64, 1, t
 city.position.set(-650, 380, -350); scene.add(city);
 
 /* ───────────── the rest of the city (districts in city/*.js) ───────────── */
-const cityInfo = buildCity({ scene, camera });
+const cityInfo = buildCity({ scene, camera, highways: hw });
 
 /* ───────────── build merged meshes ───────────── */
 const built = buildBatches(scene);
@@ -443,56 +441,6 @@ for (const arr of [beacons.filter((_, i) => i % 2), beacons.filter((_, i) => !(i
   const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   const pm = new THREE.PointsMaterial({ map: haloTex, size: 2.2, sizeAttenuation: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false });
   const pts = new THREE.Points(geo, pm); pts.frustumCulled = false; scene.add(pts); halos.push(pm);
-}
-
-/* vehicles on the highway — Tripo-generated cars in models/cars/*.glb, one InstancedMesh per type
-   (forward = +X, as Tripo exports). Until a file exists those cars render as plain boxes. */
-const NC = 72;
-const CAR_TYPES = [
-  { file: 'tesla_sedan', len: 4.72 }, { file: 'tesla_suv', len: 4.75 }, { file: 'cyber_pickup', len: 5.68 },
-  { file: 'hatchback', len: 4.1 }, { file: 'taxi', len: 4.6 }, { file: 'van', len: 5.3 },
-];
-const carData = [];
-for (let i = 0; i < NC; i++) {
-  const h = hw[i % 2], dir = R() < .5 ? 1 : -1, lane = dir * (3 + Math.floor(R() * 3) * 3.6);
-  carData.push({ h, dir, lane, s: R(), v: (10 + R() * 10) / h.L * dir, type: i % CAR_TYPES.length });
-}
-CAR_TYPES.forEach((t, k) => { t.cars = carData.filter((c) => c.type === k); t.mesh = null; });
-const carBox = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1.4, 1.8).translate(0, .7, 0), new THREE.MeshStandardMaterial({ color: 0x1a1d22, roughness: .4, metalness: .6 }), NC);
-const headL = new THREE.InstancedMesh(new THREE.BoxGeometry(.08, .12, .38), new THREE.MeshBasicMaterial({ color: new THREE.Color(4, 3.7, 3.2) }), NC * 2);
-const tailL = new THREE.InstancedMesh(new THREE.BoxGeometry(.08, .12, .42), new THREE.MeshBasicMaterial({ color: new THREE.Color(4, .2, .12) }), NC * 2);
-// highway traffic lives on layer 1: the main camera sees it, the ground reflector's camera (layer 0 only) skips it
-camera.layers.enable(1);
-for (const m of [carBox, headL, tailL]) { m.frustumCulled = false; m.layers.set(1); scene.add(m); }
-const carLoader = new GLTFLoader();
-CAR_TYPES.forEach((t) => carLoader.load(`./models/cars/lod/${t.file}.glb`, (g) => {   // ~2.8k-tri far LOD
-  const parts = []; g.scene.updateMatrixWorld(true);
-  g.scene.traverse((o) => { if (o.isMesh) { const geo = o.geometry.clone().applyMatrix4(o.matrixWorld); for (const k of Object.keys(geo.attributes)) if (!['position', 'normal', 'uv'].includes(k)) geo.deleteAttribute(k); parts.push({ geo, mat: o.material }); } });
-  const geo = parts.length === 1 ? parts[0].geo : mergeGeometries(parts.map((p) => p.geo), true);
-  const box3 = new THREE.Box3().setFromBufferAttribute(geo.attributes.position), size = box3.getSize(new THREE.Vector3());
-  if (size.z > size.x) { geo.rotateY(Math.PI / 2); box3.setFromBufferAttribute(geo.attributes.position); box3.getSize(size); }
-  const c = box3.getCenter(new THREE.Vector3()); geo.translate(-c.x, -box3.min.y, -c.z); geo.scale(t.len / size.x, t.len / size.x, t.len / size.x);
-  t.mesh = new THREE.InstancedMesh(geo, parts.length === 1 ? parts[0].mat : parts.map((p) => p.mat), t.cars.length);
-  t.mesh.frustumCulled = false; t.mesh.layers.set(1); scene.add(t.mesh);
-}, undefined, () => { /* not generated yet — keep boxes */ }));
-
-const _cm = new THREE.Matrix4(), _lm = new THREE.Matrix4(), _hide = new THREE.Matrix4().makeScale(0, 0, 0);
-function updateCars(dt) {
-  let li = 0;
-  CAR_TYPES.forEach((t) => t.cars.forEach((c, j) => {
-    c.s = (c.s + c.v * dt + 1) % 1; const h = c.h, d = c.s * h.L;
-    const x = h.x1 + h.ux * d - h.uz * c.lane, z = h.z1 + h.uz * d + h.ux * c.lane;
-    _q.setFromAxisAngle(up, ang(h.ux * c.dir, h.uz * c.dir));
-    _cm.compose(_v.set(x, h.y + 1.3, z), _q, _s);
-    const i = carData.indexOf(c);
-    if (t.mesh) { t.mesh.setMatrixAt(j, _cm); carBox.setMatrixAt(i, _hide); }
-    else carBox.setMatrixAt(i, _lm.copy(_cm).multiply(new THREE.Matrix4().makeScale(t.len, 1, 1)));
-    for (const sd of [-.62, .62]) {
-      headL.setMatrixAt(li, _lm.copy(_cm).multiply(M4(t.len / 2, .72, sd)));
-      tailL.setMatrixAt(li++, _lm.copy(_cm).multiply(M4(-t.len / 2, .8, sd)));
-    }
-  }));
-  for (const m of [carBox, headL, tailL, ...CAR_TYPES.map((t) => t.mesh).filter(Boolean)]) m.instanceMatrix.needsUpdate = true;
 }
 
 /* ───────────── markers & views ───────────── */
@@ -697,7 +645,6 @@ function tick() {
   const a = .55 + .45 * Math.sin(t * 2.4), b = .55 + .45 * Math.sin(t * 2.4 + 2.2);
   bMatA.color.setRGB(4 * a + .5, .15 * a, .1 * a); bMatB.color.setRGB(4 * b + .5, .15 * b, .1 * b);
   halos[0].opacity = .12 + .45 * a; halos[1].opacity = .12 + .45 * b;
-  updateCars(dt);
   for (const f of cityInfo.updates) f(dt, t);
   if (!dayNight.isDay) refl.visible = Math.hypot(camera.position.x, camera.position.z) < 650;   // the wet-ground mirror re-renders the whole scene: only near the compound
   if ((cullT -= dt) < 0) {   // foliage / ivy beyond ~700 m is lost in haze — skip drawing it

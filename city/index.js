@@ -17,7 +17,7 @@ import * as hearts from './hearts.js';
 import * as shibuya from './shibuya.js';
 import * as fire from './fire.js';
 import { cityBuilding } from './buildings.js';
-import { prop, loadProps, propColliders, propCount } from './props.js';
+import { prop, loadProps, propColliders, propCount, PROPS } from './props.js';
 import { streetSegment, intersection, scatterDecay } from './street.js';
 import { hunt } from './hunt.js';
 import { atmosphere } from './atmos.js';
@@ -197,6 +197,34 @@ export { tree };
 function building(x, z, w, d, h, r) { return cityBuilding(x, z, w, d, h, r); }
 
 // abandoned traffic: a few cars stopped mid-lane (local +x along the road), some askew, doors would be open
+// abandoned traffic on an elevated deck (x1,z1)→(x2,z2) at deck height y: `jams` queues ending in a pile-up against the
+// parapet, plus `singles` cars that coasted to a stop; weeds along the parapet bases and the median
+function stalledTraffic(x1, z1, x2, z2, y, r, jams, singles) {
+  const L = Math.hypot(x2 - x1, z2 - z1), D = y + 1.3, LANES = [3, 6.6, 10.2];
+  const pick = () => r() < .03 ? 'city_bus' : ['jp_sedan', 'jp_sedan', 'kcar', 'jp_taxi', 'kei_truck', 'box_truck', 'wreck_car'][Math.floor(r() * 7)];
+  withFrame((x1 + x2) / 2, 0, (z1 + z2) / 2, K.ang(x2 - x1, z2 - z1), () => {
+    const ok = (s) => { if (Math.abs(s) > L / 2 - 18) return false; const w = K.fpos(s, 0, 0); return Math.hypot(w.x + 100, w.z + 88) > 28; };   // clear of deck ends + the junction square
+    for (let j = 0; j < jams; j++) {
+      const side = r() < .5 ? -1 : 1, h = side < 0 ? 1 : -1, s0 = -L / 2 + L * (j + .25 + r() * .5) / jams, ry = h > 0 ? 0 : Math.PI;   // keep left: −z lanes head +x
+      if (ok(s0)) { prop(pick(), s0 + h * 2, D, side * 12.2 - side * 1.2, ry + (r() < .5 ? .5 : -.5)); prop('wreck_car', s0 - h * 4, D, side * 8.4, ry + (r() - .5) * .5); }   // the crash that stopped it
+      const nl = 2 + Math.floor(r() * 2);
+      for (let l = 0; l < nl; l++) {
+        let s = s0 - h * (8 + r() * 4); const n = 3 + Math.floor(r() * 4);
+        for (let k = 0; k < n; k++) {
+          const name = pick(), len = PROPS[name]?.size?.[0] || 4.5;
+          s -= h * (len + 1.2 + r() * 2 + k * .5);
+          if (ok(s)) prop(name, s, D, side * (LANES[l] + (r() - .5) * .6), ry + (r() - .5) * .12);
+        }
+      }
+    }
+    for (let i = 0; i < singles; i++) {
+      const s = -L / 2 + r() * L; if (!ok(s)) continue;
+      const side = r() < .5 ? -1 : 1, ry = side < 0 ? 0 : Math.PI, wall = r() < .3;
+      prop(pick(), s, D, side * (wall ? 12.4 : LANES[Math.floor(r() * 3)]), ry + (wall ? (r() < .5 ? .35 : -.35) : (r() - .5) * .5));
+    }
+    for (let i = 0; i < L / 40; i++) box('ivy', 3 + r() * 6, .3, 1 + r() * 2.5, -L / 2 + r() * L, y + 1.45, (r() < .5 ? -1 : 1) * (r() < .3 ? .9 : 13.4 - r() * 1.2));
+  });
+}
 function strandCars(x, z, ry) {
   const n = Math.random() < .55 ? 1 + Math.floor(Math.random() * 3) : 0;
   withFrame(x, .06, z, ry, () => {
@@ -258,11 +286,11 @@ function expressway(x1, z1, x2, z2, y = 27, w = 30) {   // same section as main.
   const dx = x2 - x1, dz = z2 - z1, L = Math.hypot(dx, dz);
   withFrame((x1 + x2) / 2, 0, (z1 + z2) / 2, K.ang(dx, dz), () => {
     box('hwy', L, 2.6, w, 0, y, 0); box('steel', L, .4, w + .6, 0, y - 1.5, 0);
-    for (const s of [-1, 1]) { box('conc', L, 1.1, .5, 0, y + 1.8, s * (w / 2 - .25)); box('glowY', L, .06, .1, 0, y + 1.2, s * (w / 2 - .6)); }
+    for (const s of [-1, 1]) box('conc', L, 1.1, .5, 0, y + 1.8, s * (w / 2 - .25));
     box('conc', L, .8, .4, 0, y + 1.7, 0);
     const n = Math.floor(L / 30);
     for (let i = 0; i <= n; i++) { const s = -L / 2 + i * L / n; box('hwy', 4.2, y - 1.4, 4.4, s, (y - 1.4) / 2, 0); box('hwy', 6, 1.4, w - 6, s, y - 2, 0); }
-    for (let s = -L / 2 + 15; s < L / 2; s += 30) for (const t of [-1, 1]) { box('steel', .2, 6, .2, s, y + 4.5, t * (w / 2 - .5)); box('glow', .8, .1, 1.6, s, y + 7.6, t * (w / 2 - 1.3)); }
+    for (let s = -L / 2 + 15; s < L / 2; s += 30) for (const t of [-1, 1]) { box('steel', .2, 6, .2, s, y + 4.5, t * (w / 2 - .5)); box('steelL', .8, .12, 1.6, s, y + 7.6, t * (w / 2 - 1.3)); }   // dead lamps
   });
 }
 function rainbowBridge() {
@@ -270,8 +298,8 @@ function rainbowBridge() {
   setZone('bridge');
   withFrame((x1 + x2) / 2, 0, z, 0, () => {
     box('hwy', L, 2.4, w, 0, y, 0); box('steelL', L, 3.2, 3, 0, y - 2.6, w / 2 - 1.5); box('steelL', L, 3.2, 3, 0, y - 2.6, -w / 2 + 1.5);
-    for (const s of [-1, 1]) { box('bridgeW', L, 1.2, .5, 0, y + 1.8, s * (w / 2 - .25)); box('glowC', L, .06, .1, 0, y + 1.2, s * (w / 2 - .6)); }
-    for (let s = -L / 2 + 20; s < L / 2; s += 40) for (const t of [-1, 1]) { box('steel', .2, 7, .2, s, y + 4.5, t * (w / 2 - .5)); box('glow', .8, .1, 1.6, s, y + 8, t * (w / 2 - 1.3)); }
+    for (const s of [-1, 1]) box('bridgeW', L, 1.2, .5, 0, y + 1.8, s * (w / 2 - .25));
+    for (let s = -L / 2 + 20; s < L / 2; s += 40) for (const t of [-1, 1]) { box('steel', .2, 7, .2, s, y + 4.5, t * (w / 2 - .5)); box('steelL', .8, .12, 1.6, s, y + 8, t * (w / 2 - 1.3)); }
     // anchorage piers
     for (const sx of [-L / 2 + 10, L / 2 - 10]) box('quay', 24, y - map.WATER_Y + 4, w + 6, sx, (y + map.WATER_Y - 4) / 2, 0);
     const tx = towers.map((t) => t - (x1 + x2) / 2);
@@ -315,7 +343,7 @@ function rainbowBridge() {
 }
 
 /* ───────────── build ───────────── */
-export function buildCity({ scene, camera }) {
+export function buildCity({ scene, camera, highways = [] }) {
   defineMaterials();
   const updates = [], pois = [], collidables = [], dayNight = [];
   const R = K.rng(777);
@@ -428,6 +456,9 @@ export function buildCity({ scene, camera }) {
   atmosphere(ctx);
   try { birds(ctx); } catch (e) { console.error('birds failed', e); }
   setZone('express');
+  { const tr = K.rng(8088);   // the compound's elevated highways: a frozen jam, as everyone vanished at once
+    for (const h of highways) stalledTraffic(h.x1, h.z1, h.x1 + h.ux * h.L, h.z1 + h.uz * h.L, h.y, tr, Math.max(1, Math.round(h.L / 260)), Math.round(h.L / 90));
+    stalledTraffic(-100, -700, -100, -105, 27, tr, 0, 3); stalledTraffic(-500, -700, 300, -700, 27, tr, 0, 5); }
   expressway(-100, -700, -100, -105); expressway(-500, -700, 300, -700); box('hwy', 30, 2.6, 30, -100, 27, -700);
   rainbowBridge();
   setZone('compound');

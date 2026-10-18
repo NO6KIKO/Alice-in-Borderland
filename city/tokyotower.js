@@ -294,9 +294,8 @@ function expressway(r) {   // decorative, collidable; same section as the city e
     const L = 300;
     box('hwy', L, 2.6, w, 0, y, 0); box('steel', L, .4, w + .6, 0, y - 1.5, 0);
     box('conc', L, 1.1, .5, 0, y + 1.8, w / 2 - .25); box('conc', L, 1.1, .5, 0, y + 1.8, -w / 2 + .25); box('conc', L, .8, .4, 0, y + 1.7, 0);
-    for (const s of [-1, 1]) box('glowY', L, .06, .1, 0, y + 1.2, s * (w / 2 - .6));
     for (let i = 0; i <= 11; i++) { const s = -L / 2 + 7 + i * 26; box('hwy', 4.2, y - 1.4, 4.4, s, (y - 1.4) / 2, 0); box('hwy', 6, 1.4, w - 6, s, y - 2, 0); }
-    for (let i = 0; i < 10; i++) { const s = -L / 2 + 15 + i * 30; for (const t of [-1, 1]) { box('steel', .2, 6, .2, s, y + 4.5, t * (w / 2 - .5)); box('glow', .8, .1, 1.6, s, y + 7.6, t * (w / 2 - 1.3)); } }
+    for (let i = 0; i < 10; i++) { const s = -L / 2 + 15 + i * 30; for (const t of [-1, 1]) { box('steel', .2, 6, .2, s, y + 4.5, t * (w / 2 - .5)); box('steelL', .8, .12, 1.6, s, y + 7.6, t * (w / 2 - 1.3)); } }   // dead lamps
     for (let i = 0; i < 12; i++) car(-140 + r() * 280, (r() < .5 ? -1 : 1) * (2.5 + r() * 7), (r() < .5 ? 0 : Math.PI) + (r() - .5) * .3, ['tt_car0', 'tt_car1', 'tt_car2', 'tt_taxi'][i % 4], y + 1.3);
     bus(40, -5, .05, y + 1.3);
     for (let i = 0; i < 8; i++) box('ivy', 3 + r() * 6, .3, 1 + r() * 3, -140 + r() * 280, y + 1.45, (r() - .5) * 18);   // weeds on the deck

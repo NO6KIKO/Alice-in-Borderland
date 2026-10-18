@@ -230,5 +230,5 @@ export function hunt(ctx) {
     casings.instanceMatrix.needsUpdate = true;
     for (const o of smokes) { if (o.life <= 0) { o.s.visible = false; continue; } o.life -= dt; o.s.position.addScaledVector(o.v, dt); o.s.scale.multiplyScalar(1 + dt * .9); o.s.material.opacity = .45 * (o.life / o.max); }
   });
-  ctx.pois.push({ id: 'hunt', cam: [-1012, 7, 262], tgt: [-990, 2, 222], spawn: [-1010, PV + .1, 252], yaw: Math.atan2(-20, 32) });   // camera looks along (−sin yaw, −cos yaw): toward the crossing
+  ctx.pois.push({ id: 'hunt', cam: [-989, 3.0, 287], tgt: [-991.5, 1.8, 221], spawn: [-1010, PV + .1, 252], yaw: Math.atan2(-20, 32) });   // camera looks along (−sin yaw, −cos yaw): toward the crossing
 }
