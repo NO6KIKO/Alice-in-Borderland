@@ -19,6 +19,7 @@ import { buildCity } from './city/index.js';
 import { createDayNight } from './city/sky.js';
 import { DISTRICTS } from './city/map.js';
 import { createGrade } from './city/grade.js';
+import { createGodRays } from './city/godrays.js';
 import { createAudio } from './city/audio.js';
 import { huntState } from './city/hunt.js';
 
@@ -615,6 +616,7 @@ gtao.enabled = hiQ;
 // cinema-mode depth of field (off otherwise): focus on what the camera looks at
 const dof = new BokehPass(scene, camera, { focus: 60, aperture: .00012, maxblur: .006 }); dof.enabled = false; composer.addPass(dof);
 const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.55, 0.6, 1.0); composer.addPass(bloom);
+const rays = createGodRays(composer, composer.passes.indexOf(dof));   // sun shafts between the towers (day / dusk)
 composer.addPass(new OutputPass());
 const grade = createGrade(composer);   // the show's teal / amber film look
 const audio = createAudio();
@@ -634,6 +636,7 @@ const dayNight = createDayNight({ scene, renderer, hemi, moon, bloom, spots, nig
   },
   (day) => { for (const k of ['poolC', 'poolY', 'beam']) mats[k].visible = !day; },   // fake light pools / cones are night-only
   (day) => grade.setDay(day, dayNight?.isDusk),
+  (day, dusk) => rays.setDay(day, dusk),
   (day) => audio.setDay(day),
   (day) => { dayBtn.textContent = !day ? '☀ 切换白天' : dayNight?.isDusk ? '☾ 切换夜晚' : '◐ 切换黄昏'; },
   ...(cityInfo.dayNight || []),
@@ -686,7 +689,7 @@ function tick() {
   updateMarkers();
   if (renderer.getPixelRatio() !== Math.min(devicePixelRatio, 2)) dispatchEvent(new Event('resize'));   // pane / monitor DPR changed
   const tr = performance.now();
-  grade.update(t, innerWidth, innerHeight);
+  grade.update(t, innerWidth, innerHeight); rays.update(camera, dayNight.sunDir, innerWidth, innerHeight);
   if (dof.enabled) dof.uniforms.focus.value = player.active ? 6 : camera.position.distanceTo(controls.target);
   audio.update(dt, camera, huntState.centre, huntState.firing);
   renderer.shadowMap.needsUpdate = true;   // shadows once per frame, not once per post pass (GTAO re-renders the scene)

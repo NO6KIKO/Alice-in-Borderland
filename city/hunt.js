@@ -111,6 +111,7 @@ export function hunt(ctx) {
   ctx.dayNight.push((day) => { flood.intensity = day ? 0 : 260; flood.visible = !day; });   // hidden by day → no shadow pass   // soft key light, not a stadium
   ctx.dayNight.push((day, dusk) => {
     const wetLook = !day || dusk; night = wetLook; const m = K.mats.shib_road; if (!m) return;   // wet after rain: dusk + night
+    wet.material.uniforms.color.value.set(dusk ? 0x4c535c : 0x8a96a6);   // the bright dusk sky mirrored at full strength read as white spots
     if (!puddleMask && m.roughnessMap?.image) {   // high-contrast copy of the puddle map: dry asphalt opaque, puddles see-through
       const src = m.roughnessMap.image, c = document.createElement('canvas'); c.width = src.width; c.height = src.height;
       const g = c.getContext('2d'); g.filter = 'brightness(1.45) contrast(2.2)'; g.drawImage(src, 0, 0);

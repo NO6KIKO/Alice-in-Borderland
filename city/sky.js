@@ -100,5 +100,5 @@ export function createDayNight({ scene, renderer, hemi, moon, bloom, spots, nigh
     sun.target.position.set(Math.round(focus.x / 8) * 8, 0, Math.round(focus.z / 8) * 8);
     sun.position.copy(sun.target.position).addScaledVector(sunDir, 700);
   }
-  return { set, update, interiors, get isDay() { return isDay; }, get isDusk() { return isDusk; }, sun };
+  return { set, update, interiors, get isDay() { return isDay; }, get isDusk() { return isDusk; }, sun, sunDir };
 }
