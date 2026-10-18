@@ -49,19 +49,19 @@ function materials() {
     }
     noise(g, W, H, 8);
   }, { repeat: true });
-  def('diamond_floor', std({ map: floor, roughness: .1, metalness: .55 }), 2.6);
+  def('diamond_floor', std({ map: floor, roughness: .12, metalness: .55, envMapIntensity: .12 }), 2.6);   // indoors: barely any sky in the reflection
   const wall = canvasTex(256, 256, (g, W, H) => {
     g.fillStyle = '#1c1d21'; g.fillRect(0, 0, W, H); noise(g, W, H, 14);
     g.fillStyle = '#0c0d0f'; for (let x = 0; x < W; x += 64) g.fillRect(x, 0, 3, H); g.fillRect(0, 0, W, 3); g.fillRect(0, H / 2, W, 2);
     g.fillStyle = 'rgba(255,255,255,.05)'; for (let x = 3; x < W; x += 64) g.fillRect(x, 0, 2, H);
   }, { repeat: true });
-  def('diamond_wall', std({ map: wall, roughness: .38, metalness: .5 }), 3);
+  def('diamond_wall', std({ map: wall, roughness: .38, metalness: .5, envMapIntensity: .2 }), 3);
   const wood = canvasTex(256, 256, (g, W, H) => {
     g.fillStyle = '#7a4a24'; g.fillRect(0, 0, W, H);
     for (let i = 0; i < 90; i++) { g.strokeStyle = `rgba(${40 + r() * 40},${20 + r() * 20},10,${.15 + r() * .3})`; g.lineWidth = 1 + r() * 2; g.beginPath(); const x = r() * W; g.moveTo(x, 0); g.bezierCurveTo(x + (r() - .5) * 20, H / 3, x + (r() - .5) * 20, H * .66, x + (r() - .5) * 10, H); g.stroke(); }
     g.fillStyle = 'rgba(0,0,0,.5)'; g.fillRect(0, 0, 3, H); noise(g, W, H, 10);
   }, { repeat: true });
-  def('diamond_wood', std({ map: wood, roughness: .42, metalness: .05 }), 1.4);
+  def('diamond_wood', std({ map: wood, roughness: .42, metalness: .05, envMapIntensity: .3 }), 1.4);
   def('diamond_amber', bas({ color: new THREE.Color(3.2, 1.7, .55) }));
   def('diamond_line', bas({ color: new THREE.Color(2.4, 2.25, 2.05) })); K.mats.diamond_line.userData.noCollide = true;
   def('diamond_glass', std({ color: 0x9fb6c6, transparent: true, opacity: .16, roughness: .04, metalness: .9, side: THREE.DoubleSide, depthWrite: false }));

@@ -68,7 +68,7 @@ export function createDayNight({ scene, renderer, hemi, moon, bloom, spots, nigh
   function base() { return isDay ? { h: 1.25, s: 5.2, e: .55 } : { h: night.hemiI, s: 0, e: .22 }; }
   function update(focus, cam) {
     cloudTex.offset.x += .000012; cloudTex.offset.y += .000006;
-    const target = cam && interiors.some((b) => cam.x > b[0] && cam.x < b[1] && cam.y < b[2] && cam.z > b[3] && cam.z < b[4]) ? 1 : 0;
+    const target = cam && interiors.some((b) => cam.x > b[0] && cam.x < b[1] && cam.y < b[2] && cam.y > (b[5] ?? -1e9) && cam.z > b[3] && cam.z < b[4]) ? 1 : 0;
     inside += (target - inside) * .08;
     if (isDay) { const b0 = base(), k = 1 - inside * .85; hemi.intensity = b0.h * k; sun.intensity = b0.s * (1 - inside); scene.environmentIntensity = b0.e * (1 - inside * .8); }
     sun.target.position.set(Math.round(focus.x / 8) * 8, 0, Math.round(focus.z / 8) * 8);

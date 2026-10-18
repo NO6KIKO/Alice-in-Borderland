@@ -635,6 +635,7 @@ dayNight.set(true);
 window.__day = dayNight; window.__renderer = renderer; window.__scene = scene; window.__camera = camera; window.__composer = composer;
 dayNight.interiors.push([402, 618, 40, -224, -76]);   // black warehouse hall (x0,x1,yTop,z0,z1)
 dayNight.interiors.push([-1058, -1023, -.5, 230, 249]);   // Shibuya subway concourse + stair shaft
+dayNight.interiors.push([-348, -312, 136, -418, -382, 122]);    // King of Diamonds courtroom (top of the tower)
 addEventListener('resize', () => { const pr = Math.min(devicePixelRatio, 2); renderer.setPixelRatio(pr); composer.setPixelRatio(pr); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight); gtao.setSize(Math.floor(innerWidth / 2), Math.floor(innerHeight / 2)); refl.getRenderTarget().setSize(Math.max(512, Math.floor(innerWidth * .6)), Math.max(512, Math.floor(innerHeight * .6))); });
 
 // moving the window to a screen with another pixel ratio doesn't fire 'resize' — watch the ratio directly
