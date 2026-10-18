@@ -282,7 +282,8 @@ export function buildCity({ scene, camera }) {
 
   // streets: grid of road segments on land, skipped inside hero districts and the compound area
   const nx = Math.ceil((330 - GRID_X0) / BLOCK), nz = Math.ceil((420 - GRID_Z0) / BLOCK);
-  const roadOK = (x, z) => onLand(x, z) && !inDistrict(x, z, -6) && !(Math.abs(x) < 300 && Math.abs(z) < 300);
+  const nearCompound = (x, z, pad = 0) => Math.abs(x) < 135 + pad && Math.abs(z - 10) < 135 + pad;   // keep the night compound's apron open
+  const roadOK = (x, z) => onLand(x, z) && !inDistrict(x, z, -6) && !nearCompound(x, z);
   for (let i = 0; i <= nx; i++) for (let j = 0; j <= nz; j++) {
     const x = GRID_X0 + i * BLOCK, z = GRID_Z0 + j * BLOCK;
     setZone(`city_${Math.floor((x - GRID_X0) / 220)}_${Math.floor((z - GRID_Z0) / 220)}`);
@@ -305,7 +306,7 @@ export function buildCity({ scene, camera }) {
     const corners = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([a, b]) => [cx + a * inner / 2, cz + b * inner / 2]);
     if (!corners.every(([x, z]) => onLand(x, z))) continue;
     if (inDistrict(cx, cz, inner / 2 - 4) || corners.some(([x, z]) => inDistrict(x, z, 2))) continue;
-    if (Math.abs(cx) < 330 && Math.abs(cz) < 330) continue;   // compound / port / expressway apron
+    if (nearCompound(cx, cz, inner / 2)) continue;
     const park = R() < .07;
     box(park ? 'grass' : 'walk', inner, .12, inner, cx, .06, cz);
     if (park) { for (let k = 0; k < 40; k++) tree(cx + (R() - .5) * (inner - 8), cz + (R() - .5) * (inner - 8), .8 + R() * .7, .12); continue; }
