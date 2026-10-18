@@ -102,9 +102,9 @@ export function hunt(ctx) {
   wet.rotation.x = -Math.PI / 2; wet.position.set(-980, .035, 190); wet.visible = false; scene.add(wet);
   let night = false, puddleMask = null;
   // the venue's cold white floodlight from high above the scramble (night only) — the people read as silhouettes against it
-  const flood = new THREE.SpotLight(0xdfe9ff, 0, 140, .55, .7, 1.2); flood.position.set(C.x + 18, 48, C.z - 12); flood.target.position.copy(C);
+  const flood = new THREE.SpotLight(0xdfe9ff, 0, 140, .6, .9, 1.2); flood.position.set(C.x + 18, 48, C.z - 12); flood.target.position.copy(C);
   flood.castShadow = true; flood.shadow.mapSize.set(1024, 1024); flood.shadow.bias = -.0005; scene.add(flood, flood.target);
-  ctx.dayNight.push((day) => { flood.intensity = day ? 0 : 5200; });
+  ctx.dayNight.push((day) => { flood.intensity = day ? 0 : 260; });   // soft key light, not a stadium
   ctx.dayNight.push((day) => {
     night = !day; const m = K.mats.shib_road; if (!m) return;
     if (!puddleMask && m.roughnessMap?.image) {   // high-contrast copy of the puddle map: dry asphalt opaque, puddles see-through

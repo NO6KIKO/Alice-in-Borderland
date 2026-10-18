@@ -57,7 +57,7 @@ function facade(kind, seed) {
       if (kind === 'conc') g.fillRect(x + 2, y + ch * .32, cw - 4, ch * .38); else if (kind === 'glass') g.fillRect(x + 3, y + 3, cw - 6, ch - 10); else g.fillRect(x + cw * .24, y + ch * .24, cw * .52, ch * .5);
     }
   }, { repeat: true });
-  const m = std({ map: day, emissiveMap: glow, emissive: 0xffffff, emissiveIntensity: 0, roughness: kind === 'glass' ? .25 : .85, metalness: kind === 'glass' ? .6 : .05 });
+  const m = std({ map: day, normalMap: K.normalFrom(day, kind === 'glass' ? 1.2 : 2.5), emissiveMap: glow, emissive: 0xffffff, emissiveIntensity: 0, roughness: kind === 'glass' ? .25 : .85, metalness: kind === 'glass' ? .6 : .05 });
   m.userData.nightGlow = kind === 'glass' ? .9 : 1.1;
   return m;
 }
