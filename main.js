@@ -606,6 +606,8 @@ addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; cam
 
 /* ───────────── loop ───────────── */
 const clock = new THREE.Clock(), up = new THREE.Vector3(0, 1, 0);
+const foliageMeshes = [...zoneMeshes.values()].flat().filter((m) => /\|(crown|ivy|leaf|trunk)/.test(m.name));
+let cullT = 0;
 let lastT = 0;
 function tick() {
   const t = clock.getElapsedTime(), dt = Math.min(.05, t - lastT); lastT = t;
@@ -619,6 +621,10 @@ function tick() {
   halos[0].opacity = .25 + .75 * a; halos[1].opacity = .25 + .75 * b;
   updateCars(dt);
   for (const f of cityInfo.updates) f(dt, t);
+  if ((cullT -= dt) < 0) {   // foliage / ivy beyond ~700 m is lost in haze — skip drawing it
+    cullT = .4;
+    for (const m of foliageMeshes) { const bs = m.geometry.boundingSphere; m.visible = camera.position.distanceTo(bs.center) - bs.radius < 700; }
+  }
   dayNight.update(player.active ? player.pos : controls.target, camera.position);
   updateMarkers();
   if (innerWidth > 0 && innerHeight > 0) composer.render();   // hidden pane → zero-size targets

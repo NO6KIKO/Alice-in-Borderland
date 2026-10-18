@@ -4,6 +4,7 @@
 // domed iron gazebo with a laid tea table, mallet rack, stair house, AC units and an external service walkway.
 // Warm lanterns + festoon bulbs light the lawn at night.
 import * as THREE from 'three';
+import { tree as cityTree } from './index.js';
 import * as K from '../kit.js';
 
 const { box, cyl, plane, put, M4, withFrame, def, std, canvasTex, noise, fpos, ang, strut, torus } = K;
@@ -344,12 +345,7 @@ function roof(ctx) {
 }
 
 /* ───────────── plaza ───────────── */
-function tree(x, z, s, y = .14) {
-  const h = (4 + r() * 3) * s;
-  put('trunk', new THREE.CylinderGeometry(.18 * s, .28 * s, h * .55, 6), M4(x, y + h * .27, z));
-  ico('leaf', 1, x, y + h * .7, z, 2.4 * s, 2 * s * (1 + r() * .4), 2.4 * s);
-  if (r() < .6) ico('leaf', 1, x + (r() - .5) * 2 * s, y + h * .95, z + (r() - .5) * 2 * s, 1.6 * s, 1.5 * s, 1.6 * s);
-}
+function tree(x, z, s, y = .14) { cityTree(x, z, s, y); }   // shared leaf-card tree
 function plaza(d) {
   const hw = d.w / 2, hd = d.d / 2;
   const inTower = (x, z, pad) => { const c = Math.cos(TR), s = Math.sin(TR), lx = x * c - z * s, lz = x * s + z * c; return Math.abs(lx) < 26 + pad && Math.abs(lz) < 22 + pad; };

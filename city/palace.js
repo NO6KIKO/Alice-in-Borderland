@@ -3,6 +3,7 @@
 // leading to yagura gates, a gravel forecourt, palace halls with big hip-and-gable roofs and a dense forest.
 // The city land slab is runtime-cut under the footprint (cooperative userData.holes) so the moat can sink.
 import * as THREE from 'three';
+import { foliage } from './index.js';
 import * as K from '../kit.js';
 const { box, cyl, strut, put, M4, withFrame, def, std } = K;
 
@@ -167,9 +168,10 @@ function hall(x, z, w, d, ry, rk) {
 function pine(x, z, s, y, r) {
   const lean = (r() - .5) * .8, top = [x + lean * 3 * s, y + 5.5 * s, z + (r() - .5) * 1.5 * s];
   strut('trunk', [x, y, z], top, .26 * s, 5);
-  for (let i = 0; i < 4; i++) {
-    const g = new THREE.IcosahedronGeometry(1, 0), sc = (2.6 - i * .45) * s; g.scale(sc, .55 * s, sc);
-    put('pal_pine', g, M4(top[0] + (r() - .5) * 2.4 * s, y + (3.4 + i * 1.1) * s, top[2] + (r() - .5) * 2.4 * s, 0, r() * 3, 0));
+  for (let i = 0; i < 4; i++) {   // flat cloud pads of needles (Japanese black pine)
+    const sc = (2.6 - i * .45) * s, px = top[0] + (r() - .5) * 2.4 * s, py = y + (3.4 + i * 1.1) * s, pz = top[2] + (r() - .5) * 2.4 * s;
+    strut('trunk', [top[0], py - .4 * s, top[2]], [px, py, pz], .1 * s, 4);
+    foliage(px, py, pz, sc, .7 * s, 11, 'crownP', s);
   }
 }
 

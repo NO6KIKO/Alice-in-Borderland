@@ -36,7 +36,11 @@ function facade(kind, seed) {
     }
     // decay: rust / water streaks and creeping moss from the top and bottom
     for (let i = 0; i < 26; i++) { const x = r() * W, gr = g.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, 'rgba(40,30,20,.35)'); gr.addColorStop(1, 'rgba(40,30,20,0)'); g.fillStyle = gr; g.fillRect(x, 0, 2 + r() * 6, H * r()); }
-    for (let i = 0; i < 90; i++) { g.fillStyle = `rgba(${50 + r() * 30},${80 + r() * 50},${30 + r() * 20},${.25 + r() * .5})`; const x = r() * W, y = r() < .5 ? r() * 40 : H - r() * 30; g.beginPath(); g.ellipse(x, y, 3 + r() * 14, 3 + r() * 20, 0, 0, 7); g.fill(); }
+    for (let i = 0; i < 40; i++) {   // damp green-black grime running down from sills
+      const x = r() * W, y0 = Math.floor(r() * 4) * ch + ch * .78, gr = g.createLinearGradient(0, y0, 0, y0 + ch * (.4 + r()));
+      gr.addColorStop(0, `rgba(${40 + r() * 20},${55 + r() * 25},${35},${.25 + r() * .25})`); gr.addColorStop(1, 'rgba(40,50,35,0)');
+      g.fillStyle = gr; g.fillRect(x, y0, 2 + r() * 10, ch * 1.2);
+    }
   }, { repeat: true });
   const glow = canvasTex(W, H, (g) => {
     g.fillStyle = '#000'; g.fillRect(0, 0, W, H);
@@ -65,14 +69,41 @@ const texWaterN = canvasTex(512, 512, (g, w, h) => {   // tileable ripple normal
   g.putImageData(id, 0, 0);
 }, { srgb: false, repeat: true });
 
+// leaf-card textures (RGBA cut-outs): a ragged round leaf cluster for tree crowns, a tileable mat for ivy
+function leafCluster(seed, tile) {
+  const r = K.rng(seed);
+  return canvasTex(512, 512, (g, w, h) => {
+    g.clearRect(0, 0, w, h);
+    const N = tile ? 1400 : 1100;
+    for (let i = 0; i < N; i++) {
+      let x, y;
+      if (tile) { x = r() * w; y = r() * h; }
+      else { const a = r() * 6.283, d = Math.sqrt(r()) * (w * .46) * (.75 + r() * .25); x = w / 2 + Math.cos(a) * d; y = h / 2 + Math.sin(a) * d; }
+      const L = (tile ? 9 : 12) + r() * 10, rot = r() * 6.283, light = r(), shade = tile ? 0 : (y / h) * .35;   // lower leaves darker
+      const R_ = 40 + light * 50 - shade * 40, G = 75 + light * 80 - shade * 60, B = 22 + light * 25;
+      for (const [ox, oy] of tile ? [[0, 0], [-w, 0], [w, 0], [0, -h], [0, h]] : [[0, 0]]) {
+        g.save(); g.translate(x + ox, y + oy); g.rotate(rot);
+        g.fillStyle = `rgb(${R_ | 0},${G | 0},${B | 0})`; g.beginPath(); g.ellipse(0, 0, L, L * .45, 0, 0, 6.283); g.fill();
+        g.strokeStyle = `rgba(${R_ * .6 | 0},${G * .7 | 0},${B * .6 | 0},.8)`; g.lineWidth = 1; g.beginPath(); g.moveTo(-L, 0); g.lineTo(L, 0); g.stroke();
+        g.restore();
+      }
+    }
+  }, { repeat: !!tile });
+}
+const texCrown = [leafCluster(11), leafCluster(23), leafCluster(37)];
+const texIvy = leafCluster(51, true);
+
 let defined = false;
 function defineMaterials() {
   if (defined) return; defined = true;
   FACADES.forEach((k, i) => def('fac' + i, facade(k, 101 + i * 17), FAC_TILE));
   def('roof', std({ map: K.texConcrete, color: 0x6c6d6a, roughness: .95 }), 6);
   def('roofG', std({ map: texLeaf, color: 0xa8c08a, roughness: 1 }), 3);
-  def('ivy', std({ map: texLeaf, color: 0x9fbf80, roughness: 1 }), 2);
-  def('leaf', std({ map: texLeaf, color: 0xb6d090, roughness: 1, flatShading: true }), 3);
+  def('ivy', std({ map: texIvy, color: 0xd8ecc0, roughness: .95, alphaTest: .5, side: THREE.DoubleSide }), 2.5);
+  texCrown.forEach((t, i) => def('crown' + i, std({ map: t, color: [0xe0f0c8, 0xd2e8b0, 0xe8ecc0][i], roughness: .9, alphaTest: .45, side: THREE.DoubleSide }), 1));
+  def('crownCore', std({ color: 0x1c2e12, roughness: 1 }));
+  def('crownP', std({ map: texCrown[1], color: 0x8fae80, roughness: .9, alphaTest: .45, side: THREE.DoubleSide }), 1);   // dark pine needles
+  def('leaf', std({ map: texIvy, color: 0xc4dca8, roughness: .95 }), 1.5);
   def('trunk', std({ color: 0x4a3a2c, roughness: 1 }));
   def('road', std({ map: texRoad, color: 0xb8bcc0, roughness: .9 }), 12);
   def('walk', std({ map: K.texConcrete, color: 0x9a9a94, roughness: .9 }), 4);
@@ -81,18 +112,43 @@ function defineMaterials() {
   def('lineY', std({ color: 0xd8a820, roughness: .6 }));
   def('grass', std({ map: texLeaf, color: 0x8fb070, roughness: 1 }), 6);
   def('bridgeW', std({ color: 0xe4e6e6, roughness: .5, metalness: .3 }));
-  mats.leaf.userData.noCollide = true;
+  for (const k of ['leaf', 'ivy', 'crown0', 'crown1', 'crown2', 'crownP', 'crownCore']) mats[k].userData.noCollide = true;
 }
 const mats = K.mats;
 
 /* ───────────── geometry helpers for the city ───────────── */
+// broadleaf tree: tapered trunk + branches, crown of crossing leaf cards whose normals point out of the
+// crown (so it shades like one soft canopy), and a dark core to stop it looking hollow
+const _c = new THREE.Vector3(), _p = new THREE.Vector3();
+let treeCount = 0;
 function tree(x, z, s = 1, y = 0) {
-  const h = (4 + Math.random() * 3) * s;
-  put('trunk', new THREE.CylinderGeometry(.18 * s, .28 * s, h * .55, 5), M4(x, y + h * .27, z));
-  const g = new THREE.IcosahedronGeometry(1, 0); g.scale(2.4 * s, 2 * s * (1 + Math.random() * .4), 2.4 * s);
-  put('leaf', g, M4(x, y + h * .7, z, 0, Math.random() * 3, 0));
-  if (Math.random() < .5) { const g2 = new THREE.IcosahedronGeometry(1, 0); g2.scale(1.6 * s, 1.5 * s, 1.6 * s); put('leaf', g2, M4(x + (Math.random() - .5) * 2 * s, y + h * .95, z + (Math.random() - .5) * 2 * s)); }
+  treeCount++;
+  const r = Math.random, h = (5 + r() * 4) * s, lean = (r() - .5) * .12, la = r() * 6.283;
+  const tx = x + Math.cos(la) * lean * h, tz = z + Math.sin(la) * lean * h;   // trunk top
+  K.strut('trunk', [x, y, z], [tx, y + h * .62, tz], .26 * s, 7);
+  const cy = y + h * .74, rx = (2.2 + r() * 1.3) * s, ry = rx * (.75 + r() * .35);
+  for (let i = 0; i < 4; i++) {   // limbs
+    const a = la + i * 1.57 + r(), d = rx * (.45 + r() * .3);
+    K.strut('trunk', [tx, y + h * (.45 + r() * .15), tz], [tx + Math.cos(a) * d, cy + (r() - .3) * ry * .6, tz + Math.sin(a) * d], .09 * s, 5);
+  }
+  foliage(tx, cy, tz, rx, ry, 18 + Math.floor(r() * 6), 'crown' + Math.floor(r() * 3), s);
 }
+// a clump of leaf cards around (x,y,z) with radii rx/ry; normals face out of the clump
+export function foliage(x, y, z, rx, ry, n, k = 'crown0', s = 1) {
+  const r = Math.random, core = new THREE.IcosahedronGeometry(1, 1); core.scale(rx * .62, ry * .62, rx * .62);
+  put('crownCore', core, M4(x, y, z));
+  _c.set(x, y, z).applyMatrix4(K.frame);
+  const card = Math.min(rx, ry * 1.6);
+  for (let i = 0; i < n; i++) {
+    const u = r() * 6.283, v = Math.acos(2 * r() - 1), d = .25 + Math.sqrt(r()) * .6;   // fill the volume, not just a shell
+    const px = x + Math.sin(v) * Math.cos(u) * rx * d, py = y + Math.cos(v) * ry * d * .9, pz = z + Math.sin(v) * Math.sin(u) * rx * d;
+    const sz = card * (1.1 + r() * .6), g = new THREE.PlaneGeometry(sz, sz);
+    put(k, g, M4(px, py, pz, r() * 3, r() * 6.283, r() * 3));
+    const pos = g.attributes.position, nor = g.attributes.normal;
+    for (let j = 0; j < pos.count; j++) { _p.fromBufferAttribute(pos, j).sub(_c); _p.y *= rx / Math.max(.1, ry); _p.normalize(); nor.setXYZ(j, _p.x, _p.y, _p.z); }
+  }
+}
+export function treeStats() { return treeCount; }
 export { tree };
 
 // one filler building on a lot (lot centre x,z; footprint w×d; height h)
@@ -109,14 +165,14 @@ function building(x, z, w, d, h, r) {
   if (!green && r() < .5) for (let i = 0; i < 1 + r() * 3; i++) box('steelL', 2 + r() * 2, 1.4, 1.6 + r(), x + (r() - .5) * (w - 4), h + 1.3, z + (r() - .5) * (d - 4));
   if (green) for (let i = 0; i < Math.min(6, w * d / 120); i++) tree(x + (r() - .5) * (w - 4), z + (r() - .5) * (d - 4), .7 + r() * .4, h + .6);
   // ivy curtains climbing the facades
-  const nIvy = r() < .55 ? 1 + Math.floor(r() * 4) : 0;
+  const nIvy = r() < .7 ? 1 + Math.floor(r() * 5) : 0;
   for (let i = 0; i < nIvy; i++) {
-    const side = Math.floor(r() * 4), ih = h * (.25 + r() * .75), iw = 2 + r() * Math.min(10, (side % 2 ? d : w) * .5);
-    const along = (r() - .5) * ((side % 2 ? d : w) - iw);
-    if (side === 0) box('ivy', iw, ih, .5, x + along, ih / 2 + .1, z + d / 2 + .2);
-    else if (side === 1) box('ivy', .5, ih, iw, x + w / 2 + .2, ih / 2 + .1, z + along);
-    else if (side === 2) box('ivy', iw, ih, .5, x + along, ih / 2 + .1, z - d / 2 - .2);
-    else box('ivy', .5, ih, iw, x - w / 2 - .2, ih / 2 + .1, z + along);
+    const side = Math.floor(r() * 4), ih = h * (.2 + r() * .8), iw = 2 + r() * Math.min(10, (side % 2 ? d : w) * .5);
+    const along = (r() - .5) * ((side % 2 ? d : w) - iw), yc = r() < .5 ? ih / 2 + .1 : h + .1 - ih / 2;   // climbing up or draping down
+    if (side === 0) plane('ivy', iw, ih, x + along, yc, z + d / 2 + .12);
+    else if (side === 1) plane('ivy', iw, ih, x + w / 2 + .12, yc, z + along, Math.PI / 2);
+    else if (side === 2) plane('ivy', iw, ih, x + along, yc, z - d / 2 - .12, Math.PI);
+    else plane('ivy', iw, ih, x - w / 2 - .12, yc, z + along, -Math.PI / 2);
   }
 }
 

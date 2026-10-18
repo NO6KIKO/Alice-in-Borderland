@@ -4,7 +4,7 @@ Three.js scene of the night-time compound with a third-person walkable character
 
 ```bash
 npm install
-python -m http.server 8765
+python tools/serve.py 8765
 ```
 
 Open http://localhost:8765 and press ▶ to walk around (WASD / Shift / Space / V).
