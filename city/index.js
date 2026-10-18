@@ -60,6 +60,7 @@ function facade(kind, seed) {
   }, { repeat: true });
   const m = std({ map: day, normalMap: K.normalFrom(day, kind === 'glass' ? 1.2 : 2.5), roughnessMap: day, emissiveMap: glow, emissive: 0xffffff, emissiveIntensity: 0, roughness: kind === 'glass' ? .6 : 1, metalness: kind === 'glass' ? .6 : .12 });
   m.userData.nightGlow = kind === 'glass' ? .9 : 1.1;
+  K.parallaxFacade(m, .35, FAC_TILE);   // recessed windows
   return m;
 }
 const FACADES = ['conc', 'glass', 'tile', 'dark', 'white', 'conc'];

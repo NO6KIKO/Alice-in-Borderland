@@ -611,7 +611,9 @@ gtao.overrideVisibility = function () {
   const cache = this._visibilityCache;
   this.scene.traverse((o) => { cache.set(o, o.visible); const m = o.material; if (o.isPoints || o.isLine || o.isSprite || (m && !Array.isArray(m) && m.transparent && !m.depthWrite)) o.visible = false; });
 };
-let hiQ = true; try { hiQ = localStorage.getItem('quality') !== 'std'; } catch (e) {}
+// integrated GPUs share system memory: default them to standard quality unless the viewer chose otherwise
+const igpu = (() => { try { const gl = renderer.getContext(), d = gl.getExtension('WEBGL_debug_renderer_info'); return /Intel|UHD|Iris|Radeon\(TM\) Graphics|Microsoft Basic/i.test(d ? gl.getParameter(d.UNMASKED_RENDERER_WEBGL) : ''); } catch (e) { return false; } })();
+let hiQ = !igpu; try { const q = localStorage.getItem('quality'); if (q) hiQ = q !== 'std'; } catch (e) {}
 gtao.enabled = hiQ;
 // cinema-mode depth of field (off otherwise): focus on what the camera looks at
 const dof = new BokehPass(scene, camera, { focus: 60, aperture: .00012, maxblur: .006 }); dof.enabled = false; composer.addPass(dof);
@@ -641,6 +643,8 @@ const dayNight = createDayNight({ scene, renderer, hemi, moon, bloom, spots, nig
   (day) => { dayBtn.textContent = !day ? '☀ 切换白天' : dayNight?.isDusk ? '☾ 切换夜晚' : '◐ 切换黄昏'; },
   ...(cityInfo.dayNight || []),
 ] });
+const shadowQ = () => { const sh = dayNight.sun.shadow, n = hiQ ? 4096 : 2048; if (sh.mapSize.x !== n) { sh.mapSize.set(n, n); if (sh.map) { sh.map.dispose(); sh.map = null; } } };   // standard quality: 2048 sun shadow (¼ the memory)
+shadowQ(); qBtn.addEventListener('click', shadowQ);
 dayBtn.onclick = () => dayNight.set(dayNight.isDusk ? 'night' : dayNight.isDay ? 'dusk' : 'day');   // day → dusk → night
 dayNight.set(true);
 window.__day = dayNight; window.__renderer = renderer; window.__scene = scene; window.__camera = camera; window.__composer = composer;

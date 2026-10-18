@@ -132,7 +132,7 @@ let defined = false;
 export function buildingMats() { defineMats(); }
 function defineMats() {
   if (defined) return; defined = true;
-  const facade = (key, [day, glow], { glow: ng = 1, tile = TILE, ...o } = {}) => { const m = std({ map: day, normalMap: K.normalFrom(day, 3), roughnessMap: day, emissiveMap: glow, emissive: 0xffffff, emissiveIntensity: 0, roughness: 1, metalness: .15, ...o }); m.userData.nightGlow = ng; def(key, m, tile); };   // roughness from the facade: dark glass glossy, concrete matte
+  const facade = (key, [day, glow], { glow: ng = 1, tile = TILE, ...o } = {}) => { const m = std({ map: day, normalMap: K.normalFrom(day, 3), roughnessMap: day, emissiveMap: glow, emissive: 0xffffff, emissiveIntensity: 0, roughness: 1, metalness: .15, ...o }); m.userData.nightGlow = ng; K.parallaxFacade(m, .35, tile); def(key, m, tile); };   // roughness from the facade: dark glass glossy, concrete matte
   facade('bOff0', texOffice(11, '#a4a39c')); facade('bOff1', texOffice(12, '#b9b1a0')); facade('bOff2', texOffice(13, '#77797a'));
   facade('bCur0', texCurtain(21), { roughness: .3, metalness: .5, glow: .8 }); facade('bCur1', texCurtain(22), { roughness: .3, metalness: .5, glow: .8, color: 0xc8d8d0 });
   facade('bTile0', texTiles(31, '#d9d6cc')); facade('bTile1', texTiles(32, '#c7bba3')); facade('bTile2', texTiles(33, '#b4b8b6'));

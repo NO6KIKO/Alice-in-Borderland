@@ -27,6 +27,25 @@ export function noise(g, w, h, amt) {
 }
 
 // normal map from a canvas texture's luminance (Sobel): dark = recessed (window reveals, joints, stains)
+// facade parallax: dark texels (glass) read as recessed `depth` metres behind the frames, so windows shift with the
+// view angle. One extra map fetch; fades out by 140 m. Assumes map / normal / roughness / emissive share UVs.
+export function parallaxFacade(m, depth, tile) {
+  const k = (depth / tile).toFixed(4), swap = (c) => THREE.ShaderChunk[c].replace(/v(Map|NormalMap|RoughnessMap|EmissiveMap)Uv/g, 'pUv');
+  m.onBeforeCompile = (sh) => {
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <map_fragment>', `vec2 pUv = vMapUv;
+        { vec3 V = normalize(vViewPosition), Nf = normalize(cross(dFdx(vViewPosition), dFdy(vViewPosition))); Nf *= sign(dot(Nf, V));
+          mat3 F = getTangentFrame(-vViewPosition, Nf, vMapUv); vec3 vt = vec3(dot(V, normalize(F[0])), dot(V, normalize(F[1])), dot(V, Nf));
+          float h = 1. - dot(texture2D(map, vMapUv).rgb, vec3(.3, .59, .11)), fade = 1. - smoothstep(40., 140., length(vViewPosition));
+          pUv -= vt.xy / max(vt.z, .3) * (h - .35) * ${k} * fade; }
+        ${swap('map_fragment')}`)
+      .replace('#include <roughnessmap_fragment>', swap('roughnessmap_fragment'))
+      .replace('#include <normal_fragment_maps>', swap('normal_fragment_maps'))
+      .replace('#include <emissivemap_fragment>', swap('emissivemap_fragment'));
+  };
+  m.customProgramCacheKey = () => 'parallaxFacade' + k;
+  return m;
+}
 export function normalFrom(tex, strength = 2) {
   const src = tex.image, w = src.width, h = src.height, g0 = src.getContext ? src.getContext('2d') : null;
   if (!g0) return null;

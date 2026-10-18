@@ -14,9 +14,9 @@ export function createDayNight({ scene, renderer, hemi, moon, bloom, spots, nigh
   // (uBlue deepens the zenith toward a clear blue; small at dusk)
   sky.material.uniforms.uHaze = { value: new THREE.Color() }; sky.material.uniforms.uBlue = { value: 1 };
   sky.material.fragmentShader = sky.material.fragmentShader.replace('void main() {', 'uniform vec3 uHaze;\nuniform float uBlue;\nvoid main() {')
-    .replace('#include <tonemapping_fragment>', 'gl_FragColor.rgb *= 0.38;\ngl_FragColor.rgb *= mix( vec3( 1.0 ), vec3( .72, .88, 1.18 ), smoothstep( .04, .55, direction.y ) * uBlue );\ngl_FragColor.rgb = mix( gl_FragColor.rgb, uHaze, pow( 1.0 - clamp( direction.y, 0.0, 1.0 ), 10.0 ) * 0.85 );\n#include <tonemapping_fragment>');
+    .replace('#include <tonemapping_fragment>', 'gl_FragColor.rgb *= 0.38;\ngl_FragColor.rgb *= mix( vec3( 1.0 ), vec3( .62, .83, 1.22 ), smoothstep( .04, .55, direction.y ) * uBlue );\ngl_FragColor.rgb = mix( gl_FragColor.rgb, uHaze, pow( 1.0 - clamp( direction.y, 0.0, 1.0 ), 10.0 ) * 0.85 );\n#include <tonemapping_fragment>');
   const u = sky.material.uniforms;
-  u.turbidity.value = 3.2; u.rayleigh.value = 2.4; u.mieCoefficient.value = .003; u.mieDirectionalG.value = .8;   // clear, slightly hazy Tokyo blue
+  u.turbidity.value = 2.8; u.rayleigh.value = 2.8; u.mieCoefficient.value = .003; u.mieDirectionalG.value = .8;   // clear, slightly hazy Tokyo blue
   const sunDay = new THREE.Vector3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(52), THREE.MathUtils.degToRad(215));
   const sunDusk = new THREE.Vector3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(82), THREE.MathUtils.degToRad(245));   // 8° above the western horizon
   const sunDir = sunDay.clone();
@@ -42,7 +42,7 @@ export function createDayNight({ scene, renderer, hemi, moon, bloom, spots, nigh
       const a = R(w(xi), w(yi)), b = R(w(xi + 1), w(yi)), c2 = R(w(xi), w(yi + 1)), d = R(w(xi + 1), w(yi + 1)); return a + (b - a) * u + (c2 - a) * v + (a - b - c2 + d) * u * v; };
     for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
       let f = 0, amp = .5, fr = 4; for (let o = 0; o < 5; o++) { f += vn(x / N * fr, y / N * fr, fr) * amp; amp *= .5; fr *= 2; }
-      const a = Math.max(0, Math.min(1, (f - .52) * 3.2)), i = (y * N + x) * 4, shade = 205 + 50 * Math.min(1, (f - .5) * 4);
+      const a = Math.max(0, Math.min(1, (f - .5) * 4.4)), i = (y * N + x) * 4, shade = 196 + 59 * Math.min(1, Math.max(0, (f - .5) * 3));   // crisper cumulus edges, brighter tops
       img.data[i] = img.data[i + 1] = shade; img.data[i + 2] = shade + 6; img.data[i + 3] = a * 255;
     }
     g.putImageData(img, 0, 0); const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(3, 3); t.colorSpace = THREE.SRGBColorSpace; return t;
@@ -71,7 +71,7 @@ export function createDayNight({ scene, renderer, hemi, moon, bloom, spots, nigh
   // mode: true / 'day', 'dusk', false / 'night'.  Dusk counts as day for the rest of the city (no night lights).
   function set(mode) {
     const day = mode === true || mode === 'day' || mode === 'dusk'; isDusk = mode === 'dusk'; isDay = day;
-    sunDir.copy(isDusk ? sunDusk : sunDay); u.sunPosition.value.copy(sunDir); u.turbidity.value = isDusk ? 6 : 3.2;
+    sunDir.copy(isDusk ? sunDusk : sunDay); u.sunPosition.value.copy(sunDir); u.turbidity.value = isDusk ? 6 : 2.8;
     sky.visible = day; if (nightBackdrop) nightBackdrop.visible = !day;
     scene.background = day ? null : night.bg;
     scene.environment = day ? (isDusk ? duskEnv : dayEnv) : nightEnv; scene.environmentIntensity = day ? .5 : .22;
