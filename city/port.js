@@ -18,40 +18,79 @@ let r = K.rng(330175);
 function defMats() {
   if (K.mats.port_red) return;
   const c = (hex) => K.std({ map: K.texCorr, color: hex, roughness: .7, metalness: .08 });   // painted steel
-  K.def('port_cW', c(0xe2e2dc), 2.4);    // white
-  K.def('port_cS', c(0x7f868b), 2.4);    // grey
-  K.def('port_cD', c(0x4a4f54), 2.4);    // dark grey
-  K.def('port_cO', c(0xa9502c), 2.4);    // rust orange
-  K.def('port_cT', c(0x3f7a78), 2.4);    // teal
-  K.def('port_cY', c(0xb9a27a), 2.4);    // beige
-  K.def('port_cM', c(0x7a2e28), 2.4);    // maroon
-  K.def('port_cRB', c(0xa8402e), 2.4);   // bright red (gate / bridges)
-  K.def('port_cBB', c(0x2f5d92), 2.4);   // bright blue
+  // each colour: base, a faded/rusty variant (…2) and a darker frame shade (…D) for posts, rails, door bars
+  const SH = { R: 0xa8402e, R2: 0x93412f, B: 0x2f5d92, B2: 0x46658a, G: 0x3f6e58, G2: 0x5a7262, W: 0xe2e2dc, W2: 0xcdc8ba,
+    S: 0x8a9094, D: 0x4a4f54, O: 0xb0552e, T: 0x3f7a78, Y: 0xc2ab80, M: 0x7a2e28, RB: 0xb8442e, BB: 0x2a62a0 };
+  const tmp = new THREE.Color();
+  for (const [n, hex] of Object.entries(SH)) {
+    K.def('port_c' + n, c(hex), 2.4);
+    tmp.setHex(hex).multiplyScalar(.62); K.def('port_c' + n + 'D', K.std({ color: tmp.clone(), roughness: .6, metalness: .25 }));
+  }
+  // faded logo / stencil decals (no collision)
+  ['KAIRI LINES', 'BORDERLAND', 'SUMIDA BAY', 'AZUMA CARGO', '♠ SPADE LOG'].forEach((txt, i) => {
+    const t = K.canvasTex(512, 128, (g, w, h) => {
+      g.clearRect(0, 0, w, h); g.fillStyle = i % 2 ? 'rgba(245,240,230,.85)' : 'rgba(250,250,250,.9)';
+      g.font = 'bold 74px Arial'; g.textBaseline = 'middle'; g.fillText(txt, 14, h * .42);
+      g.font = 'bold 22px monospace'; g.fillText(['KRLU', 'BDLU', 'SMBU', 'AZCU', 'SPDU'][i] + ' ' + (100000 + i * 73519) + ' 4  45G1', 18, h * .86);
+      g.globalCompositeOperation = 'destination-out';   // wear
+      for (let k = 0; k < 260; k++) { g.fillStyle = `rgba(0,0,0,${Math.random() * .8})`; g.fillRect(Math.random() * w, Math.random() * h, 2 + Math.random() * 10, 1 + Math.random() * 4); }
+    });
+    const m = K.std({ map: t, transparent: true, alphaTest: .25, roughness: .75, polygonOffset: true, polygonOffsetFactor: -2 });
+    K.def('port_logo' + i, m, 1); m.userData.noCollide = true;
+  });
   K.def('port_red', K.std({ color: 0xb4321f, roughness: .5, metalness: .45 }));
   K.def('port_hull', K.std({ color: 0x1d2a38, roughness: .6, metalness: .3 }));    // extrude-only (non-indexed)
   K.def('port_hullR', K.std({ color: 0x7a2a22, roughness: .7, metalness: .2 }));   // extrude-only
   K.def('port_wood', K.std({ color: 0xbfa77c, roughness: .9 }), 1);
   K.def('port_pal', K.std({ color: 0x8d7450, roughness: .95 }), 1);
   K.def('port_tarp', K.std({ color: 0x2f5f7a, roughness: .85 }), 2);
-  K.def('port_slab', K.std({ map: K.texConcrete, color: 0xb4b5b0, roughness: .93 }), 7);
+  // apron concrete: 6 m slabs (4×4 per 24 m tile) with dark joints, tone variation, oil stains, tyre marks, grime
+  const texGround = K.canvasTex(1024, 1024, (g, w, h) => {
+    g.fillStyle = '#b3b3ad'; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { const v = (Math.random() - .5) * 26; g.fillStyle = `rgba(${v > 0 ? '255,255,250' : '40,40,36'},${Math.abs(v) / 120})`; g.fillRect(i * 256, j * 256, 256, 256); }
+    K.noise(g, w, h, 26);
+    for (let i = 0; i < 60; i++) { const x = Math.random() * w, y = Math.random() * h, rr = 20 + Math.random() * 90, gr = g.createRadialGradient(x, y, 0, x, y, rr); gr.addColorStop(0, 'rgba(60,58,52,.18)'); gr.addColorStop(1, 'rgba(60,58,52,0)'); g.fillStyle = gr; g.fillRect(x - rr, y - rr, rr * 2, rr * 2); }
+    for (let i = 0; i < 22; i++) { const x = Math.random() * w, y = Math.random() * h, rr = 6 + Math.random() * 26, gr = g.createRadialGradient(x, y, 0, x, y, rr); gr.addColorStop(0, 'rgba(18,18,16,.55)'); gr.addColorStop(.6, 'rgba(25,24,20,.25)'); gr.addColorStop(1, 'rgba(25,24,20,0)'); g.fillStyle = gr; g.beginPath(); g.ellipse(x, y, rr, rr * (.5 + Math.random() * .5), Math.random() * 3, 0, 7); g.fill(); }
+    for (let i = 0; i < 16; i++) {   // tyre marks: paired arcs
+      const x = Math.random() * w, y = Math.random() * h, R = 120 + Math.random() * 400, a0 = Math.random() * 6.3, a1 = a0 + .4 + Math.random() * .8;
+      g.strokeStyle = `rgba(20,20,18,${.06 + Math.random() * .1})`; g.lineWidth = 5 + Math.random() * 4;
+      for (const o of [0, 14]) { g.beginPath(); g.arc(x, y, R + o, a0, a1); g.stroke(); }
+    }
+    for (let i = 0; i < 30; i++) { g.strokeStyle = 'rgba(30,30,28,.35)'; g.lineWidth = 1; g.beginPath(); let x = Math.random() * w, y = Math.random() * h; g.moveTo(x, y); for (let k = 0; k < 5; k++) { x += (Math.random() - .5) * 60; y += (Math.random() - .5) * 60; g.lineTo(x, y); } g.stroke(); }
+    for (let i = 0; i <= 4; i++) for (const [a, b, c2, d2] of [[i * 256, 0, 0, h], [0, i * 256, w, 0]]) {
+      g.strokeStyle = 'rgba(28,28,26,.85)'; g.lineWidth = 4; g.beginPath(); g.moveTo(a, b); g.lineTo(a + c2, b + d2); g.stroke();
+      g.strokeStyle = 'rgba(255,255,250,.18)'; g.lineWidth = 2; g.beginPath(); g.moveTo(a + 3, b + 3); g.lineTo(a + c2 + 3, b + d2 + 3); g.stroke();
+    }
+  }, { repeat: true });
+  K.def('port_slab', K.std({ map: texGround, color: 0x9a9890, roughness: .92 }), 24);
+  K.def('port_sack', K.std({ color: 0xd8cfb4, roughness: 1 }));
+  K.def('port_cab', K.std({ color: 0xd7b52a, roughness: .55, metalness: .2 }));
   K.def('port_chrome', K.std({ color: 0xe6ecf2, roughness: .08, metalness: 1, emissive: 0x9fd0ff, emissiveIntensity: 0 }));
   K.def('port_head', K.std({ color: 0xc4c8cc, roughness: .5, metalness: .3, emissive: 0xbfe0ff, emissiveIntensity: 0 }));
 }
-const PAL = ['contR', 'contR', 'contB', 'contB', 'contG', 'port_cW', 'port_cW', 'port_cS', 'port_cO', 'port_cT', 'port_cY', 'port_cM', 'port_cBB'];
+const PAL = ['port_cR', 'port_cR2', 'port_cR', 'port_cB', 'port_cB2', 'port_cB', 'port_cG', 'port_cG2', 'port_cW', 'port_cW2', 'port_cW', 'port_cS', 'port_cO', 'port_cT', 'port_cY', 'port_cM', 'port_cBB'];
 const pick = (a) => a[Math.floor(r() * a.length)];
 const col = () => pick(PAL);
-const RWB = ['contR', 'port_cRB', 'port_cW', 'port_cW', 'contB', 'port_cBB'];
+const RWB = ['port_cR', 'port_cR2', 'port_cRB', 'port_cW', 'port_cW2', 'port_cW', 'port_cB', 'port_cBB'];
 
 /* ───────────── containers ───────────── */
-// one ISO box along local x: lod 0 bare box, 1 + end frames, 2 + door bars & top rails
+// one ISO box along local x (door end at +x). lod 0 bare box; 1 + thin corner posts in the darker shade;
+// 2 + top/bottom rails, door locking bars, hinges + seam, and a faded logo decal on ~30%
 function ctr(k, len, x, y, z, ry = 0, lod = 1, h = CH) {
+  const kd = K.mats[k + 'D'] ? k + 'D' : 'steelL';
   withFrame(x, y, z, ry, () => {
     box(k, len, h, CW, 0, h / 2, 0);
     if (lod < 1) return;
-    for (const s of [-1, 1]) box('steel', .12, h + .01, CW + .02, s * (len / 2 - .05), h / 2, 0);
+    for (const a of [-1, 1]) for (const b of [-1, 1]) box(kd, .17, h + .01, .17, a * (len / 2 - .075), h / 2, b * (CW / 2 - .075));
     if (lod < 2) return;
-    for (const zz of [-.85, -.3, .3, .85]) box('steelL', .04, h - .3, .05, len / 2 + .02, h / 2, zz);
-    for (const s of [-1, 1]) box('steel', len - .2, .12, .06, 0, h - .08, s * (CW / 2 + .01));
+    for (const b of [-1, 1]) box(kd, len - .3, .12, .1, 0, h - .055, b * (CW / 2 - .035)); box(kd, len - .3, .16, CW + .03, 0, .08, 0);
+    const xe = len / 2 + .02;
+    for (const zz of [-.78, -.3, .3, .78]) box(kd, .045, h - .4, .06, xe, h / 2, zz);
+    for (const zz of [-1.06, 0, 1.06]) box(kd, .03, h - .25, zz ? .1 : .035, xe - .005, h / 2, zz);
+    if (r() < .3) {
+      const s = r() < .5 ? 1 : -1, wl = Math.min(len * .55, 6.2);
+      put('port_logo' + Math.floor(r() * 5), new THREE.PlaneGeometry(wl, wl / 4), M4((r() - .5) * (len - wl - 1), h * .58, s * (CW / 2 + .03), 0, s < 0 ? Math.PI : 0, 0));
+    }
   });
 }
 // stacked block: nc columns along the container axis `ax`, nr rows across; H(c,r) tiers. Only boxes with an
@@ -81,6 +120,16 @@ function faceStair(x0, zf, s, y0, y1) {
   return xl;
 }
 const rail = (x1, z1, x2, z2, y) => K.railSeg(x1, z1, x2, z2, y);
+/* floor paint */
+function ln(x1, z1, x2, z2, k = 'lineY', w = .2) { const dx = x2 - x1, dz = z2 - z1; box(k, Math.hypot(dx, dz), .02, w, (x1 + x2) / 2, G + .01, (z1 + z2) / 2, K.ang(dx, dz)); }
+function worn(x1, z1, x2, z2, k = 'lineY', w = .2) {   // line broken into worn pieces
+  const L = Math.hypot(x2 - x1, z2 - z1), n = Math.max(1, Math.round(L / 3.2));
+  for (let i = 0; i < n; i++) { if (r() < .12) continue; const a = (i + r() * .15) / n, b = (i + 1 - r() * .3) / n; ln(x1 + (x2 - x1) * a, z1 + (z2 - z1) * a, x1 + (x2 - x1) * b, z1 + (z2 - z1) * b, k, w); }
+}
+const rect = (x0, z0, x1, z1, k = 'lineY') => { worn(x0, z0, x1, z0, k, .16); worn(x0, z1, x1, z1, k, .16); worn(x0, z0, x0, z1, k, .16); worn(x1, z0, x1, z1, k, .16); };
+function arrowY(x, z, dx, dz, k = 'lineY') {
+  withFrame(x, 0, z, K.ang(dx, dz), () => { box(k, 2.6, .02, .35, -.7, G + .012, 0); put(k, new THREE.CylinderGeometry(.8, .8, .02, 3), M4(1.1, G + .012, 0, 0, Math.PI / 2, 0)); });
+}
 
 /* ───────────── props ───────────── */
 function forklift(x, z, ry, k = 'yel') {
@@ -126,6 +175,31 @@ function crates(x, z, n, y = G) {   // beige pallet crates
     if (r() < .35) box('port_wood', s * .8, s * .7, s * .8, px, y + .14 + s * .9 + s * .35, pz, a + .2);
   }
 }
+function jersey(x1, z1, x2, z2) {   // row of concrete jersey barriers
+  const dx = x2 - x1, dz = z2 - z1, L = Math.hypot(dx, dz), n = Math.floor(L / 2.05);
+  withFrame(x1, 0, z1, K.ang(dx, dz), () => { for (let i = 0; i < n; i++) { const c = i * 2.05 + 1; box('conc', 1.98, .32, .62, c, G + .16, 0); box('conc', 1.98, .5, .32, c, G + .57, 0); box('conc', 1.98, .1, .2, c, G + .87, 0); } });
+}
+const ycab = (x, z, ry) => withFrame(x, G, z, ry, () => { box('port_cab', 1, 1.7, .6, 0, .85, 0); box('steel', 1.1, .08, .7, 0, 1.74, 0); box('steelL', .02, 1.4, .02, 0, .85, .31); box('haz', 1, .15, .02, 0, .2, .31); });
+const genBox = (x, z, ry) => withFrame(x, G, z, ry, () => { box('steelL', 2.2, 1.3, 1.1, 0, .75, 0); box('steel', 2.3, .12, 1.2, 0, .06, 0); K.plane('grille', .9, .8, -.5, .8, .56); box('yel', 2.2, .08, 1.12, 0, 1.15, 0); cyl('pipeD', .07, .5, .8, 1.6, 0, 0, 0, 0, 8); });
+function sacks(x, z) { box('port_pal', 1.2, .14, 1.2, x, G + .07, z); for (let k = 0; k < 3; k++) for (let i = 0; i < 2; i++) box('port_sack', 1.1, .28, .55, x, G + .28 + k * .28, z + (i - .5) * .58, k % 2 ? .08 : -.05); }
+function kei(x, z, ry) {   // white kei truck
+  withFrame(x, G, z, ry, () => {
+    box('truckW', 1.3, 1.45, 1.46, 1.05, 1.05, 0); box('win', .05, .6, 1.3, 1.71, 1.4, 0); box('steel', 3.3, .2, 1.3, 0, .45, 0);
+    box('truckW', 1.95, .1, 1.46, -.66, .6, 0); for (const s of [-1, 1]) box('truckW', 1.95, .35, .05, -.66, .8, s * .71); box('truckW', .05, .35, 1.46, -1.62, .8, 0);
+    for (const a of [-1.05, 1.05]) for (const s of [-1, 1]) cyl('tire', .28, .18, a, .28, s * .62, Math.PI / 2, 0, 0, 10);
+  });
+}
+function tray(x1, z1, x2, z2, y) {   // cable tray on short posts across a container roof
+  const dx = x2 - x1, dz = z2 - z1, L = Math.hypot(dx, dz);
+  withFrame((x1 + x2) / 2, y, (z1 + z2) / 2, K.ang(dx, dz), () => {
+    box('grille', L, .06, .45, 0, .42, 0); for (const s of [-1, 1]) box('steelL', L, .1, .03, 0, .47, s * .22);
+    for (let t = -L / 2; t <= L / 2 + .01; t += 3) box('steel', .06, .4, .06, t, .2, 0);
+    pipeRun(L);
+  });
+}
+function pipeRun(L) { for (const zz of [-.1, .08]) box('pipeD', L, .08, .08, 0, .5, zz); }
+const eqBox = (x, y, z, a) => withFrame(x, y, z, a, () => { box('steelL', 1.4, 1, .9, 0, .5, 0); box('steel', 1.5, .08, 1, 0, 1.04, 0); K.plane('grille', .7, .6, -.2, .5, .46); box('glowY', .1, .1, .05, .5, .85, .46); });
+function tarp(x, y, z, w, d) { box('port_tarp', w, .7, d, x, y + .35, z, r() * .3); box('port_tarp', w * .85, .3, d * .8, x + .2, y + .85, z, r() * .3); for (const s of [-1, 1]) strut('steelL', [x - w / 2, y + .7, z + s * d / 2], [x + w / 2, y + .7, z + s * d / 2], .02, 3); }
 const cone = (x, z) => { cyl('cone', .22, .72, x, G + .38, z, 0, 0, 0, 8, .03); box('cone', .44, .04, .44, x, G + .02, z); };
 const bollard = (x, z) => { cyl('haz', .14, 1, x, G + .5, z, 0, 0, 0, 8); };
 const ubox = (x, z, ry = 0) => withFrame(x, G, z, ry, () => { box('steelL', .9, 1.1, .6, 0, .55, 0); box('steel', 1, .06, .7, 0, 1.13, 0); });
@@ -140,19 +214,19 @@ function barrierArm(x, z, len, a) {   // post at (x,z), arm along +z, raised by 
   box('yel', .4, 1.1, .4, x, G + .55, z); box('steel', .5, .2, .5, x, G + 1.15, z);
   box('haz', .12, .12, len, x, G + 1.05 + len / 2 * Math.sin(a), z + len / 2 * Math.cos(a), 0, 0, -a);
 }
-function fmast(x, z, h, tx, tz) {     // tall floodlight mast with a 4×4 head
-  cyl('steelL', .55, h, x, G + h / 2, z, 0, 0, 0, 10, .28);
-  cyl('concD', .9, .6, x, G + .3, z, 0, 0, 0, 10);
-  const a = Math.atan2(tz - z, tx - x), px = -Math.sin(a), pz = Math.cos(a), top = G + h;
-  box('grate', 1.6, .12, 4.2, x, top, z, -a);
-  for (let i = 0; i < 4; i++) {
-    box('steel', .14, .14, 4.4, x + Math.cos(a) * .4, top + .55 + i * .75, z + Math.sin(a) * .4, -a);
-    for (let j = 0; j < 4; j++) {
-      const u = (j - 1.5) * 1.05, fx = x + px * u + Math.cos(a) * .6, fz = z + pz * u + Math.sin(a) * .6, fy = top + .55 + i * .75;
+function fmast(x, z, h, tx, tz, { rows = 4, cols = 4, rad = .55 } = {}) {     // tall floodlight mast, rows × cols head
+  cyl('steelL', rad, h, x, G + h / 2, z, 0, 0, 0, 10, rad * .5);
+  cyl('concD', rad + .4, .6, x, G + .3, z, 0, 0, 0, 10);
+  const a = Math.atan2(tz - z, tx - x), px = -Math.sin(a), pz = Math.cos(a), top = G + h, wd = cols * 1.05 + .2;
+  box('grate', 1.6, .12, wd, x, top, z, -a);
+  for (let i = 0; i < rows; i++) {
+    box('steel', .14, .14, wd + .2, x + Math.cos(a) * .4, top + .55 + i * .75, z + Math.sin(a) * .4, -a);
+    for (let j = 0; j < cols; j++) {
+      const u = (j - (cols - 1) / 2) * 1.05, fx = x + px * u + Math.cos(a) * .6, fz = z + pz * u + Math.sin(a) * .6, fy = top + .55 + i * .75;
       K.floodlight(fx, fy, fz, tx, 0, tz, 0xe8f2ff, 3000, .5, false);
     }
   }
-  K.beacon(x, top + 4.2, z, 1);
+  K.beacon(x, top + rows * .75 + 1.2, z, 1);
   K.pool(tx, tz, 16, false, G);
 }
 
@@ -237,7 +311,7 @@ function ship(cx, cz, Lh, B, quayX) {
     box('port_red', 4.5, 8, 5, 0, 16, Lh / 2 - 5); box('steel', 4.6, 1.2, 5.1, 0, 20.6, Lh / 2 - 5);
     strut('steel', [0, 22.3, zB], [0, 30, zB], .15, 6); K.beacon(0, 30.5, zB, .5);
     strut('steel', [0, 6, -Lh / 2 + 4], [0, 16, -Lh / 2 + 4], .15, 6);
-    for (const zz of [-Lh / 2 + 12, -Lh / 2 + 26, Lh / 2 - 8, Lh / 2 - 22]) strut('steel', [-b, 5.5, zz], [quayX - cx, .8, zz + (zz < 0 ? -9 : 9)], .06, 4);
+    if (quayX) for (const zz of [-Lh / 2 + 12, -Lh / 2 + 26, Lh / 2 - 8, Lh / 2 - 22]) strut('steel', [-b, 5.5, zz], [quayX - cx, .8, zz + (zz < 0 ? -9 : 9)], .06, 4);
   });
 }
 
@@ -249,12 +323,12 @@ function frontEdge() {
   ctr('port_cW', L40, X, G, 207, Math.PI / 2, 2);
   ctr('port_cBB', L40, X, G, 219.6, Math.PI / 2, 2, HC);
   // the arch: two pillars of 2 red 20ft (lying across the edge), red 40ft lintel on top
-  for (const pz of [GZ - 4.72, GZ + 4.72]) for (let k = 0; k < 2; k++) ctr(k ? 'contR' : 'port_cRB', L20, X, G + k * CH, pz, 0, 2);
+  for (const pz of [GZ - 4.72, GZ + 4.72]) for (let k = 0; k < 2; k++) ctr(k ? 'port_cR' : 'port_cRB', L20, X, G + k * CH, pz, 0, 2);
   ctr('port_cRB', L40, X, G + 2 * CH, GZ, Math.PI / 2, 2);
   box('haz', .06, .4, 7, X - 1.25, G + 2 * CH + .3, GZ); box('glowY', .05, .12, 6, X - 1.26, G + 2 * CH + .65, GZ);
-  // south of the gate: blue lengthwise, then a perpendicular red 40ft
-  ctr('contB', L40, X, G, 245.3, Math.PI / 2, 2);
-  ctr('contR', L40, 203.9, G, 253.1, 0, 2);
+  // south of the gate: blue lengthwise, then a long red 40ft continuing along the fence
+  ctr('port_cB', L40, X, G, 245.3, Math.PI / 2, 2);
+  ctr('port_cR', L40, X, G, 257.7, Math.PI / 2, 2);
   // walkway along the top of the lintel, continuing north over the blue/white containers
   const yT = G + 3 * CH;
   K.catwalk(X, 201.5, X, GZ - 6.1, yT + .05, 2.8, { legs: 'frame', every: 12, lights: false });
@@ -271,40 +345,85 @@ function frontEdge() {
   const FX = 194;
   K.chainFence(FX, 182, FX, GZ - 4.5, G, 2.5); K.chainFence(FX, GZ + 4.5, FX, 300, G, 2.5);
   barrierArm(FX - .6, GZ - 4.2, 4, 0); barrierArm(FX - .6, GZ + 4.2, 4, Math.PI * .42);
-  for (const dz of [-4.8, -5.6, 4.8, 5.6]) bollard(FX - 1.2, GZ + dz);
-  for (let z = 186; z < 300; z += 9 + r() * 7) { if (Math.abs(z - GZ) < 8) continue; r() < .5 ? K.cabinet(FX + 1.1, G, z, -Math.PI / 2) : ubox(FX + 1, z, 0); }
-  for (const z of [189, 211, 226, 260, 278]) crates(FX - 2, z, 2 + Math.floor(r() * 3));
-  for (const z of [198, 203, 248, 268, 290]) ubox(FX - 1.6, z, Math.PI / 2);
+  for (const dz of [-4.8, -5.6, -6.4, 4.8, 5.6, 6.4]) bollard(FX - 1.2, GZ + dz);
+  for (const dz of [-4.8, 4.8]) bollard(FX + 1.6, GZ + dz);
   K.cabinet(FX + 1.4, G, GZ - 6.5, -Math.PI / 2); K.cabinet(FX + 1.4, G, GZ + 6.5, -Math.PI / 2);
-  pickup(191, 262, Math.PI / 2);
+  // jersey barriers along the road edge
+  jersey(188.9, 183, 188.9, GZ - 9); jersey(188.9, GZ + 9, 188.9, 300); jersey(167.1, 150, 167.1, 226);
+  // dense strip of cabinets / generator boxes / pallets between the jersey row and the fence
+  const kinds = ['cab', 'ycab', 'gen', 'sack', 'crate', 'ubox', 'cab', 'ycab'];
+  for (let z = 184; z < 300; z += 2.6 + r() * 2.2) {
+    if (Math.abs(z - GZ) < 8 || (z > 257 && z < 267) || (z > 281 && z < 289)) continue;
+    const kd = pick(kinds), x = 192.4;
+    if (kd === 'cab') K.cabinet(x, G, z, -Math.PI / 2);
+    else if (kd === 'ycab') ycab(x, z, -Math.PI / 2);
+    else if (kd === 'gen') genBox(x - .2, z, Math.PI / 2);
+    else if (kd === 'sack') sacks(x - .3, z);
+    else if (kd === 'crate') crates(x - .4, z, 1 + Math.floor(r() * 2));
+    else ubox(x, z, Math.PI / 2);
+  }
+  for (let z = 266; z < 300; z += 4 + r() * 3) r() < .5 ? K.cabinet(FX + 1.1, G, z, -Math.PI / 2) : ycab(FX + 1.1, z, -Math.PI / 2);
+  pickup(191, 262, Math.PI / 2); kei(191.3, 285, Math.PI / 2 + .05);
+  forklift(183.5, 250, -.4); forklift(172, 192, 1.3);
   for (let i = 0; i < 6; i++) cone(190.5 + (i % 2) * .8, GZ - 9 - i * 1.2);
+  K.lamp(189.9, 272, 9, { dir: -Math.PI / 2, spot: false, y0: G });
+  // south-west corner: fenced compound of small utility containers and cabinets
+  K.chainFence(197, 268, 210, 268, G, 2.4); K.chainFence(210, 268, 210, 280.5, G, 2.4); K.chainFence(210, 286, 210, 299.5, G, 2.4); K.chainFence(197, 268, 197, 299.5, G, 2.4);
+  ctr('port_cW', 2.99, 200.4, G, 271.6, 0, 2); ctr('port_cS', 2.99, 204.2, G, 271.6, 0, 2); ctr('port_cW2', 2.99, 200.4, G + CH, 271.6, 0, 2);
+  ctr('port_cY', L20, 203.6, G, 296.6, 0, 2); ctr('port_cW', 2.99, 200.4, G, 292.8, Math.PI / 2, 2);
+  K.generator(203.5, 281, Math.PI / 2); K.gasCylinders(198.6, 285.5);
+  for (const z of [276, 278.5, 288.5, 291]) (z < 280 ? ycab : (x2, z2, a2) => K.cabinet(x2, G, z2, a2))(208.6, z, Math.PI / 2);
+  ubox(199, 278, 0); crates(205.5, 287.5, 2);
   // real light #1: over the gate
   K.floodlight(X - 1, yT + 1.6, GZ - 3, 180, 0, GZ, 0xffe6c0, 3000, .6, false);
   K.addSpot(0xffe6c0, 1300, 60, .8, .6, new THREE.Vector3(X - 1.5, yT + 1.6, GZ), new THREE.Vector3(182, 0, GZ));
 }
 
+function tug(x, z, ry, L) {   // small tug / work boat
+  withFrame(x, 0, z, ry, () => {
+    const b = L * .17, sh = new THREE.Shape();
+    sh.moveTo(-b, -L / 2); sh.lineTo(b, -L / 2); sh.lineTo(b, L / 2 - L * .3); sh.quadraticCurveTo(b, L / 2 - L * .05, 0, L / 2); sh.quadraticCurveTo(-b, L / 2 - L * .05, -b, L / 2 - L * .3); sh.lineTo(-b, -L / 2);
+    const g = new THREE.ExtrudeGeometry(sh, { depth: 4, bevelEnabled: false, curveSegments: 6 }); g.rotateX(-Math.PI / 2);
+    put('port_hull', g, M4(0, -3.2, 0));
+    box('tire', b * 2.1, .5, L * .8, 0, .2, L * .05);
+    box('paintW', b * 1.2, 2.6, L * .25, 0, 2.1, L * .05); box('win', b * 1.22, .7, L * .25 + .02, 0, 2.9, L * .05);
+    box('port_red', 1.1, 2.2, 1.1, 0, 4.4, L * .2); box('steel', 1.15, .4, 1.15, 0, 5.6, L * .2);
+    strut('steel', [0, 3.4, -L * .02], [0, 7, -L * .02], .08, 4);
+  });
+}
+
 function plaza() {
-  // worn yellow lines + mast circle
-  const ln = (x1, z1, x2, z2) => { const dx = x2 - x1, dz = z2 - z1; box('lineY', Math.hypot(dx, dz), .02, .2, (x1 + x2) / 2, G + .01, (z1 + z2) / 2, K.ang(dx, dz)); };
-  ln(206, 218, 292, 218); ln(206, 243, 292, 243); ln(206, 225, 236, 225); ln(264, 240, 292, 240);
-  for (let x = 210; x < 290; x += 6) if (Math.abs(x - MX) > 7) box('lineW', 2.6, .02, .16, x, G + .01, GZ);
+  // worn yellow lane lines, loading boxes, hatching, arrows; worn white centre dashes + stop bar
+  worn(204, 217.6, 294, 217.6); worn(204, 243.6, 294, 243.6); worn(204, 225.5, 236, 225.5); worn(264, 239.8, 294, 239.8);
+  for (const [x0, z0, x1, z1, hatch] of [[208, 220, 222, 228, 1], [266, 221, 292, 227, 0], [210, 236, 232, 242, 0], [240, 236.5, 258, 242, 1], [270, 234.5, 282, 238.2, 0]]) {
+    rect(x0, z0, x1, z1);
+    if (hatch) for (let x = x0 + 1.5; x < x1 - 1; x += 2.2) ln(x, z0 + .3, Math.min(x + (z1 - z0) * .6, x1 - .3), z1 - .3, 'lineY', .14);
+  }
+  for (let x = 210; x < 292; x += 6) if (Math.abs(x - MX) > 7) box('lineW', 2.6, .02, .16, x, G + .012, GZ);
+  ln(204.5, GZ - 4.5, 204.5, GZ + 4.5, 'lineW', .45);
+  for (const [x, z, dx] of [[214, GZ - 2, 1], [228, GZ + 2, -1], [278, GZ - 2, 1], [288, GZ + 2, 1], [262, 219.5, -1], [236, 241.5, 1]]) arrowY(x, z, dx, 0);
   K.torus('lineY', 4, .07, Math.PI * 2, MX, G, MZ, Math.PI / 2, 0, 0, 48);
   K.torus('lineY', 7, .05, Math.PI * 1.4, MX, G, MZ, Math.PI / 2, 0, .4, 40);
-  // the camera mast
-  cyl('concD', 1.5, .5, MX, G + .25, MZ, 0, 0, 0, 16); cyl('steel', .9, .5, MX, G + .75, MZ, 0, 0, 0, 16, .5);
-  cyl('steel', .26, 9, MX, G + 5.4, MZ, 0, 0, 0, 12, .2);
-  cyl('steelL', .45, .3, MX, G + 4.5, MZ, 0, 0, 0, 12); sph('port_chrome', .62, MX, G + 5.25, MZ);
-  cyl('steelL', .4, .25, MX, G + 9.8, MZ, 0, 0, 0, 12);
-  box('port_head', 2.5, 1.8, 1.8, MX, G + 10.9, MZ); box('steelL', 2.7, .15, 2, MX, G + 11.85, MZ);
-  box('glowC', 2.52, .12, 1.82, MX, G + 10.4, MZ); box('steel', .6, .5, .05, MX + .8, G + 10.9, MZ + .92);
-  for (const [a, b, h] of [[-.9, -.6, 1.6], [.9, .6, 1.1], [0, .7, .8]]) strut('steel', [MX + a, G + 11.9, MZ + b], [MX + a, G + 11.9 + h, MZ + b], .03, 4);
-  sph('steelL', .22, MX - .4, G + 12.2, MZ - .5); box('redS', .1, .1, .1, MX + .9, G + 13.05, MZ + .6);
-  K.pool(MX, MZ, 10, false, G);
-  K.addSpot(0xdcecff, 1200, 60, 1.0, .6, new THREE.Vector3(MX, G + 10, MZ), new THREE.Vector3(MX, 0, MZ));   // real light #2
+  // the camera mast: squat plinth, thick pole, r≈1 chrome sphere, big light-grey head unit with a darker frame
+  cyl('concD', 1.8, .8, MX, G + .4, MZ, 0, 0, 0, 16); cyl('steel', 1.0, .45, MX, G + 1.02, MZ, 0, 0, 0, 16, .6);
+  cyl('steel', .38, 10.4, MX, G + 6.4, MZ, 0, 0, 0, 12, .3);
+  for (const y of [4.45, 6.75]) cyl('steelL', .58, .3, MX, G + y, MZ, 0, 0, 0, 12);
+  sph('port_chrome', 1.0, MX, G + 5.6, MZ);
+  cyl('steelL', .65, .5, MX, G + 11.3, MZ, 0, 0, 0, 12);
+  const hy = G + 12.9;
+  box('port_head', 3.5, 2.6, 2.6, MX, hy, MZ);
+  box('steel', 3.7, .18, 2.8, MX, hy + 1.35, MZ); box('steel', 3.7, .18, 2.8, MX, hy - 1.35, MZ);
+  for (const a of [-1, 1]) for (const b of [-1, 1]) { box('steel', .16, 2.7, .16, MX + a * 1.76, hy, MZ + b * 1.31); box('glowY', .16, .16, .16, MX + a * 1.76, hy + 1.52, MZ + b * 1.31); }
+  box('glowC', 3.52, .14, 2.62, MX, hy - .5, MZ);
+  for (const s of [-1, 1]) { box('steelL', .9, .6, .3, MX + s * .9, hy + .25, MZ + s * 1.45); box('pipeD', .7, .4, .4, MX + 1.9, hy - .2, MZ + s * .7); }
+  for (const [a, b, h] of [[-1.3, -.9, 2.2], [1.3, .9, 1.5], [.3, -.9, 1], [-.6, .8, .7]]) strut('steelL', [MX + a, hy + 1.44, MZ + b], [MX + a, hy + 1.44 + h, MZ + b], .035, 4);
+  box('steelL', .9, .5, .9, MX - .2, hy + 1.7, MZ); box('redS', .12, .12, .12, MX - 1.3, hy + 3.7, MZ - .9);
+  K.pool(MX, MZ, 11, false, G);
+  K.addSpot(0xdcecff, 1200, 60, 1.0, .6, new THREE.Vector3(MX, hy - 1.5, MZ), new THREE.Vector3(MX, 0, MZ));   // real light #2
   // loose plaza pieces: green + white pair at the north edge with crates, a lone low pair near the back
-  ctr('contG', L40, 251, G, 217.4, 0, 2); ctr('port_cS', L40, 251, G, 219.9, 0, 2);
+  ctr('port_cG', L40, 251, G, 217.4, 0, 2); ctr('port_cS', L40, 251, G, 219.9, 0, 2);
   crates(243, 222, 4); crates(259, 222.5, 3); crates(211, 239, 3); crates(287, 226, 4);
-  ctr('port_cW', L20, 284, G, 238.5, .2, 2); ctr('contB', L20, 286, G, 241.3, .25, 2);
+  ctr('port_cW', L20, 284, G, 238.5, .2, 2); ctr('port_cB', L20, 286, G, 241.3, .25, 2);
   forklift(232, 238, .5); forklift(272, 228, 2.4, 'paint');
   for (let i = 0; i < 5; i++) cone(225 + i * 1.6, 230 + (i % 2) * .4);
   K.generator(266, 241.5, 0);
@@ -318,8 +437,8 @@ function northBlock() {
     if (c <= 2) return q >= 10 ? 2 : 3;
     return q >= 9 ? 3 : 4;
   };
-  const front = ['port_cW', 'port_cW', 'port_cT', 'contR', 'contB', 'port_cBB', 'port_cRB'];
-  const corner = ['contG', 'contR', 'contB', 'port_cW'];
+  const front = ['port_cW', 'port_cW', 'port_cT', 'port_cR', 'port_cB', 'port_cBB', 'port_cRB'];
+  const corner = ['port_cG', 'port_cR', 'port_cB', 'port_cW'];
   blockGrid(204.5, 182.5, 7, 13, 'x', L40, H, (c, q, k) => c === 6 && q <= 3 ? corner[(k + q) % 4] : c <= 2 ? pick(front) : col());
   const zf = 182.5 + 13 * 2.5 - .03, xm = 204.5 + 3 * 12.25 - .03, xe = 204.5 + 7 * 12.25 - .03, y2 = G + 2 * CH, y3 = G + 3 * CH, y4 = G + 4 * CH;
   // terrace edge railings
@@ -332,16 +451,25 @@ function northBlock() {
   faceStair(268, zf, 1, G, y3);
   K.stairs(262, 208.9, 0, -1, y3, y4, 1.6);
   rail(241.4, 205.05 - .05, xe - .1, 205.05 - .05, y4);
-  // roof clutter
-  K.acUnit(276, y4, 192, 0); K.acUnit(252, y4, 186, Math.PI / 2); crates(218, 196, 3, y3); crates(284, 210, 2, y3);
-  box('port_tarp', 6.4, 1.2, 2.8, 236, y3 + .6, 188);
+  // more access: north alley → front 3-high, front 3-high → 4-high
+  faceStair(210, 182.5 - .03, -1, G, y3);
+  K.stairs(237.3, 195, 1, 0, y3, y4, 1.6);
+  // rooftop walkways, cable trays, equipment, tarps, crates, AC units
+  K.catwalk(206, 190.5, 236.5, 190.5, y3 + .05, 2, { legs: 'none', lights: false });
+  K.catwalk(243, 198.5, 276, 198.5, y4 + .05, 2, { legs: 'none', lights: false });
+  K.catwalk(244, 209, 262, 209, y3 + .05, 2, { legs: 'none', lights: false });
+  tray(206, 187.2, 220, 187.2, y3); tray(225, 187.2, 238, 187.2, y3); tray(222, 193, 222, 206, y3); tray(243, 184.2, 276, 184.2, y4); tray(280.5, 194, 280.5, 204, y4);
+  K.acUnit(276, y4, 192, 0); K.acUnit(252, y4, 186, Math.PI / 2); K.acUnit(212, y3, 204, 0); K.acUnit(287, y3, 212, Math.PI / 2);
+  crates(218, 196, 3, y3); crates(284, 210, 2, y3); crates(266, 203, 2, y4); crates(232, 212, 2, y2);
+  for (const [x, y, z, a] of [[228, y3, 186.5, 0], [233, y3, 202, .3], [258, y4, 203, 0], [271, y4, 190, 1.57], [285, G + 5 * CH, 186, 0], [250, y3, 212.5, 0], [209, y2, 210.5, 0]]) eqBox(x, y, z, a);
+  tarp(236, y3, 188, 6.4, 2.8); tarp(268, y4, 202.5, 5, 3.2); tarp(208, y2, 213, 3.4, 2.4);
   // edge clutter at the stack bases
   crates(208, 178.5, 3); crates(262, 178, 2); ubox(232, 179.5); K.gasCylinders(270, 179.5);
 }
 
 function backRow() {
   // x 297..309: 40ft laid east-west, side by side along z, 2–3 high, second arch at the gate axis
-  const x0 = 297, gap0 = GZ - 3.5, gap1 = GZ + 3.5, BC = ['contR', 'contB', 'port_cW', 'port_cY', 'port_cBB', 'port_cRB', 'port_cS'];
+  const x0 = 297, gap0 = GZ - 3.5, gap1 = GZ + 3.5, BC = ['port_cR', 'port_cB', 'port_cW', 'port_cY', 'port_cBB', 'port_cRB', 'port_cS'];
   const n1 = 18, z1 = gap0 - n1 * 2.5, n2 = Math.floor((300 - gap1) / 2.5);
   const t1 = Array.from({ length: n1 }, (_, q) => q >= n1 - 2 ? 2 : 2 + (r() < .55 ? 1 : 0));
   const t2 = Array.from({ length: n2 }, (_, q) => q < 2 ? 2 : 2 + (r() < .55 ? 1 : 0));
@@ -364,16 +492,21 @@ function southBlock() {
   blockGrid(211, 259.5, 6, 3, 'x', L40, (c, q) => c === 2 && q === 2 ? 1 : 2);
   ctr('port_cRB', L40, 250, y2, 256, Math.PI / 2, 2);
   K.acUnit(225, y2, 262, 0); K.acUnit(270, y2, 264.5, Math.PI); crates(238, 264, 3, y2); crates(281, 261, 2, y2);
+  faceStair(228, 259.5 - .03, -1, G, y2);
+  tray(212, 246, 266, 246, y2); tray(274, 246, 284, 246, y2); tray(256, 266, 283, 266, y2);
+  for (const [x, z, a] of [[216, 251.3, 0], [241, 251.3, .2], [262, 251.1, 0], [282, 251.3, 0], [217, 265.5, 1.57], [260, 262, 0]]) eqBox(x, y2, z, a);
+  tarp(276, y2, 262.5, 6, 2.8);
   for (let x = 216; x < 282; x += 11) cone(x, 256 + (r() - .5) * 3);
   crates(214, 255, 2); forklift(276, 256.5, Math.PI);
   // interior yard
-  withFrame(226, G, 276, .05, () => { box('contB', L40, CH, CW, 0, CH / 2, 0); box('port_tarp', 12.6, .25, 3.1, 0, CH + .12, 0); box('port_tarp', 12.6, 1.8, .08, 0, CH - .8, 1.55); box('port_tarp', 12.6, 1.8, .08, 0, CH - .8, -1.55); });
+  withFrame(226, G, 276, .05, () => { box('port_cB', L40, CH, CW, 0, CH / 2, 0); box('port_tarp', 12.6, .25, 3.1, 0, CH + .12, 0); box('port_tarp', 12.6, 1.8, .08, 0, CH - .8, 1.55); box('port_tarp', 12.6, 1.8, .08, 0, CH - .8, -1.55); });
   blockGrid(244, 270.5, 2, 2, 'x', L40, (c, q) => 1 + ((c + q) % 2), col, 2);
   ctr('port_cW', L20, 276, G, 278, Math.PI / 2, 2); ctr('port_cW', L20, 276, G + CH, 278, Math.PI / 2, 2);
-  booth(286, 270, Math.PI); K.generator(212, 281, 0); crates(271, 267.5, 3); crates(214, 270, 3);
+  booth(286, 270, Math.PI); K.generator(216, 280, 0); crates(271, 267.5, 3); crates(214, 270, 3);
   stacker(230, 280.5, 0, false);
   // outermost south stacks: 3 high red/white/blue
-  blockGrid(205, 285, 7, 6, 'x', L40, (c, q) => q === 0 && c % 3 === 1 ? 2 : 3, () => pick(RWB));
+  const RW = ['port_cR', 'port_cR2', 'port_cRB', 'port_cW', 'port_cW2'];
+  blockGrid(212, 285, 6, 6, 'x', L40, (c, q) => c <= 1 && q >= 2 ? 4 : q === 0 && c % 3 === 1 ? 2 : 3, (c) => c <= 1 ? pick(RW) : pick(RWB));
   crates(291, 280, 3);
 }
 
@@ -407,7 +540,10 @@ function perimeterRoad() {
   K.chainFence(196, 301, 310, 301, G, 2.5);
   for (let x = 200; x < 310; x += 4.5) bollard(x, 302.2);
   for (const x of [208, 236, 259, 283]) K.cabinet(x, G, 300.2, Math.PI);
-  for (const x of [200, 222, 244, 266, 312]) fmast(x, 303.2, 28, x - 2, 280);
+  for (const x of [200, 222, 244, 266, 312]) fmast(x, 303.2, 36, x - 2, 280, { rows: 2, cols: 3, rad: .32 });
+  // short street lamps on the quays
+  for (const z of [40, 87, 137, 195, 220, 245, 270, 292]) K.lamp(328.6, z, 7, { dir: -Math.PI / 2, spot: false, y0: G });
+  for (const x of [110, 140, 170, 200, 230, 260, 315]) K.lamp(x, 327.6, 7, { dir: Math.PI, spot: false, y0: G });
   fmast(293, 180, 30, 262, 205);
 }
 
@@ -430,12 +566,14 @@ function sea() {
   K.setZone('port_sea');
   for (const x of [304, 326]) box('steelL', .3, .16, 160, x, G + .08, 110);
   for (const z of [304, 326]) box('steelL', 70, .16, .3, 290, G + .08, z);
-  crane(326, 62, 0, { span: 22, trolley: 38 });
+  crane(326, 62, 0, { span: 22, trolley: 14 });
   crane(326, 112, 0, { span: 22, trolley: 30 });
   crane(326, 162, 0, { span: 22, raise: 1.25 });
   crane(290, 326, -Math.PI / 2, { span: 22, trolley: 26 });
-  ship(363, 120, 150, 30, 330);
-  ship(368, 262, 100, 26, 330);
+  ship(440, 120, 150, 30, 0);
+  ship(456, 268, 100, 26, 0);
+  ship(640, 70, 64, 13, 0);
+  tug(395, 210, .5, 24); tug(530, 190, -.9, 22); tug(560, 330, 1.3, 20); tug(505, 25, .2, 26);
   K.setZone('port');
 }
 
@@ -449,5 +587,5 @@ export function build(ctx, d) {
   box('port_slab', 240, .06, 303, 210, .03, 177);
   frontEdge(); plaza(); northBlock(); backRow(); southBlock();
   frontRoad(); perimeterRoad(); northYard(); sea();
-  ctx.pois.push({ id: d.id, cam: [120, 70, 290], tgt: [255, 0, 235], spawn: [181, G + .1, GZ], yaw: -Math.PI / 2 });
+  ctx.pois.push({ id: d.id, cam: [118, 52, 262], tgt: [268, 0, 228], spawn: [181, G + .1, GZ], yaw: -Math.PI / 2 });
 }
