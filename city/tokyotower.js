@@ -351,6 +351,6 @@ export function build(ctx, d) {
     const dH = bld(ctx, 80, -123, 24, 24, 92, r, Math.PI / 2); card(ctx, 'K', 'D', 21, 67.8, dH * .62, -123, -Math.PI / 2);
   });
   ctx.updates.push((dt) => { waterN.offset.x += dt * .006; waterN.offset.y += dt * .004; });
-  ctx.dayNight.push((day) => { K.mats.tt_or.emissiveIntensity = day ? 0 : .35; K.mats.tt_wh.emissiveIntensity = day ? 0 : .12; });
+  ctx.dayNight.push((day) => { K.mats.tt_or.emissiveIntensity = day ? 0 : .2; K.mats.tt_wh.emissiveIntensity = day ? 0 : .08; });
   ctx.pois.push({ id: d.id, cam: [d.x - 260, 165, d.z + 40], tgt: [d.x + 30, 45, d.z - 5], spawn: [d.x - 10, TB + .06, d.z + 19], yaw: 0 });
 }

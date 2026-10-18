@@ -389,7 +389,7 @@ const cityTex = canvasTex(2048, 256, (g, w, h) => {
   const gr = g.createLinearGradient(0, h - 60, 0, h); gr.addColorStop(0, 'rgba(70,90,130,0)'); gr.addColorStop(1, 'rgba(70,90,130,.35)'); g.fillStyle = gr; g.fillRect(0, h - 60, w, 60);
 });
 cityTex.wrapS = THREE.RepeatWrapping; cityTex.repeat.set(2, 1);
-const city = new THREE.Mesh(new THREE.CylinderGeometry(3600, 3600, 900, 64, 1, true), new THREE.MeshBasicMaterial({ map: cityTex, side: THREE.BackSide, fog: false, transparent: true, color: new THREE.Color(.8, .85, 1) }));
+const city = new THREE.Mesh(new THREE.CylinderGeometry(3600, 3600, 900, 64, 1, true), new THREE.MeshBasicMaterial({ map: cityTex, side: THREE.BackSide, fog: false, transparent: true, color: new THREE.Color(.38, .42, .52) }));   // dim: the city has no power
 city.position.set(-650, 380, -350); scene.add(city);
 
 /* ───────────── the rest of the city (districts in city/*.js) ───────────── */

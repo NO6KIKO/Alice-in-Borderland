@@ -98,10 +98,15 @@ export function hunt(ctx) {
   /* ── after-rain wet crossing: a low-res mirror under the asphalt, shown through the puddle mask at night ── */
   const wet = new Reflector(new THREE.PlaneGeometry(260, 230), { textureWidth: 512, textureHeight: 512, color: 0x8a96a6, clipBias: .003 });
   wet.rotation.x = -Math.PI / 2; wet.position.set(-980, .035, 190); wet.visible = false; scene.add(wet);
-  let night = false;
+  let night = false, puddleMask = null;
   ctx.dayNight.push((day) => {
     night = !day; const m = K.mats.shib_road; if (!m) return;
-    m.alphaMap = day ? null : m.roughnessMap; m.transparent = !day; m.needsUpdate = true;
+    if (!puddleMask && m.roughnessMap?.image) {   // high-contrast copy of the puddle map: dry asphalt opaque, puddles see-through
+      const src = m.roughnessMap.image, c = document.createElement('canvas'); c.width = src.width; c.height = src.height;
+      const g = c.getContext('2d'); g.filter = 'brightness(1.45) contrast(2.2)'; g.drawImage(src, 0, 0);
+      puddleMask = new THREE.CanvasTexture(c); puddleMask.wrapS = puddleMask.wrapT = THREE.RepeatWrapping; puddleMask.repeat.copy(m.roughnessMap.repeat);
+    }
+    m.alphaMap = day ? null : puddleMask; m.transparent = !day; m.needsUpdate = true;
   });
 
   /* ── people ── */
