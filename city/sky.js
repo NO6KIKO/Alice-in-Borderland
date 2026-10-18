@@ -28,7 +28,7 @@ export function createDayNight({ scene, renderer, hemi, moon, bloom, spots, nigh
   const sc = sun.shadow.camera; sc.left = sc.bottom = -220; sc.right = sc.top = 220; sc.near = 10; sc.far = 1400;
   sun.shadow.bias = -.0004; sun.shadow.normalBias = .6;
   scene.add(sun, sun.target);
-  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; renderer.shadowMap.autoUpdate = false;   // main.js flags one update per frame
 
   // cloud deck: fbm-noise alpha texture on a huge plane high above the city, drifting slowly
   const cloudTex = (() => {

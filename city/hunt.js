@@ -108,7 +108,7 @@ export function hunt(ctx) {
   // the venue's cold white floodlight from high above the scramble (night only) — the people read as silhouettes against it
   const flood = new THREE.SpotLight(0xdfe9ff, 0, 140, .6, .9, 1.2); flood.position.set(C.x + 18, 48, C.z - 12); flood.target.position.copy(C);
   flood.castShadow = true; flood.shadow.mapSize.set(1024, 1024); flood.shadow.bias = -.0005; scene.add(flood, flood.target);
-  ctx.dayNight.push((day) => { flood.intensity = day ? 0 : 260; });   // soft key light, not a stadium
+  ctx.dayNight.push((day) => { flood.intensity = day ? 0 : 260; flood.visible = !day; });   // hidden by day → no shadow pass   // soft key light, not a stadium
   ctx.dayNight.push((day, dusk) => {
     const wetLook = !day || dusk; night = wetLook; const m = K.mats.shib_road; if (!m) return;   // wet after rain: dusk + night
     if (!puddleMask && m.roughnessMap?.image) {   // high-contrast copy of the puddle map: dry asphalt opaque, puddles see-through
@@ -146,7 +146,7 @@ export function hunt(ctx) {
   function spawn() {
     for (const a of actors) {
       const g = lib.get(a.id); if (!g) continue;
-      const o = cloneSkinned(g.scene); o.traverse((c) => { if (c.isMesh) { c.frustumCulled = false; c.castShadow = true; } });
+      const o = cloneSkinned(g.scene); o.traverse((c) => { if (c.isMesh) { c.castShadow = true; c.geometry.computeBoundingSphere(); c.boundingSphere = c.geometry.boundingSphere.clone(); c.boundingSphere.radius *= 1.4; } });   // cull on the bind-pose sphere (skeleton not posed at first cull)
       const body = new THREE.Group(); o.rotation.y = -Math.PI / 2; body.add(o);   // Tripo characters face +X → +Z
       const h = new THREE.Group(); h.add(body); root.add(h);
       const mx = new THREE.AnimationMixer(o), clip = g.animations.find((c) => c.name === a.clip) || g.animations[0];

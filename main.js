@@ -558,7 +558,7 @@ Promise.all(['guard', 'hivis', 'player_m', 'player_f'].map((n, i) => loadOr(`./m
   const lib = { Soldier: guard, Xbot: hivis, pm, pf };
   const spawn = (name, clipName) => {
     const g = lib[name], o = cloneSkinned(g.scene);
-    o.traverse((c) => { if (c.isMesh) { c.frustumCulled = false; c.castShadow = true; } });
+    o.traverse((c) => { if (c.isMesh) { c.castShadow = true; c.geometry.computeBoundingSphere(); c.boundingSphere = c.geometry.boundingSphere.clone(); c.boundingSphere.radius *= 1.4; } });   // cull on the bind-pose sphere
     const root = new THREE.Group(); root.add(o); scene.add(root); charRoots.push(root);
     o.rotation.y = g.scene.getObjectByName('mixamorigHips') ? (name === 'Soldier' ? Math.PI : 0) : -Math.PI / 2;   // Tripo faces +X, Soldier −Z, Xbot +Z
     const clip = g.animations.find((c) => c.name.toLowerCase() === clipName.toLowerCase()) || g.animations.find((c) => /idle/i.test(c.name)) || g.animations[0];
@@ -647,6 +647,7 @@ const clock = new THREE.Clock(), up = new THREE.Vector3(0, 1, 0);
 const foliageMeshes = [...zoneMeshes.values()].flat().filter((m) => /^det_|\|(crown|ivy|leaf|trunk)/.test(m.name));   // + building detail zones
 let cullT = 0;
 let lastT = 0;
+const BG_LOOP = new URLSearchParams(location.search).has('bg');   // dev: keep ticking in a hidden / background tab (timer loop)
 const prof = window.__prof = { js: 0, render: 0 };
 function tick() {
   const t0 = performance.now();
@@ -664,6 +665,7 @@ function tick() {
   if (!dayNight.isDay) refl.visible = Math.hypot(camera.position.x, camera.position.z) < 650;   // the wet-ground mirror re-renders the whole scene: only near the compound
   if ((cullT -= dt) < 0) {   // foliage / ivy beyond ~700 m is lost in haze — skip drawing it
     cullT = .4;
+    gtao.enabled = hiQ && camera.position.y < 90;   // street-scale AO is invisible from the air — skip its extra scene pass
     for (const o of charRoots) o.visible = camera.position.distanceTo(o.position) < 260;
     for (const m of foliageMeshes) { const bs = m.geometry.boundingSphere; m.visible = camera.position.distanceTo(bs.center) - bs.radius < (m.name.startsWith('det_') ? 320 : 700); }
   }
@@ -674,9 +676,10 @@ function tick() {
   grade.update(t, innerWidth, innerHeight);
   if (dof.enabled) dof.uniforms.focus.value = player.active ? 6 : camera.position.distanceTo(controls.target);
   audio.update(dt, camera, huntState.centre, huntState.firing);
+  renderer.shadowMap.needsUpdate = true;   // shadows once per frame, not once per post pass (GTAO re-renders the scene)
   if (innerWidth > 0 && innerHeight > 0) composer.render();   // hidden pane → zero-size targets
   prof.render = prof.render * .9 + (performance.now() - tr) * .1; prof.js = prof.js * .9 + (tr - t0) * .1;
-  requestAnimationFrame(tick);
+  if (BG_LOOP) setTimeout(tick, 33); else requestAnimationFrame(tick);
 }
 tick();
 document.getElementById('load').style.opacity = 0; setTimeout(() => document.getElementById('load').remove(), 700);
