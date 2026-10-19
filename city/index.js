@@ -22,7 +22,8 @@ import { streetSegment, intersection, scatterDecay } from './street.js';
 import { hunt } from './hunt.js';
 import { atmosphere } from './atmos.js';
 import { birds } from './birds.js';
-import { realBuildings } from './realbldg.js';
+import { realBuildings, FRN } from './realbldg.js';
+import { takeshiba } from './takeshiba.js';
 import shibuyaGround from '../models/real/shibuya_bldg_ground.js';
 import towerGround from '../models/real/tokyotower_bldg_ground.js';
 
@@ -391,8 +392,11 @@ export function buildCity({ scene, camera, highways = [] }) {
   // real Tokyo around the hero districts (PLATEAU LOD2, city/realbldg.js): the grid's roads and filler blocks give way
   // there; ref = where the real reference point (the scramble / Tokyo Tower) sits in the map
   const REAL = [
-    { file: './models/real/shibuya_bldg.glb', ref: [-990, 220], rect: [-1350, -120, -700, 420], ground: shibuyaGround },
+    { file: './models/real/shibuya_bldg.glb', ref: [-990, 220], rect: [-1350, -120, -700, 420], ground: shibuyaGround, frn: './models/real/shibuya_frn.glb' },
     { file: './models/real/tokyotower_bldg.glb', ref: [-520, 30], rect: [-700, -130, -250, 340], ground: towerGround },
+    // Port City Takeshiba (PLATEAU LOD4, city/takeshiba.js) on the bay side between Tokyo Tower and the compound, by the
+    // expressway as in reality; squared to the grid and turned so its long side runs north–south, on a concrete plaza
+    { site: () => takeshiba(ctx, -204.35, 17.05, Math.PI / 2), rect: [-245, -66, -140, 128], pave: 'walk' },
   ];
   const inReal = (x, z, pad = 0) => REAL.some(({ rect: r }) => x > r[0] - pad && x < r[2] + pad && z > r[1] - pad && z < r[3] + pad);
   const roadOK = (x, z) => onLand(x, z) && !inDistrict(x, z, -6) && !nearCompound(x, z) && !inReal(x, z, ROAD_W / 2);
@@ -432,8 +436,8 @@ export function buildCity({ scene, camera, highways = [] }) {
     const corners = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([a, b]) => [cx + a * inner / 2, cz + b * inner / 2]);
     if (!corners.every(([x, z]) => onLand(x, z))) continue;
     if (inDistrict(cx, cz, inner / 2 - 4) || corners.some(([x, z]) => inDistrict(x, z, 2))) continue;
-    if (nearCompound(cx, cz, inner / 2)) { if (!underExpress(cx, cz, inner / 2)) parkingLot(cx, cz, inner, R); continue; }   // the compound's apron: abandoned car parks
     if (inReal(cx, cz, inner / 2)) continue;   // real buildings stand here
+    if (nearCompound(cx, cz, inner / 2)) { if (!underExpress(cx, cz, inner / 2)) parkingLot(cx, cz, inner, R); continue; }   // the compound's apron: abandoned car parks
     const park = R() < .07;
     if (!park && R() < .08) {   // a tiny shrine squeezed between buildings on the block's edge
       const sx = cx + (R() - .5) * (inner - 20), sz = cz + inner / 2 - 4; prop('torii', sx, .12, sz, Math.PI / 2); tree(sx - 2.5, sz - 2, .8, .12); tree(sx + 2.5, sz - 2.5, .9, .12);
@@ -478,7 +482,7 @@ export function buildCity({ scene, camera, highways = [] }) {
   try { birds(ctx); } catch (e) { console.error('birds failed', e); }
   // asphalt between the real buildings (Tokyo back streets have no kerbs), laid around the hand-built districts
   setZone('real_ground');
-  for (const { file, ref, rect, ground } of REAL) {
+  for (const { file, ref, rect, ground, frn, site, pave = 'road' } of REAL) {
     let pieces = [rect];
     for (const d of map.DISTRICTS) {
       const h = [d.x - d.w / 2, d.z - d.d / 2, d.x + d.w / 2, d.z + d.d / 2], next = [];
@@ -490,7 +494,8 @@ export function buildCity({ scene, camera, highways = [] }) {
       }
       pieces = next;
     }
-    for (const [a, b, c, e] of pieces) if (c - a > 1 && e - b > 1) box('road', c - a, .06, e - b, (a + c) / 2, .03, (b + e) / 2);
+    for (const [a, b, c, e] of pieces) if (c - a > 1 && e - b > 1) box(pave, c - a, .06, e - b, (a + c) / 2, .03, (b + e) / 2);
+    if (site) { ctx.pending.push(site()); continue; }
     // the real open space (tools/citygml_lod2.mjs): parks and empty ground run wild, cleared sites are coin parking
     for (const [a, b, c, e] of ground.lots) box('lot', c - a, .1, e - b, (a + c) / 2, .05, (b + e) / 2);
     for (const [a, b, c, e] of ground.lawns) {
@@ -499,6 +504,7 @@ export function buildCity({ scene, camera, highways = [] }) {
     }
     for (const [x, z, s] of ground.trees) tree(x, z, s, .14);
     ctx.pending.push(realBuildings(ctx, file, ref[0], ref[1]));
+    if (frn) ctx.pending.push(realBuildings(ctx, frn, 0, 0, 0, FRN));   // real street furniture (map metres)
   }
   setZone('express');
   { const tr = K.rng(8088);   // the compound's elevated highways: a frozen jam, as everyone vanished at once

@@ -28,6 +28,24 @@ buildings flattened onto one ground level and trimmed around the hand-built dist
 project's procedural materials, parapets / rooftop plant / open-space lawns derived procedurally
 (`tools/citygml_lod2.mjs`, `city/realbldg.js`). MLIT did not produce or endorse this modified result.
 
+The real street furniture north and east of the scramble (`models/real/shibuya_frn.glb`: poles, street lights,
+signals, signs, subway entrances, bus stops, fences, road paint, manholes, tactile paving) is converted from PLATEAU
+都市設備モデル (`frn:CityFurniture`, LOD3, mesh 53393596) of the same Shibuya FY2025 dataset — set down onto this game's
+flat ground with a terrain estimate from the road paint and building bases, classed into this project's street
+materials (`tools/citygml_frn.mjs`). MLIT did not produce or endorse this modified result.
+
+Port City Takeshiba (`models/real/takeshiba.glb`) is converted from PLATEAU's BIM-derived LOD4 building model:
+
+出典：「3D都市モデル（Project PLATEAU）東京都23区 LOD4（ポートシティ竹芝）」（国土交通省）
+https://www.geospatial.jp/ckan/dataset/plateau-tokyo23ku-2023-lod4 を加工して作成
+
+Source: "3D City Model (Project PLATEAU) Tokyo 23 wards LOD4 (Port City Takeshiba)", MLIT, Japan — PLATEAU Site
+Policy §3 (compatible with CC BY 4.0). Modified: reprojected to local metres and squared to the game grid, exterior
+surfaces classed by their BIM element names, interiors kept for the street-level floors only, upper-tower glazing
+reduced to its outward faces, some street-level panes removed (`tools/citygml_lod4.mjs`, `city/takeshiba.js`). MLIT
+did not produce or endorse this modified result. (The separate "sample-takeshiba" PLATEAU dataset carries no licence
+and is not used.)
+
 ## Visual reference only (not redistributed)
 
 - Tokyo Film Commission "Tokyo Location Box" (https://www.locationbox.metro.tokyo.lg.jp/) — photos used only as

@@ -8,7 +8,8 @@
 // UVs are in metres: walls u = along the wall, v = height above the base; roofs u = x, v = z.
 // It also writes <out>_ground.js for city/index.js: real open space (parks, plazas, empty lots) as lawn rectangles with
 // trees, found by a morphological opening of the space between the footprints; everything else stays asphalt.
-// Usage: node tools/citygml_lod2.mjs <out.glb> <lat0> <lon0> <refX,refZ> <x0,z0,x1,z1> -- <gml> [<gml> ...]
+// Usage: node tools/citygml_lod2.mjs <out.glb> <lat0> <lon0> <refX,refZ> <x0,z0,x1,z1> -- <gml> [<gml> ...] [++ <frn.gml> ...]
+//   (street-furniture files are road evidence: no lawn within 8 m of road paint, signals or street lights)
 //   (lat0, lon0) lands on map point ref; the rect (map metres) is the real zone. Buildings must lie inside it, on land
 //   and clear of the hand-built districts of city/map.js.
 import fs from 'node:fs';
@@ -16,7 +17,7 @@ import * as THREE from 'three';
 import { Document, NodeIO } from '@gltf-transform/core';
 
 const argv = process.argv.slice(2), dd = argv.indexOf('--');
-const [out, lat0s, lon0s, refS, rectS] = argv.slice(0, dd), files = argv.slice(dd + 1);
+const [out, lat0s, lon0s, refS, rectS] = argv.slice(0, dd), pp = argv.indexOf('++'), files = argv.slice(dd + 1, pp < 0 ? undefined : pp), frnFiles = pp < 0 ? [] : argv.slice(pp + 1);
 const [RX, RZ] = refS.split(',').map(Number), rect = rectS.split(',').map(Number);
 const { DISTRICTS, onLand } = await import('data:text/javascript,' + encodeURIComponent(fs.readFileSync(new URL('../city/map.js', import.meta.url), 'utf8')));
 const inDist = (x0, z0, x1, z1, pad) => DISTRICTS.some((d) => x1 > d.x - d.w / 2 - pad && x0 < d.x + d.w / 2 + pad && z1 > d.z - d.d / 2 - pad && z0 < d.z + d.d / 2 + pad);
@@ -167,6 +168,13 @@ for (const [cls, { p, uv }] of groups) {
 }
 await new NodeIO().write(out, doc);
 
+// road evidence (4): around real road paint, signals and street lights the open space is a street, not a park
+for (const f of frnFiles) for (const m of fs.readFileSync(f, 'utf8').matchAll(/<frn:CityFurniture gml:id="[^"]*">([\s\S]*?)<\/frn:CityFurniture>/g)) {
+  const fn = +((m[1].match(/<frn:function[^>]*>(\d+)</) || [])[1] || 0); if (!(fn >= 1000 && fn <= 1200 || fn === 4200 || fn === 4900)) continue;
+  for (const pl of m[1].matchAll(/<gml:posList[^>]*>([^<]*)<\/gml:posList>/g)) { const v = pl[1].trim().split(/\s+/).map(Number);
+    for (let i = 0; i + 2 < v.length; i += 9) { const [x, , z] = local(v[i], v[i + 1], v[i + 2]), ci = Math.floor((x + RX - rect[0]) / CS), cj = Math.floor((z + RZ - rect[1]) / CS);
+      for (let dj = -4; dj <= 4; dj++) for (let di = -4; di <= 4; di++) { const a = ci + di, b = cj + dj; if (a >= 0 && b >= 0 && a < GW && b < GH && di * di + dj * dj <= 16 && !grid[b * GW + a]) grid[b * GW + a] = 4; } } }
+}
 // ground: chamfer distance to the nearest obstacle; open cores (≥ R from everything) grown back by R − 4 m are lawns
 const dist = (src, edge) => { const d = new Float32Array(GW * GH); for (let k = 0; k < d.length; k++) d[k] = src(k) ? 0 : 1e9;   // edge: distance value beyond the zone
   const at = (i, j) => i < 0 || j < 0 || i >= GW || j >= GH ? edge : d[j * GW + i];
@@ -176,7 +184,7 @@ const dist = (src, edge) => { const d = new Float32Array(GW * GH); for (let k = 
 const R = 22 / CS, dObs = dist((k) => grid[k] > 0, 0), dCore = dist((k) => dObs[k] >= R, 1e9);   // the zone edge is a street
 const lawn = new Uint8Array(GW * GH); for (let k = 0; k < lawn.length; k++) lawn[k] = !grid[k] && dCore[k] <= R - 4 / CS ? 1 : 0;
 if (process.env.GROUND_DEBUG) {   // RGB raster for checking: buildings grey, lots blue, outside red, lawn green, asphalt black
-  const px = Buffer.alloc(GW * GH * 3); for (let k = 0; k < GW * GH; k++) { const c = grid[k] === 1 ? [150, 150, 150] : grid[k] === 3 ? [90, 90, 160] : grid[k] === 2 ? [120, 30, 30] : lawn[k] ? [60, 160, 60] : [20, 20, 24]; px.set(c, k * 3); }
+  const px = Buffer.alloc(GW * GH * 3); for (let k = 0; k < GW * GH; k++) { const c = grid[k] === 1 ? [150, 150, 150] : grid[k] === 3 ? [90, 90, 160] : grid[k] === 4 ? [70, 70, 40] : grid[k] === 2 ? [120, 30, 30] : lawn[k] ? [60, 160, 60] : [20, 20, 24]; px.set(c, k * 3); }
   fs.writeFileSync(process.env.GROUND_DEBUG, Buffer.concat([Buffer.from(`P6 ${GW} ${GH} 255\n`), px]));
 }
 const merge = (on) => { const rects = [], used = new Uint8Array(GW * GH);   // greedy merge of cells into rectangles

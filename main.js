@@ -623,6 +623,7 @@ window.__day = dayNight; window.__renderer = renderer; window.__scene = scene; w
 dayNight.interiors.push([402, 618, 40, -224, -76]);   // black warehouse hall (x0,x1,yTop,z0,z1)
 dayNight.interiors.push([-1247, -831, -1.2, 143, 480, -30]);   // the real Shibuya underground (PLATEAU LOD4.1) under the scramble
 dayNight.interiors.push([-348, -312, 136, -418, -382, 122]);    // King of Diamonds courtroom (top of the tower)
+dayNight.interiors.push([-241, -144, 7.4, -41, 103, -.5]);       // Port City Takeshiba street-level galleria (PLATEAU LOD4)
 addEventListener('resize', () => { const pr = Math.min(devicePixelRatio, DPR_MAX); renderer.setPixelRatio(pr); composer.setPixelRatio(pr); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight); gtao.setSize(Math.floor(innerWidth / 2), Math.floor(innerHeight / 2)); refl.getRenderTarget().setSize(Math.max(512, Math.floor(innerWidth * .6)), Math.max(512, Math.floor(innerHeight * .6))); });
 
 // moving the window to a screen with another pixel ratio doesn't fire 'resize' — watch the ratio directly

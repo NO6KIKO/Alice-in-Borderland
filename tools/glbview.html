@@ -1,0 +1,23 @@
+<!doctype html>
+<!-- Offline check of a converted GLB (headless Chrome, file://, see tools/glbshot.sh): one flat colour per class mesh,
+     sun + sky light. Query: f=<glb path from the repo root> &p=x,y,z (camera) &t=x,y,z (target) &fov=50
+     &f2=<second glb> &o2=x,y,z (its offset, e.g. a building area placed at its map reference point) -->
+<meta charset="utf-8">
+<style>html,body{margin:0;background:#9aa6ad;overflow:hidden}</style>
+<script type="importmap">{ "imports": { "three": "../node_modules/three/build/three.module.js", "three/addons/": "../node_modules/three/examples/jsm/" } }</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+const q = new URLSearchParams(location.search), v = (k, d) => (q.get(k) || d).split(',').map(Number);
+const r = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true }); r.setSize(innerWidth, innerHeight); document.body.appendChild(r.domElement);
+const s = new THREE.Scene(); s.background = new THREE.Color(0x9aa6ad);
+const cam = new THREE.PerspectiveCamera(+(q.get('fov') || 50), innerWidth / innerHeight, .1, 5000); cam.position.set(...v('p', '150,80,150')); cam.lookAt(...v('t', '0,20,0'));
+s.add(new THREE.HemisphereLight(0xdde6ee, 0x5a5650, 1.6)); const sun = new THREE.DirectionalLight(0xfff2e0, 2.2); sun.position.set(80, 120, 60); s.add(sun);
+const COL = { glass: 0x4f6a78, glassHi: 0x4f6a78, glassLow: 0x9fc4d4, frame: 0x8a9096, frameHi: 0x8a9096, panel: 0xc9c5bb, panelHi: 0xc9c5bb, alu: 0xb0b6bc, aluHi: 0xb0b6bc, soffit: 0xe0ddd4, soffitHi: 0xe0ddd4, roof: 0x8d8f86, roofHi: 0x8d8f86, floor: 0xb08a5a, ceil: 0xf0f0e8, iwall: 0xd8cfc0, inst: 0x6a8a5a, column: 0x9a9a92,
+  paint: 0xffffff, guard: 0xeeeeee, pole: 0xb8b8b2, steel: 0x8a9096, signal: 0x2e3236, signB: 0x1d4f9c, signR: 0xb3332b, signW: 0xdcdcd6, tactile: 0xd7b02a, manhole: 0x3b3d3f, box: 0x80878a, wall: 0xb0b4b8 };
+const load = (f, off) => new GLTFLoader().loadAsync('../' + f).then((g) => {
+  g.scene.traverse((o) => { if (!o.isMesh) return; const k = o.name.replace(/_\d+$/, ''); o.geometry.computeVertexNormals(); o.material = new THREE.MeshStandardMaterial({ color: COL[k] ?? 0xb8b4aa, roughness: .8, side: q.has('ds') ? THREE.DoubleSide : THREE.FrontSide, flatShading: true }); });
+  g.scene.position.set(...off); s.add(g.scene);
+});
+Promise.all([load(q.get('f'), [0, 0, 0]), ...(q.get('f2') ? [load(q.get('f2'), v('o2', '0,0,0'))] : [])]).then(() => { r.render(s, cam); document.title = 'done'; }, (e) => { document.body.textContent = 'ERR ' + e; });
+</script>
