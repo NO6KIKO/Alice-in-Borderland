@@ -95,6 +95,31 @@ function texTiles(seed, col) {
   }, { repeat: true });
   return [day, glowFrom(lit, S)];
 }
+// apartment block front (マンション): per 3.6 m bay a two-leaf sliding door behind a balcony — concrete or frosted
+// balustrade over the lower part, curtains, party walls between units, slab edges, rust streaks from the rails
+function texHousing(seed, wall) {
+  const r = K.rng(seed), S = 512, M = 128, lit = []; _panes = [];
+  const day = canvasTex(S, S, (g) => {
+    g.fillStyle = wall; g.fillRect(0, 0, S, S); noise(g, S, S, 18);
+    for (let f = 0; f < 4; f++) for (let m = 0; m < 4; m++) {
+      const x = m * M, y = f * M, gx = x + 14, gy = y + 18, gw = M - 28, by = y + M * .58, bh = M * .32;
+      g.fillStyle = 'rgb(66,66,64)'; g.fillRect(x + 6, y + 10, M - 12, M - 20);   // balcony recess
+      for (const lx of [gx, gx + gw / 2 + 2]) { glassGrad(g, lx, gy, gw / 2 - 2, by - gy, r, [74, 90, 96]); if (r() < .08) brokenPane(g, lx, gy, gw / 2 - 2, by - gy, r); }
+      g.fillStyle = 'rgb(150,150,146)'; g.fillRect(gx + gw / 2 - 2, gy, 4, by - gy); g.fillRect(gx - 2, gy - 3, gw + 4, 3);   // stile + head
+      if (r() < .45) { g.fillStyle = `rgba(${200 + r() * 40 | 0},${188 + r() * 40 | 0},${165 + r() * 30 | 0},.8)`; g.fillRect(gx + 2, gy + 2, gw * (.15 + r() * .3), by - gy - 4); }   // drawn curtain
+      if (r() < .25) lit.push([gx, gy, gw, by - gy]);
+      const frosted = r() < .45;
+      g.fillStyle = frosted ? 'rgb(168,178,180)' : wall; g.fillRect(x + 4, by, M - 8, bh);
+      if (frosted) { g.fillStyle = 'rgba(255,255,255,.12)'; for (let k = 0; k < 4; k++) g.fillRect(x + 8 + k * (M - 16) / 4, by + 3, 2, bh - 6); }
+      g.fillStyle = 'rgba(255,255,255,.2)'; g.fillRect(x + 4, by, M - 8, 3);   // top rail
+      g.fillStyle = 'rgba(0,0,0,.3)'; g.fillRect(x + 4, by + bh - 3, M - 8, 3); g.fillRect(x, y + M - 8, M, 3);   // drip edge, slab line
+      g.fillStyle = wall; g.fillRect(x, y, 6, M - 8); g.fillRect(x + M - 6, y, 6, M - 8);   // party walls
+      if (r() < .5) { g.fillStyle = `rgba(90,60,36,${.15 + r() * .2})`; g.fillRect(x + 10 + r() * (M - 30), by + bh, 3 + r() * 4, 10 + r() * 40); }   // rust streak
+    }
+    grime(g, S, S, r, 50);
+  }, { repeat: true });
+  return [day, glowFrom(lit, S)];
+}
 function texPodium(seed) {
   const r = K.rng(seed), S = 512, lit = []; _panes = [];
   const day = canvasTex(S, S, (g) => {
@@ -167,10 +192,11 @@ export function buildingMats() { defineMats(); }
 function defineMats() {
   if (defined) return; defined = true;
   const facade = (key, [day, glow], { glow: ng = 1, tile = TILE, ...o } = {}) => { const m = std({ map: day, normalMap: K.normalFrom(day, 3), roughnessMap: day, emissiveMap: glow, emissive: 0xffffff, emissiveIntensity: 0, roughness: 1, metalness: .15, ...o }); m.userData.nightGlow = ng; K.parallaxFacade(m, .35, tile, ROOMS[key.replace(/\d$/, '')]); def(key, m, tile); };   // roughness from the facade: dark glass glossy, concrete matte
-  const ROOMS = { bOff: { cells: [4, 4], roomD: 5 }, bCur: { cells: [6, 4], roomD: 6 }, bTile: { cells: [4, 4], roomD: 4 }, bPod: { cells: [6, 3], roomD: 6 } };   // rooms per texture tile
+  const ROOMS = { bOff: { cells: [4, 4], roomD: 5 }, bCur: { cells: [6, 4], roomD: 6 }, bTile: { cells: [4, 4], roomD: 4 }, bHouse: { cells: [4, 4], roomD: 4 }, bPod: { cells: [6, 3], roomD: 6 } };   // rooms per texture tile
   facade('bOff0', texOffice(11, '#a4a39c')); facade('bOff1', texOffice(12, '#b9b1a0')); facade('bOff2', texOffice(13, '#77797a'));
   facade('bCur0', texCurtain(21), { roughness: .3, metalness: .5, glow: .8 }); facade('bCur1', texCurtain(22), { roughness: .3, metalness: .5, glow: .8, color: 0xc8d8d0 });
   facade('bTile0', texTiles(31, '#d9d6cc')); facade('bTile1', texTiles(32, '#c7bba3')); facade('bTile2', texTiles(33, '#b4b8b6'));
+  facade('bHouse0', texHousing(51, '#d4cebf')); facade('bHouse1', texHousing(52, '#c2b39a')); facade('bHouse2', texHousing(53, '#b9bdba'));
   facade('bPod', texPodium(41), { tile: 12 });
   def('bGlass', std({ map: texCurtain(23)[0], color: 0xbfd2cc, roughness: .2, metalness: .55 }), TILE);
   def('bBand', std({ map: K.texConcrete, color: 0xb2b0a8, roughness: .9 }), 4);
