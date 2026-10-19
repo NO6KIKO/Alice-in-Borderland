@@ -20,6 +20,7 @@ import { DISTRICTS } from './city/map.js';
 import { createGrade } from './city/grade.js';
 import { createGodRays } from './city/godrays.js';
 import { paintedMap, setCardLite } from './city/cards.js';
+import { setTreeLite, setTreeSun } from './city/trees.js';
 import { FAC_INT } from './kit.js';
 import { createAudio } from './city/audio.js';
 import { huntState } from './city/hunt.js';
@@ -49,6 +50,7 @@ renderer.domElement.addEventListener('webglcontextlost', () => {   // out of GPU
 });
 renderer.setPixelRatio(Math.min(devicePixelRatio, DPR_MAX));
 setCardLite(LITE);
+setTreeLite(LITE);   // fewer near trees, shorter LOD bands, 512² leaf atlas
 renderer.setSize(innerWidth, innerHeight);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
@@ -581,7 +583,7 @@ gtao.blendIntensity = .85; composer.addPass(gtao);
 // keep see-through effects out of the AO depth/normal pass (the cloud sheet, clipped by the far plane, drew a hard line across the sky)
 gtao.overrideVisibility = function () {
   const cache = this._visibilityCache;
-  this.scene.traverse((o) => { cache.set(o, o.visible); const m = o.material; if (o.isPoints || o.isLine || o.isSprite || (m && !Array.isArray(m) && m.transparent && !m.depthWrite)) o.visible = false; });
+  this.scene.traverse((o) => { cache.set(o, o.visible); const m = o.material; if (o.isPoints || o.isLine || o.isSprite || (m && !Array.isArray(m) && m.transparent && !m.depthWrite) || o.userData.noAO) o.visible = false; });   // noAO: alpha-tested leaf pools would AO as full cards
 };
 // integrated GPUs share system memory: default them to standard quality unless the viewer chose otherwise
 let hiQ = !LITE; try { const q = localStorage.getItem('qualityChoice'); if (q) hiQ = q !== 'std'; } catch (e) {}   // only an explicit click is remembered
@@ -618,6 +620,7 @@ const dayNight = createDayNight({ scene, renderer, hemi, moon, bloom, spots, nig
 const shadowQ = () => { const sh = dayNight.sun.shadow, n = hiQ ? 4096 : 2048; if (sh.mapSize.x !== n) { sh.mapSize.set(n, n); if (sh.map) { sh.map.dispose(); sh.map = null; } } };   // standard quality: 2048 sun shadow (¼ the memory)
 shadowQ(); qBtn.addEventListener('click', shadowQ);
 dayBtn.onclick = () => dayNight.set(dayNight.isDusk ? 'night' : dayNight.isDay ? 'dusk' : 'day');   // day → dusk → night
+setTreeSun(dayNight.sunDir);
 dayNight.set(true);
 window.__day = dayNight; window.__renderer = renderer; window.__scene = scene; window.__camera = camera; window.__composer = composer;
 dayNight.interiors.push([402, 618, 40, -224, -76]);   // black warehouse hall (x0,x1,yTop,z0,z1)

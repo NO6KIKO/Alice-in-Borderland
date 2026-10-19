@@ -24,6 +24,7 @@ import { atmosphere } from './atmos.js';
 import { birds } from './birds.js';
 import { realBuildings, FRN } from './realbldg.js';
 import { takeshiba } from './takeshiba.js';
+import { plantTree, treeColliders, buildTrees } from './trees.js';
 import shibuyaGround from '../models/real/shibuya_bldg_ground.js';
 import towerGround from '../models/real/tokyotower_bldg_ground.js';
 
@@ -176,8 +177,10 @@ function parkingLot(cx, cz, inner, R) {
   for (const [a, b] of [[-.3, -.3], [.3, .3]]) prop('street_light', cx + a * inner, .08, cz + b * inner, R() * 6);
   scatterDecay(cx, cz, inner - 6, inner - 6, .08, 160, ['trash_bags', 'shopping_cart', 'bicycle_fallen']);
 }
-function tree(x, z, s = 1, y = 0) {
+const OLD_TREES = new URLSearchParams(location.search).get('trees') === 'old';   // A/B: ?trees=old brings back the card-crown trees below
+function tree(x, z, s = 1, y = 0, opts = {}) {
   treeCount++;
+  if (!OLD_TREES) return plantTree(x, z, s, y, opts);   // instanced species trees (city/trees.js); opts: { kind, species, row }
   const r = Math.random, h = (5 + r() * 4) * s, lean = (r() - .5) * .12, la = r() * 6.283;
   const tx = x + Math.cos(la) * lean * h, tz = z + Math.sin(la) * lean * h;   // trunk top
   K.strut('trunk', [x, y, z], [tx, y + h * .62, tz], .26 * s, 5);
@@ -344,7 +347,7 @@ function rainbowBridge() {
   for (let i = 0; i < 12; i++) { const yy = y - (i + .5) * y / 12; box('hwy', 10, 1, 16, I.x0 + 65 + i * 10, Math.max(.5, yy) - .5, z + 0, 0, Math.atan2(y / 12, 10)); }
   for (let gx = I.x0 + 30; gx < I.x1 - 30; gx += 55) for (let gz = I.z0 + 30; gz < I.z1 - 30; gz += 55) {
     if (Math.abs(gz - z) < 30) continue;
-    if (r() < .2) { for (let k = 0; k < 8; k++) tree(gx + (r() - .5) * 40, gz + (r() - .5) * 40, 1, .12); continue; }
+    if (r() < .2) { for (let k = 0; k < 8; k++) tree(gx + (r() - .5) * 40, gz + (r() - .5) * 40, 1, .12, { kind: 'wild' }); continue; }
     building(gx, gz, 26 + r() * 14, 26 + r() * 14, 12 + r() * 50, r);
   }
   // the dome-topped TV building silhouette (Fuji TV-ish)
@@ -440,10 +443,10 @@ export function buildCity({ scene, camera, highways = [] }) {
     if (nearCompound(cx, cz, inner / 2)) { if (!underExpress(cx, cz, inner / 2)) parkingLot(cx, cz, inner, R); continue; }   // the compound's apron: abandoned car parks
     const park = R() < .07;
     if (!park && R() < .08) {   // a tiny shrine squeezed between buildings on the block's edge
-      const sx = cx + (R() - .5) * (inner - 20), sz = cz + inner / 2 - 4; prop('torii', sx, .12, sz, Math.PI / 2); tree(sx - 2.5, sz - 2, .8, .12); tree(sx + 2.5, sz - 2.5, .9, .12);
+      const sx = cx + (R() - .5) * (inner - 20), sz = cz + inner / 2 - 4; prop('torii', sx, .12, sz, Math.PI / 2); tree(sx - 2.5, sz - 2, .8, .12, { kind: 'shrine' }); tree(sx + 2.5, sz - 2.5, .9, .12, { kind: 'shrine' });
     }
     box(park ? 'grass' : 'walk', inner, .12, inner, cx, .06, cz);
-    if (park) { for (let k = 0; k < 40; k++) tree(cx + (R() - .5) * (inner - 8), cz + (R() - .5) * (inner - 8), .8 + R() * .7, .12); scatterDecay(cx, cz, inner - 4, inner - 4, .12, 420, []); continue; }   // overgrown meadow
+    if (park) { for (let k = 0; k < 40; k++) tree(cx + (R() - .5) * (inner - 8), cz + (R() - .5) * (inner - 8), .8 + R() * .7, .12, { kind: 'wild' }); scatterDecay(cx, cz, inner - 4, inner - 4, .12, 420, []); continue; }   // overgrown meadow
     const sx = 2 + Math.floor(R() * 3), sz = 2 + Math.floor(R() * 3), lw = (inner - 8) / sx, ld = (inner - 8) / sz;   // 15–39 m lots
     for (let a = 0; a < sx; a++) for (let b = 0; b < sz; b++) {
       if (R() < .08) continue;
@@ -452,7 +455,7 @@ export function buildCity({ scene, camera, highways = [] }) {
       if (underExpress(bx, bz, Math.max(w, d) / 2 + 2)) continue;
       building(bx, bz, w, d, heightAt(bx, bz, R), R);
     }
-    for (let s = -inner / 2 + 4; s < inner / 2; s += 16) { tree(cx + s, cz - inner / 2 + 2, .9, .12); tree(cx + s, cz + inner / 2 - 2, .9, .12); }
+    { const row = Math.round(cx) * 31 + Math.round(cz) * 17; for (let s = -inner / 2 + 4; s < inner / 2; s += 16) { tree(cx + s, cz - inner / 2 + 2, .9, .12, { kind: 'street', row }); tree(cx + s, cz + inner / 2 - 2, .9, .12, { kind: 'street', row: row + 1 }); } }   // one species per kerb
     { const e = inner / 2 - 2.7, L = inner - 5.4; for (const sg of [-1, 1]) { box('tactX', L, .02, .3, cx, .13, cz + sg * e); box('tactZ', .3, .02, L, cx + sg * e, .13, cz); } }   // guide strips along the kerbs
     // corner clutter: vending clusters, parked bikes / scooters, post box
     for (const [sx, sz] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
@@ -502,7 +505,7 @@ export function buildCity({ scene, camera, highways = [] }) {
       box('grass', c - a, .14, e - b, (a + c) / 2, .07, (b + e) / 2);
       const A = (c - a) * (e - b); if (A > 150) scatterDecay((a + c) / 2, (b + e) / 2, c - a - 2, e - b - 2, .14, Math.min(260, A / 6 | 0), []);   // meadow weeds
     }
-    for (const [x, z, s] of ground.trees) tree(x, z, s, .14);
+    for (const [x, z, s] of ground.trees) tree(x, z, s, .14, { kind: 'wild' });
     ctx.pending.push(realBuildings(ctx, file, ref[0], ref[1]));
     if (frn) ctx.pending.push(realBuildings(ctx, frn, 0, 0, 0, FRN));   // real street furniture (map metres)
   }
@@ -515,6 +518,7 @@ export function buildCity({ scene, camera, highways = [] }) {
   setZone('compound');
   airships(scene, updates);
   const pc = propColliders(); if (pc) { scene.add(pc); collidables.push(pc); }
+  if (!OLD_TREES) { const tc = treeColliders(); if (tc) { scene.add(tc); collidables.push(tc); } buildTrees({ scene, camera, updates, dayNight }); }
   loadProps(scene, camera, updates); console.log('props', propCount());
   return { collidables, updates, pois, dayNight, pending };
 }
