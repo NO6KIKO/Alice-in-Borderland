@@ -21,4 +21,5 @@ class NoCache(http.server.SimpleHTTPRequestHandler):
 import functools, os
 port = int(sys.argv[1]) if len(sys.argv) > 1 else 8765
 root = sys.argv[2] if len(sys.argv) > 2 else os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')   # default: project root
-http.server.ThreadingHTTPServer(('', port), functools.partial(NoCache, directory=root)).serve_forever()
+host = sys.argv[3] if len(sys.argv) > 3 else ''   # tools/launch.ps1 passes 127.0.0.1: this machine only
+http.server.ThreadingHTTPServer((host, port), functools.partial(NoCache, directory=root)).serve_forever()
