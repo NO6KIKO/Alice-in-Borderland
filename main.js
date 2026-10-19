@@ -504,7 +504,7 @@ const dayBtn = document.createElement('button'); vb.insertBefore(dayBtn, playBtn
 const cineBtn = document.createElement('button'); cineBtn.textContent = '▭ 电影模式'; vb.insertBefore(cineBtn, playBtn);
 let cine = false; cineBtn.onclick = () => { cine = !cine; grade.setBars(cine); dof.enabled = cine; document.body.classList.toggle('cine', cine); };
 window.__player = player;   // console helper
-Promise.all([load('./models/truck_semi.glb'), load('./models/truck_box.glb')]).then(([semi, boxT]) => {
+Promise.all([load('./models/truck_semi.glb'), load('./models/truck_box.glb'), ...(cityInfo.pending || [])]).then(([semi, boxT]) => {
   const src = { truck_semi: semi.scene, truck_box: boxT.scene };
   for (const t of truckSpots) {
     const o = src[t.file].clone(); o.position.set(t.x, 0, t.z); o.rotation.y = t.ry; scene.add(o);
@@ -513,7 +513,7 @@ Promise.all([load('./models/truck_semi.glb'), load('./models/truck_box.glb')]).t
     const head = new THREE.Vector3(t.x, 1.3, t.z).addScaledVector(f, 1.7);
     addSpot(0xfff4e0, 260, 30, .45, .6, head, head.clone().addScaledVector(f, 12).setY(0));
   }
-}).catch((e) => console.error('truck load failed', e)).finally(() => { try { player.setCollider(collidables); } catch (e) { console.error('collider build failed', e); } });
+}).catch((e) => console.error('truck load failed', e)).finally(() => { try { for (const m of cityInfo.collidables) if (!collidables.includes(m)) collidables.push(m); player.setCollider(collidables); } catch (e) { console.error('collider build failed', e); } });
 window.__collidables = collidables;
 
 // patrol / work routes: pts in xz, y = walking surface height
@@ -621,7 +621,7 @@ dayBtn.onclick = () => dayNight.set(dayNight.isDusk ? 'night' : dayNight.isDay ?
 dayNight.set(true);
 window.__day = dayNight; window.__renderer = renderer; window.__scene = scene; window.__camera = camera; window.__composer = composer;
 dayNight.interiors.push([402, 618, 40, -224, -76]);   // black warehouse hall (x0,x1,yTop,z0,z1)
-dayNight.interiors.push([-1058, -1023, -.5, 230, 249]);   // Shibuya subway concourse + stair shaft
+dayNight.interiors.push([-1247, -831, -1.2, 143, 480, -30]);   // the real Shibuya underground (PLATEAU LOD4.1) under the scramble
 dayNight.interiors.push([-348, -312, 136, -418, -382, 122]);    // King of Diamonds courtroom (top of the tower)
 addEventListener('resize', () => { const pr = Math.min(devicePixelRatio, DPR_MAX); renderer.setPixelRatio(pr); composer.setPixelRatio(pr); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight); gtao.setSize(Math.floor(innerWidth / 2), Math.floor(innerHeight / 2)); refl.getRenderTarget().setSize(Math.max(512, Math.floor(innerWidth * .6)), Math.max(512, Math.floor(innerHeight * .6))); });
 

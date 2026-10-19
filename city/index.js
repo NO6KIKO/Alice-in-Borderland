@@ -450,7 +450,8 @@ export function buildCity({ scene, camera, highways = [] }) {
   }
 
   // hero districts
-  const ctx = { THREE, K, cards, map, scene, camera, updates, pois, collidables, dayNight, tree, prop };
+  const pending = [];   // async loads that add collision (main.js waits for them before building the BVH)
+  const ctx = { THREE, K, cards, map, scene, camera, updates, pois, collidables, dayNight, tree, prop, pending };
   for (const d of map.DISTRICTS) {
     const mod = DISTRICT_MODULES[d.id]; if (!mod) continue;
     try { setZone(d.id); mod.build(ctx, d); } catch (e) { console.error('district failed', d.id, e); }
@@ -474,5 +475,5 @@ export function buildCity({ scene, camera, highways = [] }) {
   airships(scene, updates);
   const pc = propColliders(); if (pc) { scene.add(pc); collidables.push(pc); }
   loadProps(scene, camera, updates); console.log('props', propCount());
-  return { collidables, updates, pois, dayNight };
+  return { collidables, updates, pois, dayNight, pending };
 }

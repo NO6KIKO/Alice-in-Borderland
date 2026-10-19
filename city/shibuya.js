@@ -7,6 +7,7 @@ import * as K from '../kit.js';
 import { prop } from './props.js';
 import { konbini } from './konbini.js';
 import { signStack, buildingMats } from './buildings.js';
+import { shibuyaUnderground } from './ubld.js';
 const { box, cyl, sph, put, M4, withFrame, def, std, canvasTex, noise, strut } = K;
 
 const RD = .06, PV = .18, DECK = 7.2;           // asphalt top, pavement top, podium deck top
@@ -504,8 +505,8 @@ function podium() {   // two-storey shopping podium filling the west wedge; walk
   for (const [x, z] of [[-66, 5], [-75, -4], [-82, 6], [-120, -45], [-118, -30]]) { X.tree(x, z, .8, DECK); for (let k = 0; k < 6; k++) tuft(x + (R() - .5) * 4, z + (R() - .5) * 4, 1, DECK); }
   for (const [x, z] of [[-70, 9], [-86, 0]]) { box('concD', 3, .6, 1.2, x, DECK + .3, z); box('ivy', 3, .3, 1.2, x, DECK + .7, z); }
 }
-function subway(x, z) {   // walkable stair head → underground concourse (y −6)
-  const L = HOLE[2] - HOLE[0], cx = (HOLE[0] + HOLE[2]) / 2 - x, FL = -6;
+function subway(x, z) {   // walkable stair head → the real B1 concourse under the scramble (y −7.5)
+  const L = HOLE[2] - HOLE[0], cx = (HOLE[0] + HOLE[2]) / 2 - x, FL = -7.5, SL = Math.ceil((PV - FL) / .2) * .3, foot = 3.3 - SL;
   withFrame(x, 0, z, 0, () => {
     for (const s of [-1, 1]) box('wall', L + .2, 1.1, .25, cx, PV + .55, s * 1.75);                    // parapets
     box('wall', .25, 1.1, 3.75, HOLE[0] - x - .1, PV + .55, 0);
@@ -515,38 +516,34 @@ function subway(x, z) {   // walkable stair head → underground concourse (y �
     for (let i = 0; i < 6; i++) hang(HOLE[0] - x + R() * L, PV + 2.9, (R() < .5 ? -1 : 1) * 2.1, .5 + R() * 1.6);
     // the stair: shaft walls down to the concourse, 31 steps rising toward the street (+x)
     for (const s of [-1, 1]) box('shib_tile', L, -FL + .3, .3, cx, (FL + PV) / 2, s * 1.75);
-    for (const s of [-1, 1]) box('shib_tile', 1.95, -FL - .2, .3, HOLE[0] - x - .97, (FL - .2) / 2, s * 1.75);   // shaft continues under the pavement to the hall
-    K.stairs(3.3 - 9.3, 0, 1, 0, FL, PV, 3, .3);
-    box('shib_tile', 3.4, .2, 3.3, 3.3 - 9.3 - 1.6, FL - .1, 0);                                         // bottom landing
+    const ul = HOLE[0] - x - foot + 3.4;   // shaft continues under the pavement past the stair foot
+    for (const s of [-1, 1]) box('shib_tile', ul, -FL - .2, .3, HOLE[0] - x - ul / 2, (FL - .2) / 2, s * 1.75);
+    box('concD', ul, .3, 3.8, HOLE[0] - x - ul / 2, -.25, 0);                                            // soffit under the pavement
+    K.stairs(foot, 0, 1, 0, FL, PV, 3, .3);
+    box('shib_tile', 3.4, .2, 3.3, foot - 1.6, FL - .1, 0);                                               // bottom landing
   });
   SOLID.push([HOLE[0] + x * 0 - .5, HOLE[1] - .5, HOLE[2] + .5, HOLE[3] + .5]);
-  underground(x - 9.3 - 10, z, FL);
+  realUnderground(x + foot - 3.2, z, FL);
 }
-// concourse: 20 × 16 m hall west of the stair foot, tiled, gates + fare machines, emergency lighting
-function underground(x, z, FL) {
-  const W = 20, D = 16, H = 3.6;
+// the real B1 concourse (PLATEAU LOD4.1 survey, city/ubld.js), positioned so a B1 corridor runs under the stair foot;
+// fare gates, machines and posters stand where the stair arrives, plus two lamps near the entrance
+// model origin (the real scramble reference) in district-local metres + rotation: the stair landing meets the end of a 21 m B1
+// corridor (model point (25, 34), turned 180°) and the 15 m stair run rises through ground clear of structure (tools/ubld_site.mjs)
+const UB = [-33.7, 83.5], UBR = Math.PI;
+function realUnderground(x, z, FL) {
+  const o = K.fpos(UB[0], 0, UB[1]); X.pending.push(shibuyaUnderground(X, o.x, 0, o.z, UBR));
   K.setZone('shibuya_sub');
   withFrame(x, 0, z, 0, () => {
-    box('shib_tile', W + 1, .3, D + 1, 0, FL - .15, 0);                                   // floor
-    box('concD', W + 1, .3, D + 1, 0, FL + H + .15, 0);                                    // ceiling slab
-    box('shib_tile', .3, H, D, -W / 2, FL + H / 2, 0);                                      // west wall
-    for (const s of [-1, 1]) box('shib_tile', W, H, .3, 0, FL + H / 2, s * D / 2);          // north / south walls
-    box('shib_tile', .3, H, D / 2 - 1.75, W / 2, FL + H / 2, D / 4 + .88); box('shib_tile', .3, H, D / 2 - 1.75, W / 2, FL + H / 2, -D / 4 - .88);   // east wall with the stair opening
-    for (let i = -1; i <= 1; i++) for (const s of [-1, 1]) box('concD', .8, H, .8, i * 6, FL + H / 2, s * 4);          // columns
-    for (let i = 0; i < 6; i++) box('glowC', 2.4, .05, .3, -7.5 + i * 3, FL + H - .05, 0);   // light strips
-    for (let k = 0; k < 4; k++) prop('station_gate', -4, FL, -6 + k * 4, Math.PI / 2);   // ticket gate line
-    for (let k = 0; k < 4; k++) prop('ticket_machine', -W / 2 + .5, FL, -5 + k * 1.4, Math.PI / 2);
-    box('steel', 3.2, 1, .1, 5, FL + 2.6, -D / 2 + .2); box('glowY', 3, .8, .02, 5, FL + 2.6, -D / 2 + .26);  // departure board
-    for (let i = 0; i < 6; i++) prop(['trash_bags', 'shopping_bag', 'umbrella_clear', 'handbag', 'school_bag', 'smartphone'][i], (R() - .5) * 14, FL, (R() - .5) * 10, R() * 6);
+    for (let k = 0; k < 4; k++) prop('station_gate', -5, FL, -3 + k * 2, Math.PI / 2);   // ticket gate line across the corridor
+    for (let k = 0; k < 3; k++) prop('ticket_machine', -1.5 - k * 1.4, FL, -2.6, 0);
+    for (let i = 0; i < 6; i++) prop(['trash_bags', 'shopping_bag', 'umbrella_clear', 'handbag', 'school_bag', 'smartphone'][i], -3 - R() * 10, FL, (R() - .5) * 4, R() * 6);
   });
   K.setZone('shibuya');
-  const P = K.fpos(x, FL + 3, z), L = new THREE.PointLight(0xcfe0ff, 25, 26, 1.6); L.position.copy(P); X.scene.add(L);
-  for (let i = 0; i < 4; i++) pic(X.cards.cardMaterial(['J', 'Q', 'K', 'J'][i], ['C', 'S', 'H', 'D'][i]), 1, 1.5, x - 6 + i * 4, FL + 1.8, z + D / 2 - .2, Math.PI);   // posters
-  // cut the city land slab over the stair opening and the bay water plane over the whole hall (world rects)
+  for (const dx of [0, -14]) { const P = K.fpos(x + dx, FL + 2.6, z), L = new THREE.PointLight(0xcfe0ff, 22, 24, 1.6); L.position.copy(P); X.scene.add(L); }
+  for (let i = 0; i < 3; i++) pic(X.cards.cardMaterial(['J', 'Q', 'K'][i], ['C', 'S', 'H'][i]), 1, 1.5, x - 8 - i * 3, FL + 1.8, z + 1.9, Math.PI);   // game posters
   const a = K.fpos(HOLE[0], 0, HOLE[1]), b = K.fpos(HOLE[2], 0, HOLE[3]);
   cutLand(Math.min(a.x, b.x), Math.min(a.z, b.z), Math.max(a.x, b.x), Math.max(a.z, b.z));
-  const c0 = K.fpos(x - W / 2 - 1, 0, z - D / 2 - 1), c1 = K.fpos(HOLE[2], 0, z + D / 2 + 1);
-  waterHole(Math.min(c0.x, c1.x), Math.min(c0.z, c1.z), Math.max(c0.x, c1.x), Math.max(c0.z, c1.z));
+  waterHole(o.x - 233, o.z - 130, o.x + 182, o.z + 206);   // the bay plane must not cap the concourse (model bounds, turned 180°)
 }
 function cutLand(x0, z0, x1, z1) {
   const land = X.scene.children.find((o) => o.isMesh && o.geometry && o.geometry.type === 'ShapeGeometry' && Math.abs(o.position.y + .08) < 1e-3);
