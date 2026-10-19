@@ -1,4 +1,6 @@
 // Third-person / first-person player: WASD move, Shift sprint, Space jump, V switch view, wheel = camera distance.
+// Levels can add moving colliders (doors, shutters: addDynamicCollider) and set state.waterY / speedMul for wading and
+// treading water (hold Space to swim up).
 // Capsule-vs-BVH collision (same approach as the three-mesh-bvh characterMovement example), so stairs,
 // ramps, catwalk decks and railings all work against the real scene geometry.
 import * as THREE from 'three';
@@ -20,16 +22,17 @@ const WALK = 1.9, RUN = 5.2, JUMP_V = 5.6, GRAVITY = -22;
 
 export function createPlayer({ scene, camera, renderer, controls, spawn = new THREE.Vector3(0, 1, 62), spawnYaw = 0 }) {
   const dom = renderer.domElement;
-  const state = { active: false, firstPerson: false, yaw: spawnYaw, pitch: .22, dist: 4.2, onGround: false };
+  const state = { active: false, firstPerson: false, yaw: spawnYaw, pitch: .22, dist: 4.2, onGround: false, waterY: -Infinity, speedMul: 1 };
   const keys = {};
   const vel = new THREE.Vector3();
   const pos = spawn.clone();                  // feet position
   let collider = null, model = null, mixer = null, actions = {}, current = null;
+  const dyn = [];   // moving collider meshes, tested in their own space each step
 
   /* ── UI ── */
   const hud = document.createElement('div');
   hud.id = 'playhud';
-  hud.innerHTML = `<div class="ph-cross"></div><div class="ph-keys"><b>WASD</b> 移动 <b>Shift</b> 奔跑 <b>Space</b> 跳 <b>V</b> 第一/第三人称 <b>滚轮</b> 镜头距离 <b>Esc</b> 退出</div>`;
+  hud.innerHTML = `<div class="ph-cross"></div><div class="ph-keys"><b>WASD</b> 移动 <b>Shift</b> 奔跑 <b>Space</b> 跳 <b>V</b> 第一/第三人称 <b>E</b> 互动 <b>滚轮</b> 镜头距离 <b>Esc</b> 退出</div>`;
   document.body.appendChild(hud);
   const style = document.createElement('style');
   style.textContent = `#playhud{position:fixed;inset:0;pointer-events:none;display:none}
@@ -105,7 +108,7 @@ export function createPlayer({ scene, camera, renderer, controls, spawn = new TH
   }
 
   /* ── physics step ── */
-  const seg = new THREE.Line3(), box = new THREE.Box3(), tv = new THREE.Vector3(), tv2 = new THREE.Vector3();
+  const seg = new THREE.Line3(), box = new THREE.Box3(), tv = new THREE.Vector3(), tv2 = new THREE.Vector3(), _inv = new THREE.Matrix4();
   function collide() {
     seg.start.set(pos.x, pos.y + HEIGHT - RADIUS, pos.z);
     seg.end.set(pos.x, pos.y + RADIUS, pos.z);
@@ -117,11 +120,27 @@ export function createPlayer({ scene, camera, renderer, controls, spawn = new TH
         if (d < RADIUS) { const dir = tv2.sub(tv).normalize(), depth = RADIUS - d; seg.start.addScaledVector(dir, depth); seg.end.addScaledVector(dir, depth); }
       },
     });
+    for (const m of dyn) {   // moving colliders: bring the capsule into the mesh's space, push out there, bring it back
+      if (!m.visible || m.userData.solid === false) continue;
+      m.updateWorldMatrix(true, false); _inv.copy(m.matrixWorld).invert(); seg.applyMatrix4(_inv);
+      box.makeEmpty(); box.expandByPoint(seg.start); box.expandByPoint(seg.end); box.min.addScalar(-RADIUS); box.max.addScalar(RADIUS);
+      m.geometry.boundsTree.shapecast({
+        intersectsBounds: (b) => b.intersectsBox(box),
+        intersectsTriangle: (tri) => { const d = tri.closestPointToSegment(seg, tv, tv2); if (d < RADIUS) { const dir = tv2.sub(tv).normalize(), depth = RADIUS - d; seg.start.addScaledVector(dir, depth); seg.end.addScaledVector(dir, depth); } },
+      });
+      seg.applyMatrix4(m.matrixWorld);
+    }
     const np = tv.set(seg.end.x, seg.end.y - RADIUS, seg.end.z), delta = tv2.subVectors(np, pos);
     return delta;
   }
+  function addDynamicCollider(mesh) { if (!mesh.geometry.boundsTree) mesh.geometry.boundsTree = new MeshBVH(mesh.geometry); dyn.push(mesh); }
   function step(dt, wish) {
-    if (state.onGround) vel.y = GRAVITY * dt; else vel.y += GRAVITY * dt;   // grounded: small push keeps feet on slopes & stairs
+    if (pos.y + 1.1 < state.waterY) {   // chest-deep: tread water — slow sinking, drag, Space swims up to keep the head out
+      vel.y += GRAVITY * .08 * dt; vel.y *= Math.max(0, 1 - 2.5 * dt);
+      if (keys.Space) vel.y = Math.min(2.2, vel.y + 16 * dt);
+      if (pos.y + EYE > state.waterY + .25 && vel.y > 0) vel.y = 0;
+      state.onGround = false;
+    } else if (state.onGround) vel.y = GRAVITY * dt; else vel.y += GRAVITY * dt;   // grounded: small push keeps feet on slopes & stairs
     pos.addScaledVector(vel, dt);
     pos.addScaledVector(wish, dt);
     if (!collider) { if (pos.y < 0) { pos.y = 0; vel.y = 0; state.onGround = true; } return; }
@@ -133,7 +152,7 @@ export function createPlayer({ scene, camera, renderer, controls, spawn = new TH
   }
 
   /* ── camera ── */
-  const ray = new THREE.Ray(), head = new THREE.Vector3(), camGoal = new THREE.Vector3();
+  const ray = new THREE.Ray(), _ray = new THREE.Ray(), head = new THREE.Vector3(), camGoal = new THREE.Vector3();
   function updateCamera(dt) {
     head.set(pos.x, pos.y + (state.firstPerson ? EYE : 1.55), pos.z);
     const cp = Math.cos(state.pitch), dir = new THREE.Vector3(Math.sin(state.yaw) * cp, Math.sin(state.pitch), Math.cos(state.yaw) * cp); // look direction is −dir
@@ -145,6 +164,11 @@ export function createPlayer({ scene, camera, renderer, controls, spawn = new TH
       ray.origin.copy(head); ray.direction.copy(dir);
       const hit = collider.geometry.boundsTree.raycastFirst(ray, THREE.DoubleSide);
       if (hit && hit.distance < dist + .3) dist = Math.max(.4, hit.distance - .3);
+      for (const m of dyn) {   // and in front of closed doors
+        if (!m.visible || m.userData.solid === false) continue;
+        _inv.copy(m.matrixWorld).invert(); _ray.copy(ray).applyMatrix4(_inv);
+        const h = m.geometry.boundsTree.raycastFirst(_ray, THREE.DoubleSide); if (h && h.distance < dist + .3) dist = Math.max(.4, h.distance - .3);
+      }
     }
     camGoal.copy(head).addScaledVector(dir, dist);
     camera.position.lerp(camGoal, 1 - Math.exp(-dt * 18));
@@ -160,7 +184,7 @@ export function createPlayer({ scene, camera, renderer, controls, spawn = new TH
     const fwd = new THREE.Vector3(-Math.sin(state.yaw), 0, -Math.cos(state.yaw)), right = new THREE.Vector3(Math.cos(state.yaw), 0, -Math.sin(state.yaw));
     const wish = fwd.multiplyScalar(f).add(right.multiplyScalar(s));
     const moving = wish.lengthSq() > 0;
-    if (moving) wish.normalize().multiplyScalar(run ? RUN : WALK);
+    if (moving) wish.normalize().multiplyScalar((run && state.speedMul > .9 ? RUN : WALK) * state.speedMul);   // no sprinting through deep water
     const n = 5; for (let i = 0; i < n; i++) step(dt / n, wish);
     if (model) {
       model.visible = !state.firstPerson;
@@ -180,5 +204,5 @@ export function createPlayer({ scene, camera, renderer, controls, spawn = new TH
   }
 
   function teleport(p, yaw = 0) { pos.copy(p); vel.set(0, 0, 0); state.yaw = yaw; state.pitch = .1; faceYaw = yaw + Math.PI; if (model) model.rotation.y = faceYaw; }
-  return { enter, exit, update, setCollider, teleport, state, get pos() { return pos; }, get active() { return state.active; } };
+  return { enter, exit, update, setCollider, addDynamicCollider, teleport, state, get pos() { return pos; }, get active() { return state.active; } };
 }

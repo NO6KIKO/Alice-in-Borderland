@@ -41,9 +41,13 @@ export function createGrade(composer) {
     dusk: { shadowTint: 0x153c52, highTint: 0xffb46a, split: .2, sat: .9, contrast: .3, lift: .01, vignette: .42 },
     night: { shadowTint: 0x06303c, highTint: 0xffa860, split: .22, sat: .85, contrast: .34, lift: .012, vignette: .5 },
   };
+  const UNDER = { shadowTint: 0x062e33, highTint: 0xbfe6de, split: .26, sat: .68, contrast: .36, lift: .014, vignette: .56 };   // underground: cold teal, desaturated
+  let cur = looks.day, uk = 0; const _a = new THREE.Color(), _b = new THREE.Color();
+  const apply = () => { for (const [k, v] of Object.entries(cur)) { const w = UNDER[k]; if (u[k].value?.isColor) u[k].value.copy(_a.setHex(v, THREE.LinearSRGBColorSpace).lerp(_b.setHex(w, THREE.LinearSRGBColorSpace), uk)); else u[k].value = v + (w - v) * uk; } };
   return {
     pass,
-    setDay(day, dusk) { const L = looks[dusk ? 'dusk' : day ? 'day' : 'night']; for (const [k, v] of Object.entries(L)) { if (u[k].value?.isColor) u[k].value.setHex(v, THREE.LinearSRGBColorSpace); else u[k].value = v; } },
+    setDay(day, dusk) { cur = looks[dusk ? 'dusk' : day ? 'day' : 'night']; apply(); },
+    setUnder(k) { if (Math.abs(k - uk) < 1e-3) return; uk = k; apply(); },   // blend toward the underground look (0..1)
     setBars(on) { u.bars.value = on ? 1 : 0; },
     update(t, w, h) { u.time.value = t % 100; u.aspect.value = w / h; },
   };

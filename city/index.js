@@ -16,6 +16,7 @@ import * as clubs from './clubs.js';
 import * as hearts from './hearts.js';
 import * as shibuya from './shibuya.js';
 import * as fire from './fire.js';
+import * as lightbulb from './lightbulb.js';
 import { cityBuilding } from './buildings.js';
 import { prop, loadProps, propColliders, propCount, PROPS } from './props.js';
 import { streetSegment, intersection, scatterDecay } from './street.js';
@@ -28,7 +29,7 @@ import { plantTree, treeColliders, buildTrees } from './trees.js';
 import shibuyaGround from '../models/real/shibuya_bldg_ground.js';
 import towerGround from '../models/real/tokyotower_bldg_ground.js';
 
-const DISTRICT_MODULES = { port, arena, prison, tokyotower, palace, diamond, clubs, hearts, shibuya, fire };
+const DISTRICT_MODULES = { port, arena, prison, tokyotower, palace, diamond, clubs, hearts, shibuya, fire, bulb: lightbulb };
 const { box, cyl, sph, plane, put, strut, beacon, M4, withFrame, setZone, canvasTex, noise, def, std } = K;
 
 /* ───────────── city materials ───────────── */

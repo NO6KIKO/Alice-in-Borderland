@@ -23,6 +23,7 @@ import { paintedMap, setCardLite } from './city/cards.js';
 import { setTreeLite, setTreeSun } from './city/trees.js';
 import { FAC_INT } from './kit.js';
 import { createAudio } from './city/audio.js';
+import { attachBulb } from './city/lightbulb.js';
 import { huntState } from './city/hunt.js';
 
 /* 场地尺寸（来自参考图）: 120m × 85m，围墙 6m，廊道 10m / 15m，04 牌塔 38m，05 控制塔 28m */
@@ -622,6 +623,7 @@ shadowQ(); qBtn.addEventListener('click', shadowQ);
 dayBtn.onclick = () => dayNight.set(dayNight.isDusk ? 'night' : dayNight.isDay ? 'dusk' : 'day');   // day → dusk → night
 setTreeSun(dayNight.sunDir);
 dayNight.set(true);
+attachBulb({ player, audio, grade, dayNight });   // ♦4 Light Bulb level: interaction, water, door colliders
 window.__day = dayNight; window.__renderer = renderer; window.__scene = scene; window.__camera = camera; window.__composer = composer;
 dayNight.interiors.push([402, 618, 40, -224, -76]);   // black warehouse hall (x0,x1,yTop,z0,z1)
 dayNight.interiors.push([-1247, -831, -1.2, 143, 480, -30]);   // the real Shibuya underground (PLATEAU LOD4.1) under the scramble

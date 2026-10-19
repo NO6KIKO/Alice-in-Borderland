@@ -19,6 +19,7 @@ export const DISTRICTS = [
   { id: 'tokyotower', name: '东京塔 · 增上寺 · 芝公园', suit: '♠', x: -510, z: 30, w: 280, d: 300 },
   { id: 'palace', name: '皇居 · 护城河', suit: '', x: -760, z: -300, w: 400, d: 330 },
   { id: 'diamond', name: '方块 K · 审判之塔', suit: '♦', x: -330, z: -400, w: 110, d: 110 },
+  { id: 'bulb', name: '方块 4 · 电灯泡（地下雨水调节池）', suit: '♦', x: -407, z: -436, w: 40, d: 88 },
   { id: 'clubs', name: '梅花大厦', suit: '♣', x: -600, z: -780, w: 140, d: 140 },
   { id: 'hearts', name: '红心 Q · 屋顶庭园', suit: '♥', x: -1160, z: -300, w: 130, d: 110 },
   { id: 'shibuya', name: '涩谷十字路口', suit: '♦', x: -980, z: 190, w: 260, d: 230 },

@@ -98,7 +98,7 @@ export function createDayNight({ scene, renderer, hemi, moon, bloom, spots, nigh
     stars.visible = moonDisc.visible = !day;
     for (const f of onChange) f(day, isDusk);
   }
-  // enclosed halls: by day, fade sky light out while the camera is inside one of these boxes
+  // enclosed halls / underground: fade sky light out while the camera is inside one of these boxes
   const interiors = []; let inside = 0;
   function base() { return isDusk ? { h: .4, s: 4.2, e: 1.0 } : isDay ? { h: .5, s: 5.9, e: 1.0 } : { h: night.hemiI, s: 0, e: .22 }; }
   function update(focus, cam) {
@@ -107,6 +107,7 @@ export function createDayNight({ scene, renderer, hemi, moon, bloom, spots, nigh
     const target = cam && interiors.some((b) => cam.x > b[0] && cam.x < b[1] && cam.y < b[2] && cam.y > (b[5] ?? -1e9) && cam.z > b[3] && cam.z < b[4]) ? 1 : 0;
     inside += (target - inside) * .08;
     if (isDay) { const b0 = base(), k = 1 - inside * .85; hemi.intensity = b0.h * k; sun.intensity = b0.s * (1 - inside); scene.environmentIntensity = b0.e * (1 - inside * .9); }
+    else { hemi.intensity = night.hemiI * (1 - inside * .85); moon.intensity = night.moonI * (1 - inside); scene.environmentIntensity = .22 * (1 - inside * .9); }   // no moonlight underground either
     sun.target.position.set(Math.round(focus.x / 8) * 8, 0, Math.round(focus.z / 8) * 8);
     sun.position.copy(sun.target.position).addScaledVector(sunDir, 700);
   }
