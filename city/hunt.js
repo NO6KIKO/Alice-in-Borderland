@@ -36,8 +36,8 @@ function cast(cars) {
   run('delivery', 'run', [[-960, 232], [-1024, 210]], 5.6, .7);
   run('teen_girl', 'flee_02', [[-1010, 206], [-972, 240]], 4.2, .55);
   // sheltering: store doorway (behind glass), subway entrance, billboard pillars
-  A.push({ id: 'clerk', clip: 'frightened', x: -966.5, z: 243.2, y: PV, target: C });
-  A.push({ id: 'student', clip: 'scared_01', x: -968.2, z: 245.8, y: PV, target: C });
+  A.push({ id: 'clerk', clip: 'frightened', x: -966.5, z: 243.2, y: PV + .1, target: C });   // on the store floor (top at +.1)
+  A.push({ id: 'student', clip: 'scared_01', x: -968.2, z: 245.8, y: PV + .1, target: C });
   A.push({ id: 'elder', clip: 'afraid', x: -1027.5, z: 242.5, y: PV, target: C });
   A.push({ id: 'tracksuit', clip: 'look_around', x: -1025.8, z: 241.2, y: PV, target: C });
   A.push({ id: 'nurse', clip: 'frightened', x: -969, z: 202, y: PV, target: C });

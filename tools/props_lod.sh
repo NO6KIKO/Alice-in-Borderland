@@ -11,7 +11,8 @@ for f in models/props/*.glb; do
     jp_*|kcar|kei_truck|wreck_car|box_truck|motorcycle|tiger|panther|deer) t=3000;;
     bicycle|bicycle_fallen|scooter|koban|rubble_pile|slab_rebar|charred_tree) t=2000;;
     street_light|bus_stop) t=1400;;   # seen up close on every street: 700 melted the lamp heads
-    konbini_shelf|drink_fridge|magazine_rack|bento_case|izakaya_table|office_desk|ramen_counter|ticket_machine|station_gate|atm|coffee_machine|konbini_counter|karaoke_sofa|tatami_room_set|shutter_shop|torii|phone_booth|vending|traffic_signal|utility_pole) t=1500;;
+    konbini_shelf|drink_fridge|magazine_rack|bento_case|izakaya_table|office_desk|ramen_counter|ticket_machine|station_gate|atm|coffee_machine|konbini_counter|karaoke_sofa|tatami_room_set) t=6000;;   # walk-in interior fixtures: seen at arm's length, few instances, near-only (1500 shattered them)
+    shutter_shop|torii|phone_booth|vending|traffic_signal|utility_pole) t=2500;;
     *) t=700;;   # lamps, bins, signs, bags, small clutter
   esac
   case $n in city_bus|jp_*|kcar|kei_truck|wreck_car|box_truck|burnt_bus|motorcycle|airship|koban|tiger|panther|deer) px=1024;; *) px=512;; esac

@@ -75,11 +75,12 @@ const placements = new Map();   // name → [{ m: Matrix4 (world), p: Vector3 }]
 const _q = new THREE.Quaternion(), _s = new THREE.Vector3(), _p = new THREE.Vector3(), _e = new THREE.Euler();
 
 // x,y,z in the current kit frame; ry turns local +x (the model's forward) toward the desired heading
-export function prop(name, x, y, z, ry = 0, scale = 1, tilt = 0) {
+// opt.collide: give this placement a collision box even if its type is walk-through clutter; opt.rz: roll
+export function prop(name, x, y, z, ry = 0, scale = 1, tilt = 0, opt = {}) {
   if (!PROPS[name]) throw new Error('unknown prop ' + name);
-  const m = K.frame.clone().multiply(new THREE.Matrix4().compose(_p.set(x, y, z), _q.setFromEuler(_e.set(tilt, ry, 0, 'YXZ')), _s.setScalar(scale)));
+  const m = K.frame.clone().multiply(new THREE.Matrix4().compose(_p.set(x, y, z), _q.setFromEuler(_e.set(tilt, ry, opt.rz || 0, 'YXZ')), _s.setScalar(scale)));
   if (!placements.has(name)) placements.set(name, []);
-  placements.get(name).push({ m, p: new THREE.Vector3().setFromMatrixPosition(m) });
+  placements.get(name).push({ m, p: new THREE.Vector3().setFromMatrixPosition(m), collide: !!opt.collide });
 }
 // world placements of the given prop names within r of (x, z) — used to stage people behind cars etc.
 export function placementsNear(names, x, z, r) {
@@ -94,8 +95,8 @@ export function propColliders() {
   const geos = [];
   for (const [name, list] of placements) {
     const [L, H, D] = PROPS[name].size;
-    if (PROPS[name].range < 100) continue;   // interior clutter: walk-through is fine, keeps the BVH small
-    for (const { m } of list) { const g = new THREE.BoxGeometry(L * .92, H * .9, D * .9); g.translate(0, H * .45, 0); g.applyMatrix4(m); geos.push(g); }
+    const all = PROPS[name].range >= 100;   // interior clutter is walk-through unless a placement asks to collide
+    for (const { m, collide } of list) { if (!all && !collide) continue; const g = new THREE.BoxGeometry(L * .92, H * .9, D * .9); g.translate(0, H * .45, 0); g.applyMatrix4(m); geos.push(g); }
   }
   if (!geos.length) return null;
   const mesh = new THREE.Mesh(mergeGeometries(geos), new THREE.MeshBasicMaterial());
