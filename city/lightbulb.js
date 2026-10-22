@@ -521,6 +521,7 @@ function createLevel(ctx, root, { mouths, BRK, ELECTRODES }) {
     update,
     attach({ player, audio, grade, dayNight }) {
       P = player; A = audio; G = grade; DN = dayNight;
+      window.__bulb = this;   // console / trailer helper
       for (const lf of leaves) player.addDynamicCollider?.(lf.leaf);
       player.addDynamicCollider?.(shutter);
       DN?.interiors?.push([X0 - 1, X1 + 1, -.5, -477, ROOM.z1 + 1, F - 2]);

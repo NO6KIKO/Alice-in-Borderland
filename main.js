@@ -624,7 +624,7 @@ dayBtn.onclick = () => dayNight.set(dayNight.isDusk ? 'night' : dayNight.isDay ?
 setTreeSun(dayNight.sunDir);
 dayNight.set(true);
 attachBulb({ player, audio, grade, dayNight });   // ♦4 Light Bulb level: interaction, water, door colliders
-window.__day = dayNight; window.__renderer = renderer; window.__scene = scene; window.__camera = camera; window.__composer = composer;
+window.__controls = controls; window.__pois = cityInfo.pois; window.__grade = grade; window.__dof = dof; window.__bloom = bloom; window.__audio = audio; window.__day = dayNight; window.__renderer = renderer; window.__scene = scene; window.__camera = camera; window.__composer = composer;
 dayNight.interiors.push([402, 618, 40, -224, -76]);   // black warehouse hall (x0,x1,yTop,z0,z1)
 dayNight.interiors.push([-1247, -831, -1.2, 143, 480, -30]);   // the real Shibuya underground (PLATEAU LOD4.1) under the scramble
 dayNight.interiors.push([-348, -312, 136, -418, -382, 122]);    // King of Diamonds courtroom (top of the tower)
@@ -654,6 +654,7 @@ function tick() {
   updateWalkers(dt);
   if (anim) { let k = Math.min(1, (performance.now() - anim.t0) / anim.d); k = k * k * (3 - 2 * k); camera.position.lerpVectors(anim.c0, anim.c1, k); controls.target.lerpVectors(anim.t0v, anim.t1, k); if (k >= 1) anim = null; }
   if (player.active) player.update(dt); else controls.update();
+  window.__camHook?.(dt, t);   // dev: trailer/rec.html drives the camera after the controls each frame
   document.body.classList.toggle('playing', player.active);
   const a = .55 + .45 * Math.sin(t * 2.4), b = .55 + .45 * Math.sin(t * 2.4 + 2.2);
   bMatA.color.setRGB(4 * a + .5, .15 * a, .1 * a); bMatB.color.setRGB(4 * b + .5, .15 * b, .1 * b);

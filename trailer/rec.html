@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<!-- Trailer recorder: the game on a virtual clock. trailer/rec.mjs steps it frame by frame over CDP and reads each
+     frame back; the camera is driven through main.js's __camHook by the shot list in trailer/shots.js. -->
+<base href="../">
+<title>Borderland rec</title>
+<style>
+  html,body{margin:0;height:100%;background:#000;overflow:hidden}
+  canvas{display:block}
+  #markers,#hud,#views,#tip,#lb-hud,#lb-prompt,#lb-phone,#lb-msg,#lb-breath{display:none!important}
+</style>
+<script>
+  // virtual time: performance.now / Date.now only move when the recorder steps; rAF callbacks queue until then
+  try { sessionStorage.removeItem('lite'); } catch (e) {}   // a lost context elsewhere must not drop the recorder to lite
+  (() => {
+    let vt = 0; const q = [], d0 = Date.now();
+    performance.now = () => vt;
+    Date.now = () => d0 + vt;
+    window.requestAnimationFrame = (cb) => { q.push(cb); return q.length; };
+    window.__clock = { get ms() { return vt; }, step(ms) { vt += ms; const run = q.splice(0); for (const cb of run) cb(vt); } };
+  })();
+</script>
+<script type="importmap">
+{"imports":{"three":"./node_modules/three/build/three.module.js","three/addons/":"./node_modules/three/examples/jsm/","three-mesh-bvh":"./node_modules/three-mesh-bvh/build/index.module.js"}}
+</script>
+</head>
+<body>
+<div id="load">LOADING…</div>
+<div id="markers"></div>
+<div id="hud"><h1></h1><ul id="legend"></ul></div>
+<div id="views"></div>
+<div id="tip"></div>
+<script type="module" src="./main.js"></script>
+<script type="module" src="./trailer/shots.js"></script>
+</body>
+</html>
