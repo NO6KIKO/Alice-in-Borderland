@@ -1,0 +1,35 @@
+This repository is dual-licensed:
+
+  • Source code (all .js / .mjs / .py / .sh / .ps1 / .html files): MIT License, below.
+  • Assets made for this project (playing-card paintings in cards/, 3D models in models/ other than
+    models/real/, images in docs/media/): Creative Commons Attribution 4.0 International (CC BY 4.0),
+    https://creativecommons.org/licenses/by/4.0/ — reuse is free with attribution to NO6KIKO.
+  • Third-party data keeps its own terms: the PLATEAU city models in models/real/ are © MLIT Japan under the
+    PLATEAU Policy (compatible with CC BY 4.0); see CREDITS.md for the required attribution.
+
+This is an unofficial fan project. It is not affiliated with or endorsed by Netflix, ROBOT Communications or
+Haro Aso; "Alice in Borderland" / 今際の国のアリス and related names belong to their respective owners.
+
+────────────────────────────────────────────────────────────────────────────
+
+MIT License
+
+Copyright (c) 2026 NO6KIKO
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
