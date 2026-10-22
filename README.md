@@ -1,4 +1,6 @@
-# 弥留之国 · BORDERLAND
+# Gorest-AliceinBorderland
+
+**弥留之国 · BORDERLAND**, a browser-playable Alice in Borderland tribute by [Gorest](https://gorest.ai).
 
 ![Borderland](docs/media/poster.jpg)
 
